@@ -10,7 +10,7 @@ import (
 	"runtime"
 )
 
-const Version = "1.0"
+const Version = "1.1"
 
 func main() {
 	if err := model.Init(); err != nil {
