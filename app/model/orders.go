@@ -3,6 +3,7 @@ package model
 import (
 	"github.com/shopspring/decimal"
 	"strconv"
+	"sync"
 	"time"
 )
 
@@ -13,6 +14,8 @@ const OrderStatusWaiting = 1
 const OrderNotifyStateSucc = 1
 const OrderNotifyStateFail = 0
 const Atomicity = 0.01 // 原子精度
+
+var _calcMutex sync.Mutex
 
 type TradeOrders struct {
 	Id          int64     `gorm:"primary_key;AUTO_INCREMENT"`
@@ -81,8 +84,11 @@ func GetNotifyFailedTradeOrders() ([]TradeOrders, error) {
 	return orders, res.Error
 }
 
+// CalcTradeAmount 计算当前实际可用的交易金额
 func CalcTradeAmount(wa []WalletAddress, rate, money float64) (WalletAddress, string) {
-	// 获取当前已经锁定（地址+金额）的交易订单
+	_calcMutex.Lock()
+	defer _calcMutex.Unlock()
+
 	var _orders []TradeOrders
 	var _lock = make(map[string]bool)
 	DB.Where("status = ?", OrderStatusWaiting).Find(&_orders)
