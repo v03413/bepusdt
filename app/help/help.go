@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"os"
+	"regexp"
 	"sort"
 	"strings"
 )
@@ -78,4 +79,10 @@ func Ec(str string) string {
 	}
 
 	return str
+}
+
+func IsNumber(s string) bool {
+	match, err := regexp.MatchString(`^\d+\.?\d*$`, s)
+
+	return match && err == nil
 }

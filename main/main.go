@@ -21,6 +21,9 @@ func main() {
 	// 启动机器人
 	go monitor.BotStart()
 
+	// 启动汇率监控
+	go monitor.OkxUsdtRateStart()
+
 	// 启动交易监控
 	go monitor.TradeStart()
 

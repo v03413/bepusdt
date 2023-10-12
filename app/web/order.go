@@ -7,6 +7,7 @@ import (
 	"github.com/v03413/bepusdt/app/help"
 	"github.com/v03413/bepusdt/app/log"
 	"github.com/v03413/bepusdt/app/model"
+	"github.com/v03413/bepusdt/app/monitor"
 	"time"
 )
 
@@ -26,12 +27,7 @@ func CreateTransaction(ctx *gin.Context) {
 	}
 
 	// 获取兑换汇率
-	rate, err := config.GetUsdtRate()
-	if err != nil {
-		log.Error("USDT汇率获取失败：", err.Error())
-		ctx.JSON(200, RespFailJson(fmt.Errorf("USDT汇率获取失败，请稍后再试。")))
-		return
-	}
+	rate := monitor.GetLatestUsdtRate()
 
 	// 获取钱包地址
 	var wallet = model.GetAvailableAddress()
