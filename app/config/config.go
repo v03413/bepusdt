@@ -136,6 +136,11 @@ func GetTemplatePath() string {
 	return runPath + "/templates/*"
 }
 
+func GetStaticPath() string {
+
+	return runPath + "/static/"
+}
+
 func parseRate() {
 
 }

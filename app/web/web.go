@@ -13,9 +13,9 @@ func Start() {
 
 	listen := config.GetListen()
 	r := gin.New()
-	r.Static("/img", "./static/img")
-	r.Static("/css", "./static/css")
-	r.Static("/js", "./static/js")
+	r.Static("/img", config.GetStaticPath()+"img")
+	r.Static("/css", config.GetStaticPath()+"css")
+	r.Static("/js", config.GetStaticPath()+"js")
 	r.LoadHTMLGlob(config.GetTemplatePath())
 	r.Use(gin.LoggerWithWriter(log.GetWriter()), gin.Recovery())
 	r.Use(func(ctx *gin.Context) {
