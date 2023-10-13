@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/v03413/bepusdt/app/config"
 	"github.com/v03413/bepusdt/app/model"
 	"github.com/v03413/bepusdt/app/monitor"
 	"github.com/v03413/bepusdt/app/web"
@@ -10,12 +11,17 @@ import (
 	"runtime"
 )
 
-const Version = "1.1"
+const Version = "1.1.1"
 
 func main() {
 	if err := model.Init(); err != nil {
 
 		panic("数据库初始化失败：" + err.Error())
+	}
+
+	if config.GetTGBotToken() == "" || config.GetTGBotAdminId() == "" {
+
+		panic("请配置参数 TG_BOT_TOKEN 和 TG_BOT_ADMIN_ID")
 	}
 
 	// 启动机器人
