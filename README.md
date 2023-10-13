@@ -33,17 +33,8 @@ Bepusdt 所有参数都是以传递环境变量的方式进行配置，大部分
 
 ## 🚀 安装部署
 
-### Docker
-
-```shell
-# 完善中...
-```
-
-### 手动安装
-
-```shell
-# 完善中...
-```
+- [Docker 安装教程](./docs/docker.md)
+- [Linux 手动安装教程](./docs/systemd.md)
 
 ## 🤔 常见问题
 
