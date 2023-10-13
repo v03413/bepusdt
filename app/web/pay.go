@@ -32,6 +32,7 @@ func CheckoutCounter(ctx *gin.Context) {
 		"address":    order.Address,
 		"expire":     order.ExpiredAt.UnixMilli(),
 		"return_url": order.ReturnUrl,
+		"usdt_rate":  order.UsdtRate,
 	})
 }
 
