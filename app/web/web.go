@@ -16,7 +16,7 @@ func Start() {
 	r.Static("/img", "./static/img")
 	r.Static("/css", "./static/css")
 	r.Static("/js", "./static/js")
-	r.LoadHTMLGlob("templates/*")
+	r.LoadHTMLGlob(config.GetTemplatePath())
 	r.Use(gin.LoggerWithWriter(log.GetWriter()), gin.Recovery())
 	r.Use(func(ctx *gin.Context) {
 		// 解析请求地址

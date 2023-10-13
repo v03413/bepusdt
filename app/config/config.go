@@ -131,6 +131,11 @@ func GetDbPath() string {
 	return runPath + "/bepusdt.db"
 }
 
+func GetTemplatePath() string {
+
+	return runPath + "/templates/*"
+}
+
 func parseRate() {
 
 }
