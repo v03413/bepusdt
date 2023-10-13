@@ -5,7 +5,7 @@ WORKDIR /go/release
 ADD . .
 RUN set -x \
     && apk --no-cache add build-base \
-    && CGO_ENABLED=1 go build -ldflags="-s -w" -o bepusdt ./main
+    && CGO_ENABLED=1 go build -trimpath -ldflags="-s -w -buildid=" -o bepusdt ./main
 
 FROM alpine:latest
 ENV DEBIAN_FRONTEND noninteractive
