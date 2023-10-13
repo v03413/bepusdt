@@ -1,0 +1,60 @@
+name: Build and Release
+on:
+  workflow_dispatch:
+  create:
+    tags:
+      - v*
+
+env:
+  APP_NAME: bepusdt
+  BUILD_DIR: build_assets
+
+jobs:
+  build-release:
+    strategy:
+      matrix:
+        goos: [ linux ]
+        goarch: [ amd64, arm64 ]
+      fail-fast: false
+    runs-on: ubuntu-latest
+    env:
+      GOOS: ${{ matrix.goos }}
+      GOARCH: ${{ matrix.goarch }}
+
+    steps:
+      - name: Checkout codebase
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Show workflow information
+        id: get_filename
+        run: |
+          export _NAME=$GOOS-$GOARCH
+          echo "GOOS: $GOOS, GOARCH: $GOARCH, RELEASE_NAME: $_NAME"
+          echo "OS_ARCH=$_NAME" >> $GITHUB_ENV
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ^1.21
+      - name: Get project dependencies
+        run: go mod download
+      - name: Build Bepusdt
+        run: |
+          CGO_ENABLED=1
+          mkdir -p ${{ env.BUILD_DIR }}
+          go build -v -o ${{ env.BUILD_DIR }}/${{ env.APP_NAME }} -trimpath -ldflags "-s -w -buildid=" ./main
+      - name: Prepare package
+        run: |
+          cp -v -R ./templates ./${{ env.BUILD_DIR }}
+          cp -v -R ./static ./${{ env.BUILD_DIR }}
+          cp -v ./docs/${{ env.APP_NAME }}.service ./${{ env.BUILD_DIR }}
+          cp -v ./docs/Environment.conf ./${{ env.BUILD_DIR }}
+          mv -v ./${{ env.BUILD_DIR }} ./${{ env.APP_NAME }}
+      - name: Create ZIP archive
+        run: zip -9vr ./${{ env.APP_NAME }}-${{ env.OS_ARCH }}.zip ./${{ env.APP_NAME }}
+      - name: Upload files to GitHub release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: ./${{ env.APP_NAME }}-${{ env.OS_ARCH }}.zip
+          tag: ${{ github.ref }}
