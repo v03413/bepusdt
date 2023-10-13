@@ -20,11 +20,16 @@ func Init() error {
 		}
 
 		DB.Exec(installSql)
+		addStartWalletAddress()
 
 		return nil
 	}
 
 	DB, _err = gorm.Open(sqlite.Open(dbPath), &gorm.Config{})
+	if _err == nil {
+
+		addStartWalletAddress()
+	}
 
 	return _err
 }

@@ -141,6 +141,11 @@ func GetStaticPath() string {
 	return runPath + "/static/"
 }
 
-func parseRate() {
+func GetInitWalletAddress() []string {
+	if data := help.GetEnv("WALLET_ADDRESS"); data != "" {
 
+		return strings.Split(strings.TrimSpace(data), ",")
+	}
+
+	return []string{}
 }

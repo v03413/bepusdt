@@ -4,6 +4,7 @@ import (
 	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/v03413/bepusdt/app/config"
+	"github.com/v03413/bepusdt/app/help"
 	"github.com/v03413/bepusdt/app/model"
 	"strings"
 )
@@ -51,7 +52,7 @@ func HandleCallback(query *tgbotapi.CallbackQuery) {
 func addWalletAddress(msg *tgbotapi.Message) {
 	var address = strings.TrimSpace(msg.Text)
 	// 简单检测地址是否合法
-	if len(address) != 34 || string(address[0]) != "T" {
+	if !help.IsValidTRONWalletAddress(address) {
 		SendMsg(tgbotapi.NewMessage(msg.Chat.ID, "钱包地址不合法"))
 
 		return

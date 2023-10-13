@@ -86,3 +86,9 @@ func IsNumber(s string) bool {
 
 	return match && err == nil
 }
+
+func IsValidTRONWalletAddress(address string) bool {
+	match, err := regexp.MatchString(`^T[a-zA-Z0-9]{33}$`, address)
+
+	return match && err == nil
+}
