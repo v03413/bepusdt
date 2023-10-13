@@ -5,6 +5,7 @@ on:
   push:
     paths-ignore:
       - '.github/**'
+      - '*.md'
 
 env:
   APP_NAME: bepusdt
