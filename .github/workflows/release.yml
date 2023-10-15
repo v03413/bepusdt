@@ -14,7 +14,7 @@ jobs:
     strategy:
       matrix:
         goos: [ linux ]
-        goarch: [ amd64, arm64 ]
+        goarch: [ amd64 ]
       fail-fast: false
     runs-on: ubuntu-latest
     env:
