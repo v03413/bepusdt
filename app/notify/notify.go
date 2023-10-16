@@ -59,6 +59,7 @@ func OrderNotify(order model.TradeOrders) {
 		return
 	}
 
+	postReq.Header.Set("Content-Type", "application/json")
 	postReq.Header.Set("Powered-By", "https://github.com/v03413/bepusdt")
 	resp, err := client.Do(postReq)
 	if err != nil {
