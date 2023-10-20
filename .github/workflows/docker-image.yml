@@ -2,12 +2,9 @@ name: docker-image
 
 on:
   workflow_dispatch:
-  push:
-    tags-ignore:
-      - '*'
-    paths-ignore:
-      - '.github/**'
-      - '*.md'
+  create:
+    tags:
+      - v*
 
 env:
   APP_NAME: bepusdt
