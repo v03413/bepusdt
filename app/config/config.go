@@ -87,8 +87,10 @@ func GetListen() string {
 
 func GetTradeConfirmed() bool {
 	if data := help.GetEnv("TRADE_IS_CONFIRMED"); data != "" {
+		if data == "1" || data == "true" {
 
-		return true
+			return true
+		}
 	}
 
 	return false
