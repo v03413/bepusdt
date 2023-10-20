@@ -1,6 +1,7 @@
 package monitor
 
 import (
+	"fmt"
 	"github.com/shopspring/decimal"
 	"github.com/tidwall/gjson"
 	"github.com/v03413/bepusdt/app/config"
@@ -102,6 +103,8 @@ func TradeStart() {
 				continue
 			}
 
+			log.Info(fmt.Sprintf("transfer total: %s(%s)", _toAddress, result.Get("total").String()))
+
 			// 遍历交易记录
 			for _, transfer := range result.Get("data").Array() {
 				// 计算交易金额
@@ -131,9 +134,7 @@ func TradeStart() {
 				var _tradeIsConfirmed = config.GetTradeConfirmed()
 				var _fromAddress = transfer.Get("from_address").String()
 
-				//log.Info(_order)
-				//log.Info(_confirmed, _tradeIsConfirmed, _tradeHash, _fromAddress, _createdAt)
-				if (config.GetTradeConfirmed() && _confirmed) || !_tradeIsConfirmed {
+				if (_tradeIsConfirmed && _confirmed) || !_tradeIsConfirmed {
 					if _order.OrderSetSucc(_fromAddress, _tradeHash, _createdAt) == nil {
 						// 通知订单支付成功
 						go notify.OrderNotify(_order)
