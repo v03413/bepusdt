@@ -97,13 +97,14 @@ func TradeStart() {
 
 			// 解析响应记录
 			result := gjson.ParseBytes(all)
-			if result.Get("total").Num <= 0 {
+			recentTransferTotal := result.Get("total").Num
+
+			log.Info(fmt.Sprintf("recent transfer total: %s(%v)", _toAddress, recentTransferTotal))
+			if recentTransferTotal <= 0 {
 				// 没有交易记录
 
 				continue
 			}
-
-			log.Info(fmt.Sprintf("transfer total: %s(%s)", _toAddress, result.Get("total").String()))
 
 			// 遍历交易记录
 			for _, transfer := range result.Get("data").Array() {
