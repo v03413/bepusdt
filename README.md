@@ -1,5 +1,16 @@
 # Bepusdt (Better Easy Payment Usdt)
 
+<p align="center">
+<img src="./static/img/tether.svg" width="15%" alt="tether">
+</p>
+<p align="center">
+<a href="https://www.gnu.org/licenses/gpl-3.0.html"><img src="https://img.shields.io/badge/license-GPLV3-blue" alt="license GPLV3"></a>
+<a href="https://golang.org"><img src="https://img.shields.io/badge/Golang-1.21-red" alt="Go version 1.21"></a>
+<a href="https://github.com/gin-gonic/gin"><img src="https://img.shields.io/badge/Gin-v1.9-blue" alt="Gin Web Framework v1.9"></a>
+<a href="https://github.com/go-telegram-bot-api/telegram-bot-api"><img src="https://img.shields.io/badge/Telegram Bot-v5-lightgrey" alt="Golang Telegram Bot Api-v5"></a>
+<a href="https://github.com/v03413/bepusdt"><img src="https://img.shields.io/badge/Release-v1.2.5-green" alt="Release v1.2.5"></a>
+</p>
+
 ## 🪧 介绍
 
 基本就是对`Epusdt`重新造了一次轮子，移除一些非必要依赖(`Redis MySQL`)，同时加入一些新特性，让个人`USDT.TRC20`
