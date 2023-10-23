@@ -21,8 +21,9 @@ func OkxUsdtRateStart() {
 	var _act, _value, _defaultRate = config.GetUsdtRate()
 	for {
 		if _act == "" {
+			setLatestUsdtRateRate(_defaultRate)
 
-			log.Info("固定汇率", _defaultRate)
+			log.Info("固定汇率", GetLatestUsdtRate())
 		} else {
 			_okxRate, _okxErr := getOkxUsdtCnySellPrice()
 			if _okxErr == nil { // 获取成功
