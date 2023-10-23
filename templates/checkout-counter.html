@@ -67,22 +67,21 @@
 <script src="/js/clipboard.min.js"></script>
 <script src="https://cdn.bootcdn.net/ajax/libs/layer/3.1.1/layer.js"></script>
 <script>
+    let expire = {{.expire}};
+
     // 支付时间倒计时
     function clock() {
-        let timeout = new Date({{.expire}});
-        let now = new Date();
-        let ms = timeout.getTime() - now.getTime();//时间差的毫秒数
-        let second = Math.round(ms / 1000);
-        let minute = Math.floor(second / 60);
+        let seconds = --expire;
+        let minute = Math.floor(seconds / 60);
         let hour = Math.floor(minute / 60);
-        if (ms <= 0) {
+        if (seconds <= 0) {
 
             return layer.alert("支付超时，请重新发起支付！", {icon: 5});
         }
 
         $('.hours').text(hour.toString().padStart(2, '0'));
         $('.minutes').text(minute.toString().padStart(2, '0'));
-        $('.seconds').text((second % 60).toString().padStart(2, '0'));
+        $('.seconds').text((seconds % 60).toString().padStart(2, '0'));
 
         return setTimeout(clock, 1000);
     }

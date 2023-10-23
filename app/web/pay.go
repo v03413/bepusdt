@@ -6,6 +6,7 @@ import (
 	"github.com/v03413/bepusdt/app/log"
 	"github.com/v03413/bepusdt/app/model"
 	"net/url"
+	"time"
 )
 
 func CheckoutCounter(ctx *gin.Context) {
@@ -30,7 +31,7 @@ func CheckoutCounter(ctx *gin.Context) {
 		"trade_id":   tradeId,
 		"amount":     order.Amount,
 		"address":    order.Address,
-		"expire":     order.ExpiredAt.UnixMilli(),
+		"expire":     int64(order.ExpiredAt.Sub(time.Now()).Seconds()),
 		"return_url": order.ReturnUrl,
 		"usdt_rate":  order.UsdtRate,
 	})
