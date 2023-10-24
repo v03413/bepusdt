@@ -44,18 +44,6 @@ class bepusdt_plugin
         return ['type' => 'jump', 'url' => $json['data']['payment_url']];
     }
 
-    public static function mapi()
-    {
-        global $siteurl, $channel, $order, $conf, $device, $mdevice;
-
-        if ($channel['appswitch'] == 1) {
-            $typename = $order['typename'];
-            return self::$typename();
-        } else {
-            return ['type' => 'jump', 'url' => $siteurl . 'pay/submit/' . TRADE_NO . '/'];
-        }
-    }
-
     public static function notify()
     {
         global $channel, $order;
