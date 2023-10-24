@@ -31,6 +31,12 @@ func CreateTransaction(ctx *gin.Context) {
 
 	// 获取钱包地址
 	var wallet = model.GetAvailableAddress()
+	if len(wallet) == 0 {
+		log.Error("订单创建失败：还没有配置收款地址")
+		ctx.JSON(200, RespFailJson(fmt.Errorf("还没有配置收款地址")))
+
+		return
+	}
 
 	// 计算交易金额
 	address, _amount := model.CalcTradeAmount(wallet, rate, _money)
