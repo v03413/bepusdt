@@ -77,10 +77,18 @@ func addWalletAddress(msg *tgbotapi.Message) {
 }
 
 func botCommandHandle(_msg *tgbotapi.Message) {
-	switch _msg.Command() {
-	case cmdGetId:
+	if _msg.Command() == cmdGetId {
+
 		go cmdGetIdHandle(_msg)
-	case cmdStart:
+	}
+
+	if fmt.Sprintf("%v", _msg.Chat.ID) != config.GetTGBotAdminId() {
+
+		return
+	}
+
+	if _msg.Command() == cmdStart {
+
 		go cmdStartHandle()
 	}
 }
