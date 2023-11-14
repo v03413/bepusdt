@@ -8,7 +8,7 @@
 <a href="https://golang.org"><img src="https://img.shields.io/badge/Golang-1.21-red" alt="Go version 1.21"></a>
 <a href="https://github.com/gin-gonic/gin"><img src="https://img.shields.io/badge/Gin-v1.9-blue" alt="Gin Web Framework v1.9"></a>
 <a href="https://github.com/go-telegram-bot-api/telegram-bot-api"><img src="https://img.shields.io/badge/Telegram Bot-v5-lightgrey" alt="Golang Telegram Bot Api-v5"></a>
-<a href="https://github.com/v03413/bepusdt"><img src="https://img.shields.io/badge/Release-v1.2.5-green" alt="Release v1.2.5"></a>
+<a href="https://github.com/v03413/bepusdt"><img src="https://img.shields.io/badge/Release-v1.4.11-green" alt="Release v1.4.11"></a>
 </p>
 
 ## 🪧 介绍
@@ -21,6 +21,8 @@
 - ✅ 具备`Epusdt`的所有特性，插件兼容无缝替换
 - ✅ USDT汇率实时同步交易所，且支持在以此基础上波动
 - ✅ 不依赖`MySQL Redis`环境，支持`Docker`部署
+- ✅ 支持非订单交易监控通知，钱包余额变动及时通知
+- ✅ TG机器人支持查询当前实时汇率，计算实际浮动汇率
 
 ## 🛠 参数配置
 
