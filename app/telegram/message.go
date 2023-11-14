@@ -19,7 +19,7 @@ func SendTradeSuccMsg(order model.TradeOrders) {
 	var text = `
 ✅有新的交易支付成功
 ---
-📝商户订单：｜%v｜
+🚦商户订单：｜%v｜
 💰请求金额：｜%v｜ CNY(%v)
 💲支付数额：%v USDT.TRC20
 🪧收款地址：｜%s｜
@@ -30,6 +30,13 @@ func SendTradeSuccMsg(order model.TradeOrders) {
 		order.CreatedAt.Format(time.DateTime), order.UpdatedAt.Format(time.DateTime))
 	var msg = tgbotapi.NewMessage(adminChatId, text)
 	msg.ParseMode = tgbotapi.ModeMarkdown
+	msg.ReplyMarkup = tgbotapi.InlineKeyboardMarkup{
+		InlineKeyboard: [][]tgbotapi.InlineKeyboardButton{
+			{
+				tgbotapi.NewInlineKeyboardButtonURL("📝查看交易明细", "https://tronscan.org/#/transaction/"+order.TradeHash),
+			},
+		},
+	}
 
 	_, _ = botApi.Send(msg)
 }
