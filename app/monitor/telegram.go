@@ -8,7 +8,7 @@ import (
 
 var err error
 
-func BotStart() {
+func BotStart(version string) {
 	var BotApi = telegram.GetBotApi()
 	if BotApi == nil {
 
@@ -23,6 +23,8 @@ func BotStart() {
 
 		return
 	}
+
+	telegram.SendWelcome(version)
 
 	// 监听消息
 	for _u := range updates {

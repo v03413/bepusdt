@@ -12,7 +12,7 @@ import (
 )
 
 // Version 版本号说明 1.0.0 代表主版本号.功能版本号.修订号
-const Version = "1.2.8"
+const Version = "1.3.9"
 
 func main() {
 	if err := model.Init(); err != nil {
@@ -26,7 +26,7 @@ func main() {
 	}
 
 	// 启动机器人
-	go monitor.BotStart()
+	go monitor.BotStart(Version)
 
 	// 启动汇率监控
 	go monitor.OkxUsdtRateStart()
