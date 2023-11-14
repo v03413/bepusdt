@@ -17,14 +17,14 @@ func (nr *NotifyRecord) TableName() string {
 
 func IsNeedNotifyByTxid(txid string) bool {
 	var row NotifyRecord
-	var res = DB.Where("txid = ?", txid).First(&row)
+	var res = DB.Where("txid = ?", txid).Limit(1).Find(&row)
 	if res.RowsAffected > 0 {
 
 		return false
 	}
 
 	var row2 TradeOrders
-	var res2 = DB.Where("trade_hash = ?", txid).First(&row2)
+	var res2 = DB.Where("trade_hash = ?", txid).Limit(1).Find(&row2)
 	if res2.RowsAffected > 0 {
 
 		return false
