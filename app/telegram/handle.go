@@ -87,8 +87,10 @@ func botCommandHandle(_msg *tgbotapi.Message) {
 		return
 	}
 
-	if _msg.Command() == cmdStart {
-
+	switch _msg.Command() {
+	case cmdStart:
 		go cmdStartHandle()
+	case cmdUsdt:
+		go cmdUsdtHandle()
 	}
 }

@@ -7,7 +7,7 @@ import (
 	"github.com/v03413/bepusdt/app/help"
 	"github.com/v03413/bepusdt/app/log"
 	"github.com/v03413/bepusdt/app/model"
-	"github.com/v03413/bepusdt/app/monitor"
+	"github.com/v03413/bepusdt/app/usdt"
 	"time"
 )
 
@@ -27,7 +27,7 @@ func CreateTransaction(ctx *gin.Context) {
 	}
 
 	// 获取兑换汇率
-	rate := monitor.GetLatestUsdtRate()
+	rate := usdt.GetLatestRate()
 
 	// 获取钱包地址
 	var wallet = model.GetAvailableAddress()

@@ -7,54 +7,43 @@ import (
 	"github.com/tidwall/gjson"
 	"github.com/v03413/bepusdt/app/config"
 	"github.com/v03413/bepusdt/app/log"
+	"github.com/v03413/bepusdt/app/usdt"
 	"io"
-	"math"
 	"net/http"
 	"strconv"
 	"time"
 )
-
-var _latestUsdtRate = 0.0
 
 // OkxUsdtRateStart Okx USDT 汇率监控，避免频繁请求
 func OkxUsdtRateStart() {
 	var _act, _value, _defaultRate = config.GetUsdtRate()
 	for {
 		if _act == "" {
-			setLatestUsdtRateRate(_defaultRate)
+			usdt.SetLatestRate(_defaultRate)
 
-			log.Info("固定汇率", GetLatestUsdtRate())
+			log.Info("固定汇率", usdt.GetLatestRate())
 		} else {
 			_okxRate, _okxErr := getOkxUsdtCnySellPrice()
 			if _okxErr == nil { // 获取成功
+				usdt.SetOkxLatestRate(_okxRate.InexactFloat64())
+
 				switch _act {
 				case "~":
-					setLatestUsdtRateRate(_okxRate.Mul(_value).InexactFloat64())
+					usdt.SetLatestRate(_okxRate.Mul(_value).InexactFloat64())
 				case "+":
-					setLatestUsdtRateRate(_okxRate.Add(_value).InexactFloat64())
+					usdt.SetLatestRate(_okxRate.Add(_value).InexactFloat64())
 				case "-":
-					setLatestUsdtRateRate(_okxRate.Sub(_value).InexactFloat64())
+					usdt.SetLatestRate(_okxRate.Sub(_value).InexactFloat64())
 				default:
-					setLatestUsdtRateRate(_okxRate.InexactFloat64())
+					usdt.SetLatestRate(_okxRate.InexactFloat64())
 				}
 
-				log.Info(fmt.Sprintf("okx rate: %v act(%v) value(%v) 最终实际汇率：%v", _okxRate, _act, _value, GetLatestUsdtRate()))
+				log.Info(fmt.Sprintf("okx rate: %v act(%v) value(%v) 最终实际汇率：%v", _okxRate, _act, _value, usdt.GetLatestRate()))
 			}
 		}
 
 		time.Sleep(time.Minute)
 	}
-}
-
-func setLatestUsdtRateRate(rate float64) {
-	// 取绝对值
-
-	_latestUsdtRate = math.Abs(rate)
-}
-
-func GetLatestUsdtRate() float64 {
-
-	return _latestUsdtRate
 }
 
 // getOkxUsdtCnySellPrice  Okx  C2C快捷交易 USDT出售 实时汇率

@@ -4,10 +4,12 @@ import (
 	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/v03413/bepusdt/app/model"
+	"github.com/v03413/bepusdt/app/usdt"
 )
 
 const cmdGetId = "id"
 const cmdStart = "start"
+const cmdUsdt = "usdt"
 
 const replayAddressText = "🚚 请发送一个合法的钱包地址"
 
@@ -35,6 +37,14 @@ func cmdStartHandle() {
 
 	inlineBtn = append(inlineBtn, tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData("👛 添加新的钱包地址", cbAddressAdd)))
 	msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(inlineBtn...)
+
+	SendMsg(msg)
+}
+
+func cmdUsdtHandle() {
+	var msg = tgbotapi.NewMessage(0, fmt.Sprintf("🪧交易所最新基准汇率：`%v`\n✅订单实际计算浮动汇率：`%v`",
+		usdt.GetOkxLastRate(), usdt.GetLatestRate()))
+	msg.ParseMode = tgbotapi.ModeMarkdown
 
 	SendMsg(msg)
 }
