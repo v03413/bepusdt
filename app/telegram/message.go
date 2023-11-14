@@ -34,6 +34,19 @@ func SendTradeSuccMsg(order model.TradeOrders) {
 	_, _ = botApi.Send(msg)
 }
 
+func SendOtherNotify(text string) {
+	var adminChatId, err = strconv.ParseInt(config.GetTGBotAdminId(), 10, 64)
+	if err != nil {
+
+		return
+	}
+
+	var msg = tgbotapi.NewMessage(adminChatId, text)
+	msg.ParseMode = tgbotapi.ModeMarkdown
+
+	_, _ = botApi.Send(msg)
+}
+
 func SendWelcome(version string) {
 	var text = `
 👋 欢迎使用 Bepusdt，一款更好用的个人USDT收款网关，如果您看到此消息，说明机器人已经启动成功

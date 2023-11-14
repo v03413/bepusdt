@@ -30,7 +30,16 @@ CREATE TABLE wallet_address (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     address TEXT UNIQUE NOT NULL, -- 钱包地址
     status INTEGER DEFAULT 1 NOT NULL, -- 地址状态 1启动 0禁止
+	other_notify INTEGER DEFAULT 1 NOT NULL, -- 其它转账通知 1启动 0禁止
     created_at TIMESTAMP NULL,
     updated_at TIMESTAMP NULL
+);
+
+-- notify_record definition
+
+CREATE TABLE notify_record (
+    txid TEXT PRIMARY KEY NOT NULL, -- 交易哈希
+	created_at TIMESTAMP NOT NULL,  -- 创建时间
+    updated_at TIMESTAMP NULL   -- 更新时间
 );
 `

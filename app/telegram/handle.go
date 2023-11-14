@@ -45,6 +45,8 @@ func HandleCallback(query *tgbotapi.CallbackQuery) {
 		go cbAddressDisableAction(query, args[1])
 	case cbAddressDelete:
 		go cbAddressDeleteAction(query, args[1])
+	case cbAddressOtherNotify:
+		go cbAddressOtherNotifyAction(query, args[1])
 	}
 
 }

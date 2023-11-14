@@ -10,6 +10,7 @@ const cbAddressAdd = "address_add"
 const cbAddressEnable = "address_enable"
 const cbAddressDisable = "address_disable"
 const cbAddressDelete = "address_del"
+const cbAddressOtherNotify = "address_other_notify"
 
 func cbAddressAddHandle(query *tgbotapi.CallbackQuery) {
 	var msg = tgbotapi.NewMessage(query.Message.Chat.ID, replayAddressText)
@@ -21,12 +22,20 @@ func cbAddressAddHandle(query *tgbotapi.CallbackQuery) {
 func cbAddressAction(query *tgbotapi.CallbackQuery, id string) {
 	var wa model.WalletAddress
 	if model.DB.Where("id = ?", id).First(&wa).Error == nil {
+		var otherTextLabel = "✅已启用 非订单交易监控通知"
+		if wa.OtherNotify != 1 {
+			otherTextLabel = "❌已禁用 非订单交易监控通知"
+		}
+
 		EditAndSendMsg(query.Message.MessageID, wa.Address, tgbotapi.InlineKeyboardMarkup{
 			InlineKeyboard: [][]tgbotapi.InlineKeyboardButton{
 				{
 					tgbotapi.NewInlineKeyboardButtonData("✅启用", cbAddressEnable+"|"+id),
 					tgbotapi.NewInlineKeyboardButtonData("❌禁用", cbAddressDisable+"|"+id),
 					tgbotapi.NewInlineKeyboardButtonData("⛔️删除", cbAddressDelete+"|"+id),
+				},
+				{
+					tgbotapi.NewInlineKeyboardButtonData(otherTextLabel, cbAddressOtherNotify+"|"+id),
 				},
 			},
 		})
@@ -71,6 +80,21 @@ func cbAddressDeleteAction(query *tgbotapi.CallbackQuery, id string) {
 		DeleteMsg(query.Message.MessageID)
 
 		// 推送最新状态
+		cmdStartHandle()
+	}
+}
+
+func cbAddressOtherNotifyAction(query *tgbotapi.CallbackQuery, id string) {
+	var wa model.WalletAddress
+	if model.DB.Where("id = ?", id).First(&wa).Error == nil {
+		if wa.OtherNotify == 1 {
+			wa.SetOtherNotify(model.OtherNotifyDisable)
+		} else {
+			wa.SetOtherNotify(model.OtherNotifyEnable)
+		}
+
+		DeleteMsg(query.Message.MessageID)
+
 		cmdStartHandle()
 	}
 }
