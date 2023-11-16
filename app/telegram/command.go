@@ -42,7 +42,7 @@ func cmdStartHandle() {
 }
 
 func cmdUsdtHandle() {
-	var msg = tgbotapi.NewMessage(0, fmt.Sprintf("🪧交易所最新基准汇率：`%v`\n✅订单实际计算浮动汇率：`%v`",
+	var msg = tgbotapi.NewMessage(0, fmt.Sprintf("🪧交易所基准汇率：`%v`\n✅订单实际浮动汇率：`%v`",
 		usdt.GetOkxLastRate(), usdt.GetLatestRate()))
 	msg.ParseMode = tgbotapi.ModeMarkdown
 
