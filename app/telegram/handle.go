@@ -16,7 +16,7 @@ func HandleMessage(msg *tgbotapi.Message) {
 		return
 	}
 
-	if msg.ReplyToMessage.Text == replayAddressText {
+	if msg.ReplyToMessage != nil && msg.ReplyToMessage.Text == replayAddressText {
 		addWalletAddress(msg)
 	}
 }
