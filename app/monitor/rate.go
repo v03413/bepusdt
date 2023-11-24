@@ -51,7 +51,7 @@ func getOkxUsdtCnySellPrice() (decimal.Decimal, error) {
 	var _zero = decimal.NewFromInt(0)
 	var t = strconv.Itoa(int(time.Now().Unix()))
 	var okxApi = "https://www.okx.com/v4/c2c/express/price?crypto=USDT&fiat=CNY&side=sell&t=" + t
-	client := http.Client{Timeout: time.Second}
+	client := http.Client{Timeout: time.Second * 5}
 	req, _ := http.NewRequest("GET", okxApi, nil)
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36")
 	resp, err := client.Do(req)
