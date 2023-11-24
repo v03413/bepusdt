@@ -28,7 +28,8 @@ func init() {
 	_, err = botApi.Request(tgbotapi.NewSetMyCommands([]tgbotapi.BotCommand{
 		{Command: "/" + cmdGetId, Description: "获取ID"},
 		{Command: "/" + cmdStart, Description: "开始使用"},
-		{Command: "/" + cmdUsdt, Description: "获取最新汇率"},
+		{Command: "/" + cmdUsdt, Description: "实时汇率"},
+		{Command: "/" + cmdWallet, Description: "钱包信息"},
 	}...))
 	if err != nil {
 		panic("TG Bot Request Error:" + err.Error())

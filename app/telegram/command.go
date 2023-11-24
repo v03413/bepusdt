@@ -10,6 +10,7 @@ import (
 const cmdGetId = "id"
 const cmdStart = "start"
 const cmdUsdt = "usdt"
+const cmdWallet = "wallet"
 
 const replayAddressText = "🚚 请发送一个合法的钱包地址"
 
@@ -45,6 +46,26 @@ func cmdUsdtHandle() {
 	var msg = tgbotapi.NewMessage(0, fmt.Sprintf("🪧交易所基准汇率：`%v`\n✅订单实际浮动汇率：`%v`",
 		usdt.GetOkxLastRate(), usdt.GetLatestRate()))
 	msg.ParseMode = tgbotapi.ModeMarkdown
+
+	SendMsg(msg)
+}
+
+func cmdWalletHandle() {
+	var msg = tgbotapi.NewMessage(0, "请选择需要查询的钱包地址")
+	var was []model.WalletAddress
+	var inlineBtn [][]tgbotapi.InlineKeyboardButton
+	if model.DB.Find(&was).Error == nil {
+		for _, wa := range was {
+			var _address = fmt.Sprintf("[✅已启用] %s", wa.Address)
+			if wa.Status == model.StatusDisable {
+				_address = fmt.Sprintf("[❌已禁用] %s", wa.Address)
+			}
+
+			inlineBtn = append(inlineBtn, tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData(_address, fmt.Sprintf("%s|%v", cbWallet, wa.Address))))
+		}
+	}
+
+	msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(inlineBtn...)
 
 	SendMsg(msg)
 }
