@@ -12,7 +12,7 @@ import (
 )
 
 // Version 版本号说明 1.0.0 代表主版本号.功能版本号.修订号
-const Version = "1.5.13"
+const Version = "1.5.14"
 
 func main() {
 	if err := model.Init(); err != nil {

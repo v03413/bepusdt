@@ -17,7 +17,12 @@ func HandleMessage(msg *tgbotapi.Message) {
 	}
 
 	if msg.ReplyToMessage != nil && msg.ReplyToMessage.Text == replayAddressText {
+
 		addWalletAddress(msg)
+	}
+
+	if msg.Text != "" && help.IsValidTRONWalletAddress(msg.Text) {
+		go queryAnyTrc20AddressInfo(msg, msg.Text)
 	}
 }
 
@@ -99,4 +104,22 @@ func botCommandHandle(_msg *tgbotapi.Message) {
 	case cmdWallet:
 		go cmdWalletHandle()
 	}
+}
+
+func queryAnyTrc20AddressInfo(msg *tgbotapi.Message, address string) {
+	var info = getWalletInfoByAddress(address)
+	var reply = tgbotapi.NewMessage(msg.Chat.ID, "❌查询失败")
+	if info != "" {
+		reply.ReplyToMessageID = msg.MessageID
+		reply.Text = info
+		reply.ReplyMarkup = tgbotapi.InlineKeyboardMarkup{
+			InlineKeyboard: [][]tgbotapi.InlineKeyboardButton{
+				{
+					tgbotapi.NewInlineKeyboardButtonURL("📝查看详细信息", "https://tronscan.org/#/address/"+address),
+				},
+			},
+		}
+	}
+
+	_, _ = botApi.Send(reply)
 }
