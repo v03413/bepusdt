@@ -6,6 +6,7 @@ import (
 	"github.com/shopspring/decimal"
 	"github.com/tidwall/gjson"
 	"github.com/v03413/bepusdt/app/config"
+	"github.com/v03413/bepusdt/app/help"
 	"github.com/v03413/bepusdt/app/log"
 	"github.com/v03413/bepusdt/app/model"
 	"github.com/v03413/bepusdt/app/notify"
@@ -142,18 +143,18 @@ func handleOtherNotify(_toAddress string, result gjson.Result) {
 			continue
 		}
 
-		var title = "➡️转入"
+		var title = "收入"
 		if transfer.Get("to_address").String() != _toAddress {
-			title = "⬅️转出"
+			title = "支出"
 		}
 
 		var text = fmt.Sprintf(
-			"*%s USDT.TRC20*\n\n💲交易数额：`%v`\n⏱️交易时间：%v\n✅转入地址：`%v`\n🅾️转出地址：`%v`",
+			"#账户%s #非订单交易\n---\n```\n💲交易数额：%v USDT.TRC20\n⏱️交易时间：%v\n✅接收地址：%v\n🅾️发送地址：%v```\n",
 			title,
 			_amount,
 			_created.Format(time.DateTime),
-			transfer.Get("to_address").String(),
-			transfer.Get("from_address").String(),
+			help.MaskAddress(transfer.Get("to_address").String()),
+			help.MaskAddress(transfer.Get("from_address").String()),
 		)
 
 		var adminChatId, err = strconv.ParseInt(config.GetTGBotAdminId(), 10, 64)
@@ -181,7 +182,7 @@ func handleOtherNotify(_toAddress string, result gjson.Result) {
 
 // 搜索交易记录
 func searchTransaction(_toAddress string) (gjson.Result, error) {
-	var client = &http.Client{Timeout: time.Second * 5}
+	var client = &http.Client{Timeout: time.Second * 10}
 	req, err := http.NewRequest("GET", tronScanApi+"api/multi/search", nil)
 	if err != nil {
 

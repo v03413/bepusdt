@@ -92,3 +92,12 @@ func IsValidTRONWalletAddress(address string) bool {
 
 	return match && err == nil
 }
+
+func MaskAddress(address string) string {
+	if len(address) <= 20 {
+
+		return address
+	}
+
+	return address[:8] + " ***** " + address[len(address)-10:]
+}

@@ -4,9 +4,9 @@ import (
 	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/v03413/bepusdt/app/config"
+	"github.com/v03413/bepusdt/app/help"
 	"github.com/v03413/bepusdt/app/model"
 	"strconv"
-	"strings"
 	"time"
 )
 
@@ -17,17 +17,26 @@ func SendTradeSuccMsg(order model.TradeOrders) {
 		return
 	}
 	var text = `
-✅有新的交易支付成功
+#收款成功 #订单交易
 ---
-🚦商户订单：｜%v｜
-💰请求金额：｜%v｜ CNY(%v)
+` + "```" + `
+🚦商户订单：%v
+💰请求金额：%v CNY(%v)
 💲支付数额：%v USDT.TRC20
-🪧收款地址：｜%s｜
+✅收款地址：%s
 ⏱️创建时间：%s
 ️🎯️支付时间：%s
+` + "```" + `
 `
-	text = fmt.Sprintf(strings.ReplaceAll(text, "｜", "`"), order.OrderId, order.Money, order.UsdtRate, order.Amount, order.Address,
-		order.CreatedAt.Format(time.DateTime), order.UpdatedAt.Format(time.DateTime))
+	text = fmt.Sprintf(text,
+		order.OrderId,
+		order.Money,
+		order.UsdtRate,
+		order.Amount,
+		help.MaskAddress(order.Address),
+		order.CreatedAt.Format(time.DateTime),
+		order.UpdatedAt.Format(time.DateTime),
+	)
 	var msg = tgbotapi.NewMessage(adminChatId, text)
 	msg.ParseMode = tgbotapi.ModeMarkdown
 	msg.ReplyMarkup = tgbotapi.InlineKeyboardMarkup{

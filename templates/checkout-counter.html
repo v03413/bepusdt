@@ -94,7 +94,7 @@
             success: function (data) {
                 if (data.status === 1) {
                     // 等待支付
-                    return setTimeout(checkStatus, 3000);
+                    return setTimeout(checkStatus, 5000);
                 }
                 if (data.status === 2) {  // 支付成功
                     layer.msg('支付成功，正在跳转中...', {icon: 16, shade: 0.01, time: 20000});

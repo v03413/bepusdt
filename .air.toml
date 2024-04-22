@@ -5,7 +5,7 @@ tmp_dir = "tmp"
 [build]
 args_bin = []
 bin = "./tmp/main"
-cmd = "go build -o ./tmp/main ./main"
+cmd = "go build -o ./tmp/main -trimpath -ldflags \"-s -w -buildid=\" ./main"
 delay = 3000
 exclude_dir = ["assets", "tmp", "vendor", "testdata"]
 exclude_file = []
