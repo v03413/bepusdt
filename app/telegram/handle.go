@@ -54,8 +54,9 @@ func HandleCallback(query *tgbotapi.CallbackQuery) {
 		go cbAddressDeleteAction(query, args[1])
 	case cbAddressOtherNotify:
 		go cbAddressOtherNotifyAction(query, args[1])
+	case cbOrderDetail:
+		go cbOrderDetailAction(query, args[1])
 	}
-
 }
 
 func addWalletAddress(msg *tgbotapi.Message) {
@@ -103,6 +104,8 @@ func botCommandHandle(_msg *tgbotapi.Message) {
 		go cmdUsdtHandle()
 	case cmdWallet:
 		go cmdWalletHandle()
+	case cmdOrder:
+		go cmdOrderHandle()
 	}
 }
 

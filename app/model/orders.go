@@ -62,6 +62,20 @@ func (o *TradeOrders) OrderSetNotifyState(state int) error {
 	return DB.Save(o).Error
 }
 
+func (o *TradeOrders) GetStatusLabel() string {
+	var _label = "🟢 收款成功"
+	if o.Status == OrderStatusExpired {
+
+		_label = "🔴 交易过期"
+	}
+	if o.Status == OrderStatusWaiting {
+
+		_label = "🟡 等待支付"
+	}
+
+	return _label
+}
+
 func GetTradeOrder(tradeId string) (TradeOrders, bool) {
 	var order TradeOrders
 	var res = DB.Where("trade_id = ?", tradeId).First(&order)

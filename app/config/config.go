@@ -40,6 +40,15 @@ func GetExpireTime() time.Duration {
 	return defaultExpireTime
 }
 
+func GetUsdtRateRaw() string {
+	if data := help.GetEnv("USDT_RATE"); data != "" {
+
+		return strings.TrimSpace(data)
+	}
+
+	return ""
+}
+
 func GetUsdtRate() (string, decimal.Decimal, float64) {
 	if data := help.GetEnv("USDT_RATE"); data != "" {
 		data = strings.TrimSpace(data)

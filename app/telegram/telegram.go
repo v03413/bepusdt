@@ -30,6 +30,7 @@ func init() {
 		{Command: "/" + cmdStart, Description: "开始使用"},
 		{Command: "/" + cmdUsdt, Description: "实时汇率"},
 		{Command: "/" + cmdWallet, Description: "钱包信息"},
+		{Command: "/" + cmdOrder, Description: "最近订单"},
 	}...))
 	if err != nil {
 		panic("TG Bot Request Error:" + err.Error())

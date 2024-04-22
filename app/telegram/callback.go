@@ -4,10 +4,13 @@ import (
 	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/tidwall/gjson"
+	"github.com/v03413/bepusdt/app/config"
+	"github.com/v03413/bepusdt/app/help"
 	"github.com/v03413/bepusdt/app/log"
 	"github.com/v03413/bepusdt/app/model"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 )
@@ -19,6 +22,7 @@ const cbAddressEnable = "address_enable"
 const cbAddressDisable = "address_disable"
 const cbAddressDelete = "address_del"
 const cbAddressOtherNotify = "address_other_notify"
+const cbOrderDetail = "order_detail"
 
 func cbWalletAction(query *tgbotapi.CallbackQuery, address string) {
 	var info = getWalletInfoByAddress(address)
@@ -122,6 +126,55 @@ func cbAddressOtherNotifyAction(query *tgbotapi.CallbackQuery, id string) {
 		DeleteMsg(query.Message.MessageID)
 
 		cmdStartHandle()
+	}
+}
+
+func cbOrderDetailAction(query *tgbotapi.CallbackQuery, tradeId string) {
+	var o model.TradeOrders
+
+	if model.DB.Where("trade_id = ?", tradeId).First(&o).Error == nil {
+		var urlInfo, er2 = url.Parse(o.NotifyUrl)
+		if er2 != nil {
+			log.Error("商户网站地址解析错误：" + er2.Error())
+
+			return
+		}
+
+		var _notifyStateLabel = "✅ 回调成功"
+		if o.NotifyState != model.OrderNotifyStateSucc {
+			_notifyStateLabel = "❌ 回调失败"
+		}
+		if model.OrderStatusWaiting == o.Status {
+			_notifyStateLabel = o.GetStatusLabel()
+		}
+		if model.OrderStatusExpired == o.Status {
+			_notifyStateLabel = "🈚️ 没有回调"
+		}
+
+		var _site = &url.URL{Scheme: urlInfo.Scheme, Host: urlInfo.Host}
+		var _msg = tgbotapi.NewMessage(0, "```"+`
+📌 订单ID：`+o.OrderId+`
+📊 交易汇率：`+o.UsdtRate+`(`+config.GetUsdtRateRaw()+`)
+💰 交易金额：`+fmt.Sprintf("%.2f", o.Money)+` CNY
+💲 交易数额：`+o.Amount+` USDT.TRC20
+🌏 商户网站：`+_site.String()+`
+🔋 收款状态：`+o.GetStatusLabel()+`
+🍀 回调状态：`+_notifyStateLabel+`
+💎️ 收款地址：`+help.MaskAddress(o.Address)+`
+🕒 创建时间：`+o.CreatedAt.Format(time.DateTime)+`
+🕒 失效时间：`+o.ExpiredAt.Format(time.DateTime)+`
+⚖️️ 确认时间：`+o.ConfirmedAt.Format(time.DateTime)+`
+`+"\n```")
+		_msg.ParseMode = tgbotapi.ModeMarkdown
+		_msg.ReplyMarkup = tgbotapi.InlineKeyboardMarkup{
+			InlineKeyboard: [][]tgbotapi.InlineKeyboardButton{
+				{
+					tgbotapi.NewInlineKeyboardButtonURL("🌏商户网站", _site.String()),
+				},
+			},
+		}
+
+		SendMsg(_msg)
 	}
 }
 
