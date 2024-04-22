@@ -123,6 +123,25 @@ func GetTGBotAdminId() string {
 	return ""
 }
 
+func GetTgBotGroupId() string {
+	if data := help.GetEnv("TG_BOT_GROUP_ID"); data != "" {
+
+		return strings.TrimSpace(data)
+	}
+
+	return ""
+}
+
+func GetTgBotNotifyTarget() string {
+	var groupId = GetTgBotGroupId()
+	if groupId != "" {
+
+		return groupId
+	}
+
+	return GetTGBotAdminId()
+}
+
 func GetOutputLog() string {
 
 	return runPath + "/bepusdt.log"

@@ -5,10 +5,10 @@
 </p>
 <p align="center">
 <a href="https://www.gnu.org/licenses/gpl-3.0.html"><img src="https://img.shields.io/badge/license-GPLV3-blue" alt="license GPLV3"></a>
-<a href="https://golang.org"><img src="https://img.shields.io/badge/Golang-1.21-red" alt="Go version 1.21"></a>
+<a href="https://golang.org"><img src="https://img.shields.io/badge/Golang-1.22-red" alt="Go version 1.21"></a>
 <a href="https://github.com/gin-gonic/gin"><img src="https://img.shields.io/badge/Gin-v1.9-blue" alt="Gin Web Framework v1.9"></a>
 <a href="https://github.com/go-telegram-bot-api/telegram-bot-api"><img src="https://img.shields.io/badge/Telegram Bot-v5-lightgrey" alt="Golang Telegram Bot Api-v5"></a>
-<a href="https://github.com/v03413/bepusdt"><img src="https://img.shields.io/badge/Release-v1.5.13-green" alt="Release v1.5.13"></a>
+<a href="https://github.com/v03413/bepusdt"><img src="https://img.shields.io/badge/Release-v1.6.15-green" alt="Release v1.6.15"></a>
 </p>
 
 ## 🪧 介绍
@@ -24,6 +24,7 @@
 - ✅ 支持非订单交易监控通知，钱包余额变动及时通知
 - ✅ 机器人支持查询当前实时汇率，计算实际浮动汇率
 - ✅ 机器人支持任意地址查询 USDT、TRX余额等信息
+- ✅ 订单收款成功和余额变动通知 支持指定群组推送
 
 ## 🛠 参数配置
 
@@ -42,6 +43,7 @@ Bepusdt 所有参数都是以传递环境变量的方式进行配置，大部分
 | WALLET_ADDRESS     | 空        | 启动时需要添加的钱包地址，多个请用半角符逗号`,`分开；当然，同样也支持通过机器人添加。                                                                                                  |
 | TG_BOT_TOKEN       | 无        | Telegram Bot Token，**必须设置**，否则无法使用                                                                                                            |
 | TG_BOT_ADMIN_ID    | 无        | Telegram Bot 管理员ID，**必须设置**，否则无法使用                                                                                                            |
+| TG_BOT_GROUP_ID    | 无        | Telegram 群组ID，设置之后机器人会将交易消息会推送到此群                                                                                                             |
 
 **Ps：所以综上所述，必须设置的参数有`TG_BOT_TOKEN TG_BOT_ADMIN_ID`，否则无法使用！**
 

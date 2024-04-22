@@ -46,6 +46,12 @@ func GetBotApi() *tgbotapi.BotAPI {
 }
 
 func SendMsg(msg tgbotapi.MessageConfig) {
+	if msg.ChatID != 0 {
+		_, _ = botApi.Send(msg)
+
+		return
+	}
+
 	var chatId, err = strconv.ParseInt(config.GetTGBotAdminId(), 10, 64)
 	if err == nil {
 		msg.ChatID = chatId

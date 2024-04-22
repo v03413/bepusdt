@@ -11,7 +11,7 @@ import (
 )
 
 func SendTradeSuccMsg(order model.TradeOrders) {
-	var adminChatId, err = strconv.ParseInt(config.GetTGBotAdminId(), 10, 64)
+	var chatId, err = strconv.ParseInt(config.GetTgBotNotifyTarget(), 10, 64)
 	if err != nil {
 
 		return
@@ -37,7 +37,7 @@ func SendTradeSuccMsg(order model.TradeOrders) {
 		order.CreatedAt.Format(time.DateTime),
 		order.UpdatedAt.Format(time.DateTime),
 	)
-	var msg = tgbotapi.NewMessage(adminChatId, text)
+	var msg = tgbotapi.NewMessage(chatId, text)
 	msg.ParseMode = tgbotapi.ModeMarkdown
 	msg.ReplyMarkup = tgbotapi.InlineKeyboardMarkup{
 		InlineKeyboard: [][]tgbotapi.InlineKeyboardButton{
@@ -51,13 +51,13 @@ func SendTradeSuccMsg(order model.TradeOrders) {
 }
 
 func SendOtherNotify(text string) {
-	var adminChatId, err = strconv.ParseInt(config.GetTGBotAdminId(), 10, 64)
+	var chatId, err = strconv.ParseInt(config.GetTgBotNotifyTarget(), 10, 64)
 	if err != nil {
 
 		return
 	}
 
-	var msg = tgbotapi.NewMessage(adminChatId, text)
+	var msg = tgbotapi.NewMessage(chatId, text)
 	msg.ParseMode = tgbotapi.ModeMarkdown
 
 	_, _ = botApi.Send(msg)

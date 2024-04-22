@@ -157,13 +157,13 @@ func handleOtherNotify(_toAddress string, result gjson.Result) {
 			help.MaskAddress(transfer.Get("from_address").String()),
 		)
 
-		var adminChatId, err = strconv.ParseInt(config.GetTGBotAdminId(), 10, 64)
+		var chatId, err = strconv.ParseInt(config.GetTgBotNotifyTarget(), 10, 64)
 		if err != nil {
 
 			continue
 		}
 
-		var msg = tgbotapi.NewMessage(adminChatId, text)
+		var msg = tgbotapi.NewMessage(chatId, text)
 		msg.ParseMode = tgbotapi.ModeMarkdown
 		msg.ReplyMarkup = tgbotapi.InlineKeyboardMarkup{
 			InlineKeyboard: [][]tgbotapi.InlineKeyboardButton{
