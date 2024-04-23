@@ -24,6 +24,7 @@ func TradeStart() {
 	log.Info("交易监控启动.")
 
 	for range time.Tick(time.Second * 5) {
+		var recentTransferTotal float64
 		var _lock, err = getAllPendingOrders()
 		if err != nil {
 			log.Error(err.Error())
@@ -47,7 +48,6 @@ func TradeStart() {
 				continue
 			}
 
-			var recentTransferTotal float64
 			if config.IsTronScanApi() {
 				recentTransferTotal = result.Get("total").Num
 			} else {
@@ -98,7 +98,7 @@ func getAllPendingOrders() (map[string]model.TradeOrders, error) {
 	return _lock, nil
 }
 
-// 处理支付交易
+// 处理支付交易 TronScan
 func handlePaymentTransactionForTronScan(_lock map[string]model.TradeOrders, _toAddress string, _data gjson.Result) {
 	for _, transfer := range _data.Get("token_transfers").Array() {
 		if transfer.Get("to_address").String() != _toAddress {
@@ -125,24 +125,19 @@ func handlePaymentTransactionForTronScan(_lock map[string]model.TradeOrders, _to
 			continue
 		}
 
-		// 判断交易是否需要等待广播确认
-		var _confirmed = transfer.Get("confirmed").Bool()
 		var _transId = transfer.Get("transaction_id").String()
-		var _tradeIsConfirmed = config.GetTradeConfirmed()
 		var _fromAddress = transfer.Get("from_address").String()
+		if _order.OrderSetSucc(_fromAddress, _transId, _createdAt) == nil {
+			// 通知订单支付成功
+			go notify.OrderNotify(_order)
 
-		if (_tradeIsConfirmed && _confirmed) || !_tradeIsConfirmed {
-			if _order.OrderSetSucc(_fromAddress, _transId, _createdAt) == nil {
-				// 通知订单支付成功
-				go notify.OrderNotify(_order)
-
-				// TG发送订单信息
-				go telegram.SendTradeSuccMsg(_order)
-			}
+			// TG发送订单信息
+			go telegram.SendTradeSuccMsg(_order)
 		}
 	}
 }
 
+// 处理支付交易 TronGrid
 func handlePaymentTransactionForTronGrid(_lock map[string]model.TradeOrders, _toAddress string, result gjson.Result) {
 	for _, transfer := range result.Get("data").Array() {
 		if transfer.Get("to").String() != _toAddress {
@@ -253,7 +248,11 @@ func getUsdtTrc20TransByTronScan(_toAddress string) (gjson.Result, error) {
 	params.Add("start_timestamp", strconv.FormatInt(now.Add(-time.Hour).UnixMilli(), 10)) // 当前时间向前推 1 小时
 	params.Add("end_timestamp", strconv.FormatInt(now.Add(time.Hour).UnixMilli(), 10))    // 当前时间向后推 1 小时
 	params.Add("relatedAddress", _toAddress)
-	params.Add("confirm", "false")
+	if config.GetTradeConfirmed() {
+		params.Add("confirm", "true")
+	} else {
+		params.Add("confirm", "false")
+	}
 	req.URL.RawQuery = params.Encode()
 
 	if config.GetTronScanApiKey() != "" {
