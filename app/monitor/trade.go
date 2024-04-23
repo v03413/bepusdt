@@ -62,10 +62,10 @@ func TradeStart() {
 
 			if config.IsTronScanApi() {
 				handlePaymentTransactionForTronScan(_lock, _row.Address, result)
-				handleOtherNotify(_row.Address, result)
+				handleOtherNotifyForTronScan(_row.Address, result)
 			} else {
 				handlePaymentTransactionForTronGrid(_lock, _row.Address, result)
-				handleOtherNotify(_row.Address, result)
+				handleOtherNotifyForTronGrid(_row.Address, result)
 			}
 		}
 	}
@@ -176,16 +176,16 @@ func handlePaymentTransactionForTronGrid(_lock map[string]model.TradeOrders, _to
 }
 
 // 非订单交易通知
-func handleOtherNotify(_toAddress string, result gjson.Result) {
-	for _, transfer := range result.Get("data").Array() {
+func handleOtherNotifyForTronScan(_toAddress string, result gjson.Result) {
+	for _, transfer := range result.Get("token_transfers").Array() {
 		if !model.GetOtherNotify(_toAddress) {
 
 			break
 		}
 
-		var _amount = parseTransAmount(transfer.Get("amount").Float())
-		var _created = time.UnixMilli(transfer.Get("date_created").Int())
-		var _txid = transfer.Get("hash").String()
+		var _amount = parseTransAmount(transfer.Get("quant").Float())
+		var _created = time.UnixMilli(transfer.Get("block_ts").Int())
+		var _txid = transfer.Get("transaction_id").String()
 		var _detailUrl = "https://tronscan.org/#/transaction/" + _txid
 		if !model.IsNeedNotifyByTxid(_txid) {
 			// 不需要额外通知
@@ -205,6 +205,60 @@ func handleOtherNotify(_toAddress string, result gjson.Result) {
 			_created.Format(time.DateTime),
 			help.MaskAddress(transfer.Get("to_address").String()),
 			help.MaskAddress(transfer.Get("from_address").String()),
+		)
+
+		var chatId, err = strconv.ParseInt(config.GetTgBotNotifyTarget(), 10, 64)
+		if err != nil {
+
+			continue
+		}
+
+		var msg = tgbotapi.NewMessage(chatId, text)
+		msg.ParseMode = tgbotapi.ModeMarkdown
+		msg.ReplyMarkup = tgbotapi.InlineKeyboardMarkup{
+			InlineKeyboard: [][]tgbotapi.InlineKeyboardButton{
+				{
+					tgbotapi.NewInlineKeyboardButtonURL("📝查看交易明细", _detailUrl),
+				},
+			},
+		}
+
+		var _record = model.NotifyRecord{Txid: _txid}
+		model.DB.Create(&_record)
+
+		go telegram.SendMsg(msg)
+	}
+}
+
+func handleOtherNotifyForTronGrid(_toAddress string, result gjson.Result) {
+	for _, transfer := range result.Get("data").Array() {
+		if !model.GetOtherNotify(_toAddress) {
+
+			break
+		}
+
+		var _amount = parseTransAmount(transfer.Get("value").Float())
+		var _created = time.UnixMilli(transfer.Get("block_timestamp").Int())
+		var _txid = transfer.Get("transaction_id").String()
+		var _detailUrl = "https://tronscan.org/#/transaction/" + _txid
+		if !model.IsNeedNotifyByTxid(_txid) {
+			// 不需要额外通知
+
+			continue
+		}
+
+		var title = "收入"
+		if transfer.Get("to").String() != _toAddress {
+			title = "支出"
+		}
+
+		var text = fmt.Sprintf(
+			"#账户%s #非订单交易\n---\n```\n💲交易数额：%v USDT.TRC20\n⏱️交易时间：%v\n✅接收地址：%v\n🅾️发送地址：%v```\n",
+			title,
+			_amount,
+			_created.Format(time.DateTime),
+			help.MaskAddress(transfer.Get("to").String()),
+			help.MaskAddress(transfer.Get("from").String()),
 		)
 
 		var chatId, err = strconv.ParseInt(config.GetTgBotNotifyTarget(), 10, 64)
