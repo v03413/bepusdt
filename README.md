@@ -64,6 +64,12 @@ Bepusdt 所有参数都是以传递环境变量的方式进行配置，大部分
 
 Telegram 搜索`@userinfobot`机器人并启用，返回的ID就是`TG_BOT_ADMIN_ID`
 
+### 如何申请`TronScan`和`TronGrid`的ApiKey
+
+目前[TronScan](https://tronscan.org/)和[TronGrid](https://www.trongrid.io/)
+都可以通过邮箱注册，登录之后在用户中心创建一个ApiKey即可；默认免费套餐都是每天10W请求，对于个人收款绰绰有余。  
+**❗️最近发现TronScan接口不稳定且数据不及时，可以有条件的话都推荐使用TronGrid。**
+
 ## ⚠️ 特别注意
 
 - 订单交易强依赖时间，请确保服务器时间准确性，否则可能导致订单异常！
