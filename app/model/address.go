@@ -1,9 +1,11 @@
 package model
 
 import (
+	"errors"
 	"fmt"
 	"github.com/v03413/bepusdt/app/config"
 	"github.com/v03413/bepusdt/app/help"
+	"gorm.io/gorm"
 	"time"
 )
 
@@ -23,13 +25,17 @@ type WalletAddress struct {
 
 // 启动时添加初始钱包地址
 func addStartWalletAddress() {
+	var _wa WalletAddress
+
 	for _, address := range config.GetInitWalletAddress() {
 		if help.IsValidTRONWalletAddress(address) {
-			var _row = WalletAddress{Address: address, Status: StatusEnable}
-			var _res = DB.Create(&_row)
-			if _res.Error == nil && _res.RowsAffected == 1 {
-
-				fmt.Println("✅钱包地址添加成功：", address)
+			var _res2 = DB.Where("address = ?", address).First(&_wa)
+			if errors.Is(_res2.Error, gorm.ErrRecordNotFound) {
+				var _row = WalletAddress{Address: address, Status: StatusEnable}
+				var _res = DB.Create(&_row)
+				if _res.Error == nil && _res.RowsAffected == 1 {
+					fmt.Println("✅钱包地址添加成功：", address)
+				}
 			}
 		}
 	}
