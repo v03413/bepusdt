@@ -15,6 +15,8 @@ const defaultExpireTime = 600     // 订单默认有效期 10分钟
 const defaultUsdtRate = 6.4       // 默认汇率
 const defaultAuthToken = "123234" // 默认授权码
 const defaultListen = ":8080"     // 默认监听地址
+const TronServerApiScan = "TRON_SCAN"
+const TronServerApiGrid = "TRON_GRID"
 
 var runPath string
 
@@ -49,6 +51,15 @@ func GetUsdtRateRaw() string {
 	return ""
 }
 
+func GetTronServerApi() string {
+	if data := help.GetEnv("TRON_SERVER_API"); data != "" {
+
+		return strings.TrimSpace(data)
+	}
+
+	return ""
+}
+
 func GetTronScanApiKey() string {
 	if data := help.GetEnv("TRON_SCAN_API_KEY"); data != "" {
 
@@ -56,6 +67,24 @@ func GetTronScanApiKey() string {
 	}
 
 	return ""
+}
+
+func GetTronGridApiKey() string {
+	if data := help.GetEnv("TRON_GRID_API_KEY"); data != "" {
+
+		return strings.TrimSpace(data)
+	}
+
+	return ""
+}
+
+func IsTronScanApi() bool {
+	if GetTronServerApi() == TronServerApiScan {
+
+		return true
+	}
+
+	return GetTronServerApi() != TronServerApiGrid
 }
 
 func GetUsdtRate() (string, decimal.Decimal, float64) {
