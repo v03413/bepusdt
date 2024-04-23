@@ -182,7 +182,7 @@ func handleOtherNotify(_toAddress string, result gjson.Result) {
 // 搜索交易记录
 func getUsdtTrc20TransByTronScan(_toAddress string) (gjson.Result, error) {
 	var now = time.Now()
-	var client = &http.Client{Timeout: time.Second * 5}
+	var client = &http.Client{Timeout: time.Second * 15}
 	req, err := http.NewRequest("GET", "https://apilist.tronscanapi.com/api/new/token_trc20/transfers", nil)
 	if err != nil {
 
@@ -192,7 +192,7 @@ func getUsdtTrc20TransByTronScan(_toAddress string) (gjson.Result, error) {
 	// 构建请求参数
 	var params = url.Values{}
 	params.Add("start", "0")
-	params.Add("limit", "100")
+	params.Add("limit", "30")
 	params.Add("contract_address", usdtToken)
 	params.Add("start_timestamp", strconv.FormatInt(now.Add(-time.Hour).UnixMilli(), 10)) // 当前时间向前推 3 小时
 	params.Add("end_timestamp", strconv.FormatInt(now.Add(time.Hour).UnixMilli(), 10))    // 当前时间向后推 1 小时
