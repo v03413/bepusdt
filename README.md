@@ -8,7 +8,7 @@
 <a href="https://golang.org"><img src="https://img.shields.io/badge/Golang-1.22-red" alt="Go version 1.21"></a>
 <a href="https://github.com/gin-gonic/gin"><img src="https://img.shields.io/badge/Gin-v1.9-blue" alt="Gin Web Framework v1.9"></a>
 <a href="https://github.com/go-telegram-bot-api/telegram-bot-api"><img src="https://img.shields.io/badge/Telegram Bot-v5-lightgrey" alt="Golang Telegram Bot Api-v5"></a>
-<a href="https://github.com/v03413/bepusdt"><img src="https://img.shields.io/badge/Release-v1.7.15-green" alt="Release v1.7.15"></a>
+<a href="https://github.com/v03413/bepusdt"><img src="https://img.shields.io/badge/Release-v1.7.16-green" alt="Release v1.7.16"></a>
 </p>
 
 ## 🪧 介绍
@@ -44,6 +44,7 @@ Bepusdt 所有参数都是以传递环境变量的方式进行配置，大部分
 | TG_BOT_TOKEN       | 无        | Telegram Bot Token，**必须设置**，否则无法使用                                                                                                            |
 | TG_BOT_ADMIN_ID    | 无        | Telegram Bot 管理员ID，**必须设置**，否则无法使用                                                                                                            |
 | TG_BOT_GROUP_ID    | 无        | Telegram 群组ID，设置之后机器人会将交易消息会推送到此群                                                                                                             |
+| TRON_SCAN_API_KEY  | 无        | TRONSCAN API KEY，如果收款地址较多推荐设置，可避免被官方QOS                                                                                                       |
 
 **Ps：所以综上所述，必须设置的参数有`TG_BOT_TOKEN TG_BOT_ADMIN_ID`，否则无法使用！**
 

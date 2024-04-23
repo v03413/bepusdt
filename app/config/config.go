@@ -49,6 +49,15 @@ func GetUsdtRateRaw() string {
 	return ""
 }
 
+func GetTronScanApiKey() string {
+	if data := help.GetEnv("TRON_SCAN_API_KEY"); data != "" {
+
+		return strings.TrimSpace(data)
+	}
+
+	return ""
+}
+
 func GetUsdtRate() (string, decimal.Decimal, float64) {
 	if data := help.GetEnv("USDT_RATE"); data != "" {
 		data = strings.TrimSpace(data)

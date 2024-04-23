@@ -18,7 +18,6 @@ import (
 	"time"
 )
 
-const tronScanApi = "https://apilist.tronscanapi.com/"
 const usdtToken = "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t"
 
 func TradeStart() {
@@ -33,7 +32,7 @@ func TradeStart() {
 		}
 
 		for _, _row := range model.GetAvailableAddress() {
-			var result, err = searchTransaction(_row.Address)
+			var result, err = getUsdtTrc20TransByTronScan(_row.Address)
 			if err != nil {
 				log.Error(err.Error())
 
@@ -82,7 +81,7 @@ func getAllPendingOrders() (map[string]model.TradeOrders, error) {
 
 // 处理支付交易
 func handlePaymentTransaction(_lock map[string]model.TradeOrders, _toAddress string, _data gjson.Result) {
-	for _, transfer := range _data.Get("data").Array() {
+	for _, transfer := range _data.Get("token_transfers").Array() {
 		if transfer.Get("to_address").String() != _toAddress {
 			// 不是接收地址
 
@@ -90,9 +89,9 @@ func handlePaymentTransaction(_lock map[string]model.TradeOrders, _toAddress str
 		}
 
 		// 计算交易金额
-		var _amount = parseTransAmount(transfer.Get("amount").Float())
+		var _quant = parseTransAmount(transfer.Get("quant").Float())
 
-		_order, ok := _lock[_toAddress+_amount]
+		_order, ok := _lock[_toAddress+_quant]
 		if !ok || transfer.Get("contractRet").String() != "SUCCESS" {
 			// 订单不存在或交易失败
 
@@ -100,7 +99,7 @@ func handlePaymentTransaction(_lock map[string]model.TradeOrders, _toAddress str
 		}
 
 		// 判断时间是否有效
-		var _createdAt = time.UnixMilli(transfer.Get("date_created").Int())
+		var _createdAt = time.UnixMilli(transfer.Get("block_ts").Int())
 		if _createdAt.Unix() < _order.CreatedAt.Unix() || _createdAt.Unix() > _order.ExpiredAt.Unix() {
 			// 失效交易
 
@@ -109,12 +108,12 @@ func handlePaymentTransaction(_lock map[string]model.TradeOrders, _toAddress str
 
 		// 判断交易是否需要等待广播确认
 		var _confirmed = transfer.Get("confirmed").Bool()
-		var _tradeHash = transfer.Get("hash").String()
+		var _transId = transfer.Get("transaction_id").String()
 		var _tradeIsConfirmed = config.GetTradeConfirmed()
 		var _fromAddress = transfer.Get("from_address").String()
 
 		if (_tradeIsConfirmed && _confirmed) || !_tradeIsConfirmed {
-			if _order.OrderSetSucc(_fromAddress, _tradeHash, _createdAt) == nil {
+			if _order.OrderSetSucc(_fromAddress, _transId, _createdAt) == nil {
 				// 通知订单支付成功
 				go notify.OrderNotify(_order)
 
@@ -181,16 +180,30 @@ func handleOtherNotify(_toAddress string, result gjson.Result) {
 }
 
 // 搜索交易记录
-func searchTransaction(_toAddress string) (gjson.Result, error) {
-	var client = &http.Client{Timeout: time.Second * 10}
-	req, err := http.NewRequest("GET", tronScanApi+"api/multi/search", nil)
+func getUsdtTrc20TransByTronScan(_toAddress string) (gjson.Result, error) {
+	var now = time.Now()
+	var client = &http.Client{Timeout: time.Second * 5}
+	req, err := http.NewRequest("GET", "https://apilist.tronscanapi.com/api/new/token_trc20/transfers", nil)
 	if err != nil {
 
 		return gjson.Result{}, fmt.Errorf("处理请求创建错误: %w", err)
 	}
 
 	// 构建请求参数
-	req.URL.RawQuery = buildSearchParams(_toAddress)
+	var params = url.Values{}
+	params.Add("start", "0")
+	params.Add("limit", "100")
+	params.Add("contract_address", usdtToken)
+	params.Add("start_timestamp", strconv.FormatInt(now.Add(-time.Hour).UnixMilli(), 10)) // 当前时间向前推 3 小时
+	params.Add("end_timestamp", strconv.FormatInt(now.Add(time.Hour).UnixMilli(), 10))    // 当前时间向后推 1 小时
+	params.Add("relatedAddress", _toAddress)
+	params.Add("confirm", "false")
+	req.URL.RawQuery = params.Encode()
+
+	if config.GetTronScanApiKey() != "" {
+
+		req.Header.Add("TRON-PRO-API-KEY", config.GetTronScanApiKey())
+	}
 
 	// 请求交易记录
 	resp, err := client.Do(req)
@@ -211,27 +224,6 @@ func searchTransaction(_toAddress string) (gjson.Result, error) {
 
 	// 解析响应记录
 	return gjson.ParseBytes(all), nil
-}
-
-// 构建搜索参数
-func buildSearchParams(toAddress string) string {
-	var params = url.Values{}
-	var now = time.Now()
-	var start = now.Add(-time.Hour) // 当前时间向前推 3 小时
-	var end = now.Add(time.Hour)    // 当前时间向后推 1 小时
-
-	params.Add("limit", "50")
-	params.Add("start", "0")
-	params.Add("type", "transfer")
-	params.Add("secondType", "20")
-	params.Add("start_timestamp", strconv.FormatInt(start.UnixMilli(), 10)) // 起始时间
-	params.Add("end_timestamp", strconv.FormatInt(end.UnixMilli(), 10))     // 截止时间
-	params.Add("toAddress", toAddress)                                      // 接收地址
-	params.Add("fromAddress", toAddress)                                    // 发送地址
-	params.Add("token", usdtToken)                                          // USDT 通证
-	params.Add("relation", "or")
-
-	return params.Encode()
 }
 
 // 解析交易金额
