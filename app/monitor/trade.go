@@ -108,7 +108,11 @@ func handlePaymentTransactionForTronScan(_lock map[string]model.TradeOrders, _to
 		}
 
 		// 计算交易金额
-		var _quant = parseTransAmount(transfer.Get("quant").Float())
+		var _rawQuant, _quant = parseTransAmount(transfer.Get("quant").Float())
+		if !inPaymentAmountRange(_rawQuant) {
+
+			continue
+		}
 
 		_order, ok := _lock[_toAddress+_quant]
 		if !ok || transfer.Get("contractRet").String() != "SUCCESS" {
@@ -147,7 +151,12 @@ func handlePaymentTransactionForTronGrid(_lock map[string]model.TradeOrders, _to
 		}
 
 		// 计算交易金额
-		var _quant = parseTransAmount(transfer.Get("value").Float())
+		var _rawQuant, _quant = parseTransAmount(transfer.Get("value").Float())
+		if !inPaymentAmountRange(_rawQuant) {
+
+			continue
+		}
+
 		_order, ok := _lock[_toAddress+_quant]
 		if !ok || transfer.Get("type").String() != "Transfer" {
 			// 订单不存在或交易失败
@@ -183,7 +192,12 @@ func handleOtherNotifyForTronScan(_toAddress string, result gjson.Result) {
 			break
 		}
 
-		var _amount = parseTransAmount(transfer.Get("quant").Float())
+		var _rawAmount, _amount = parseTransAmount(transfer.Get("quant").Float())
+		if !inPaymentAmountRange(_rawAmount) {
+
+			continue
+		}
+
 		var _created = time.UnixMilli(transfer.Get("block_ts").Int())
 		var _txid = transfer.Get("transaction_id").String()
 		var _detailUrl = "https://tronscan.org/#/transaction/" + _txid
@@ -237,7 +251,12 @@ func handleOtherNotifyForTronGrid(_toAddress string, result gjson.Result) {
 			break
 		}
 
-		var _amount = parseTransAmount(transfer.Get("value").Float())
+		var _rawQuant, _amount = parseTransAmount(transfer.Get("value").Float())
+		if !inPaymentAmountRange(_rawQuant) {
+
+			continue
+		}
+
 		var _created = time.UnixMilli(transfer.Get("block_timestamp").Int())
 		var _txid = transfer.Get("transaction_id").String()
 		var _detailUrl = "https://tronscan.org/#/transaction/" + _txid
@@ -391,8 +410,10 @@ func getUsdtTrc20TransByTronGrid(_toAddress string) (gjson.Result, error) {
 }
 
 // 解析交易金额
-func parseTransAmount(amount float64) string {
+func parseTransAmount(amount float64) (decimal.Decimal, string) {
 	var _decimalAmount = decimal.NewFromFloat(amount)
 	var _decimalDivisor = decimal.NewFromFloat(1000000)
-	return _decimalAmount.Div(_decimalDivisor).String()
+	var result = _decimalAmount.Div(_decimalDivisor)
+
+	return result, result.String()
 }

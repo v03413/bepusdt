@@ -17,6 +17,8 @@ const defaultAuthToken = "123234" // 默认授权码
 const defaultListen = ":8080"     // 默认监听地址
 const TronServerApiScan = "TRON_SCAN"
 const TronServerApiGrid = "TRON_GRID"
+const defaultPaymentMinAmount = 0.01
+const defaultPaymentMaxAmount = 99999
 
 var runPath string
 
@@ -28,6 +30,56 @@ func init() {
 	}
 
 	runPath = filepath.Dir(execPath)
+}
+
+func GetPaymentMinAmount() decimal.Decimal {
+	var _default = decimal.NewFromFloat(defaultPaymentMinAmount)
+	var _min, _ = getPaymentRangeAmount()
+	if _min == "" {
+
+		return _default
+	}
+
+	_result, err := decimal.NewFromString(_min)
+	if err == nil {
+
+		return _result
+	}
+
+	return _default
+}
+
+func GetPaymentMaxAmount() decimal.Decimal {
+	var _default = decimal.NewFromFloat(defaultPaymentMaxAmount)
+	var _, _max = getPaymentRangeAmount()
+	if _max == "" {
+
+		return _default
+	}
+
+	_result, err := decimal.NewFromString(_max)
+	if err == nil {
+
+		return _result
+	}
+
+	return _default
+}
+
+func getPaymentRangeAmount() (string, string) {
+	var _rangeVar string
+	if _rangeVar = strings.TrimSpace(help.GetEnv("PAYMENT_AMOUNT_RANGE")); _rangeVar == "" {
+
+		return "", ""
+	}
+
+	var _payRange = strings.Split(_rangeVar, ",")
+	if len(_payRange) < 2 {
+
+		return "", ""
+	}
+
+	return _payRange[0], _payRange[1]
 }
 
 func GetExpireTime() time.Duration {
