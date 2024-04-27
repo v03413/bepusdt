@@ -129,7 +129,7 @@ func cbAddressOtherNotifyAction(query *tgbotapi.CallbackQuery, id string) {
 	}
 }
 
-func cbOrderDetailAction(query *tgbotapi.CallbackQuery, tradeId string) {
+func cbOrderDetailAction(tradeId string) {
 	var o model.TradeOrders
 
 	if model.DB.Where("trade_id = ?", tradeId).First(&o).Error == nil {
@@ -170,6 +170,7 @@ func cbOrderDetailAction(query *tgbotapi.CallbackQuery, tradeId string) {
 			InlineKeyboard: [][]tgbotapi.InlineKeyboardButton{
 				{
 					tgbotapi.NewInlineKeyboardButtonURL("🌏商户网站", _site.String()),
+					tgbotapi.NewInlineKeyboardButtonURL("📝交易明细", "https://tronscan.org/#/transaction/"+o.TradeHash),
 				},
 			},
 		}

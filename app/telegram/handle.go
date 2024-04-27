@@ -55,7 +55,7 @@ func HandleCallback(query *tgbotapi.CallbackQuery) {
 	case cbAddressOtherNotify:
 		go cbAddressOtherNotifyAction(query, args[1])
 	case cbOrderDetail:
-		go cbOrderDetailAction(query, args[1])
+		go cbOrderDetailAction(args[1])
 	}
 }
 
