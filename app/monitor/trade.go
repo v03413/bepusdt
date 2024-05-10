@@ -390,14 +390,15 @@ func getUsdtTrc20TransByTronGrid(_toAddress string) (gjson.Result, error) {
 
 	// 请求交易记录
 	resp, err := client.Do(req)
-	if resp.StatusCode != http.StatusOK {
-
-		return gjson.Result{}, fmt.Errorf("请求交易记录错误: StatusCode != 200")
-	}
 
 	if err != nil {
 
 		return gjson.Result{}, fmt.Errorf("请求交易记录错误: %w", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+
+		return gjson.Result{}, fmt.Errorf("请求交易记录错误: StatusCode != 200")
 	}
 
 	// 获取响应记录
