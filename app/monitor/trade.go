@@ -340,6 +340,11 @@ func getUsdtTrc20TransByTronScan(_toAddress string) (gjson.Result, error) {
 		return gjson.Result{}, fmt.Errorf("请求交易记录错误: %w", err)
 	}
 
+	if resp.StatusCode != http.StatusOK {
+
+		return gjson.Result{}, fmt.Errorf("请求交易记录错误: StatusCode != 200")
+	}
+
 	// 获取响应记录
 	all, err := io.ReadAll(resp.Body)
 	if err != nil {
