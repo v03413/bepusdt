@@ -9,15 +9,21 @@ import (
 var err error
 
 func BotStart(version string) {
-	var BotApi = telegram.GetBotApi()
-	if BotApi == nil {
+	var botApi = telegram.GetBotApi()
+	if botApi == nil {
 
 		return
 	}
 
+	_, err = botApi.MakeRequest("deleteWebhook", tgbotapi.Params{})
+	if err != nil {
+
+		log.Error("TG Bot deleteWebhook Error:", err)
+	}
+
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
-	updates := BotApi.GetUpdatesChan(u)
+	updates := botApi.GetUpdatesChan(u)
 	if err != nil {
 		log.Error("TG Bot GetUpdatesChan Error:", err)
 
