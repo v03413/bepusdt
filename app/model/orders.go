@@ -18,24 +18,24 @@ const Atomicity = 0.01 // 原子精度
 var _calcMutex sync.Mutex
 
 type TradeOrders struct {
-	Id          int64     `gorm:"primary_key;AUTO_INCREMENT"`
-	OrderId     string    `gorm:"type:varchar(255);not null;unique"`
-	TradeId     string    `gorm:"type:varchar(255);not null;unique"`
-	TradeHash   string    `gorm:"type:varchar(64);default:'';unique"`
-	UsdtRate    string    `gorm:"type:varchar(10);not null"`
-	Amount      string    `gorm:"type:decimal(10,2);not null;default:0"`
-	Money       float64   `gorm:"type:decimal(10,2);not null;default:0"`
-	Address     string    `gorm:"type:varchar(34);not null"`
-	FromAddress string    `gorm:"type:varchar(34);not null;default:''"`
-	Status      int       `gorm:"type:tinyint(1);not null;default:0"`
-	ReturnUrl   string    `gorm:"type:varchar(255);not null;default:''"`
-	NotifyUrl   string    `gorm:"type:varchar(255);not null;default:''"`
-	NotifyNum   int       `gorm:"type:int(11);not null;default:0"`
-	NotifyState int       `gorm:"type:tinyint(1);not null;default:0"`
-	ExpiredAt   time.Time `gorm:"type:timestamp;not null"`
-	CreatedAt   time.Time `gorm:"autoCreateTime;type:timestamp;not null"`
-	UpdatedAt   time.Time `gorm:"autoUpdateTime;type:timestamp;not null"`
-	ConfirmedAt time.Time `gorm:"type:timestamp;null"`
+	Id          int64     `gorm:"primary_key;AUTO_INCREMENT;comment:id"`
+	OrderId     string    `gorm:"type:varchar(255);not null;unique;color:blue;comment:客户订单ID"`
+	TradeId     string    `gorm:"type:varchar(255);not null;unique;color:blue;comment:本地订单ID"`
+	TradeHash   string    `gorm:"type:varchar(64);default:'';unique;comment:交易哈希"`
+	UsdtRate    string    `gorm:"type:varchar(10);not null;comment:USDT汇率"`
+	Amount      string    `gorm:"type:decimal(10,2);not null;default:0;comment:USDT交易数额"`
+	Money       float64   `gorm:"type:decimal(10,2);not null;default:0;comment:订单交易金额"`
+	Address     string    `gorm:"type:varchar(34);not null;comment:收款地址"`
+	FromAddress string    `gorm:"type:varchar(34);not null;default:'';comment:支付地址"`
+	Status      int       `gorm:"type:tinyint(1);not null;default:0;comment:交易状态 1：等待支付 2：支付成功 3：订单过期"`
+	ReturnUrl   string    `gorm:"type:varchar(255);not null;default:'';comment:同步地址"`
+	NotifyUrl   string    `gorm:"type:varchar(255);not null;default:'';comment:异步地址"`
+	NotifyNum   int       `gorm:"type:int(11);not null;default:0;comment:回调次数"`
+	NotifyState int       `gorm:"type:tinyint(1);not null;default:0;comment:回调状态 1：成功 0：失败"`
+	ExpiredAt   time.Time `gorm:"type:timestamp;not null;comment:订单失效时间"`
+	CreatedAt   time.Time `gorm:"autoCreateTime;type:timestamp;not null;comment:创建时间"`
+	UpdatedAt   time.Time `gorm:"autoUpdateTime;type:timestamp;not null;comment:更新时间"`
+	ConfirmedAt time.Time `gorm:"type:timestamp;null;comment:交易确认时间"`
 }
 
 func (o *TradeOrders) OrderSetExpired() error {

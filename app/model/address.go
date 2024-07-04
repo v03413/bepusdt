@@ -15,12 +15,12 @@ const OtherNotifyEnable = 1
 const OtherNotifyDisable = 0
 
 type WalletAddress struct {
-	Id          int64     `gorm:"primary_key;AUTO_INCREMENT"`
-	Address     string    `gorm:"type:varchar(255);not null;unique"`
-	Status      int       `gorm:"type:tinyint(1);not null;default:1"`
-	OtherNotify int       `gorm:"type:tinyint(1);not null;default:1"`
-	CreatedAt   time.Time `gorm:"autoCreateTime;type:timestamp;not null"`
-	UpdatedAt   time.Time `gorm:"autoUpdateTime;type:timestamp;not null"`
+	Id          int64     `gorm:"integer;primaryKey;not null;comment:id"`
+	Address     string    `gorm:"type:varchar(255);not null;unique;comment:钱包地址"`
+	Status      int       `gorm:"type:tinyint(1);not null;default:1;comment:地址状态 1启动 0禁止"`
+	OtherNotify int       `gorm:"type:tinyint(1);not null;default:1;comment:其它转账通知 1启动 0禁止"`
+	CreatedAt   time.Time `gorm:"autoCreateTime;type:timestamp;not null;comment:创建时间"`
+	UpdatedAt   time.Time `gorm:"autoUpdateTime;type:timestamp;not null;comment:更新时间"`
 }
 
 // 启动时添加初始钱包地址
