@@ -1,8 +1,8 @@
 package model
 
 import (
+	"github.com/glebarez/sqlite"
 	"github.com/v03413/bepusdt/app/config"
-	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
