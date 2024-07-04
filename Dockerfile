@@ -4,7 +4,7 @@ ENV GO111MODULE=on
 WORKDIR /go/release
 ADD . .
 RUN set -x \
-    && CGO_ENABLED=1 go build -trimpath -ldflags="-linkmode external -extldflags -static -s -w -buildid=" -o bepusdt ./main
+    && CGO_ENABLED=0 go build -trimpath -ldflags="-s -w -buildid=" -o bepusdt ./main
 
 FROM debian:latest
 

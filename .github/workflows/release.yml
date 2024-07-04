@@ -14,7 +14,7 @@ jobs:
     strategy:
       matrix:
         goos: [ linux ]
-        goarch: [ amd64 ]
+        goarch: [ amd64,arm64 ]
       fail-fast: false
     runs-on: ubuntu-latest
     env:
@@ -40,9 +40,9 @@ jobs:
         run: go mod download
       - name: Build Bepusdt
         run: |
-          CGO_ENABLED=1
+          CGO_ENABLED=0
           mkdir -p ${{ env.BUILD_DIR }}
-          go build -v -o ${{ env.BUILD_DIR }}/${{ env.APP_NAME }} -trimpath -ldflags "-linkmode external -extldflags -static -s -w -buildid=" ./main
+          go build -v -o ${{ env.BUILD_DIR }}/${{ env.APP_NAME }} -trimpath -ldflags "-s -w -buildid=" ./main
       - name: Prepare package
         run: |
           cp -v -R ./templates ./${{ env.BUILD_DIR }}
