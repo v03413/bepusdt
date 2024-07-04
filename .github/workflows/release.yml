@@ -16,7 +16,7 @@ jobs:
         goos: [ linux ]
         goarch: [ amd64,arm64 ]
       fail-fast: false
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     env:
       GOOS: ${{ matrix.goos }}
       GOARCH: ${{ matrix.goarch }}
@@ -40,7 +40,7 @@ jobs:
         run: go mod download
       - name: Build Bepusdt
         run: |
-          CGO_ENABLED=0
+          export CGO_ENABLED=0
           mkdir -p ${{ env.BUILD_DIR }}
           go build -v -o ${{ env.BUILD_DIR }}/${{ env.APP_NAME }} -trimpath -ldflags "-s -w -buildid=" ./main
       - name: Prepare package
