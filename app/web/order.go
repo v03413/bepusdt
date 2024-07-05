@@ -53,6 +53,7 @@ func CreateTransaction(ctx *gin.Context) {
 	var _orderData = model.TradeOrders{
 		OrderId:     _orderId,
 		TradeId:     _tradeId,
+		TradeHash:   _tradeId, // 这里默认填充一个本地交易ID，等支付成功后再更新为实际交易哈希
 		UsdtRate:    fmt.Sprintf("%v", rate),
 		Amount:      _amount,
 		Money:       _money,
