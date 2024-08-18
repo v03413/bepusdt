@@ -242,23 +242,39 @@ func GetTgBotNotifyTarget() string {
 }
 
 func GetOutputLog() string {
+	if data := help.GetEnv("LOG_DIR"); data != "" {
 
-	return runPath + "/bepusdt.log"
+		return strings.TrimSpace(data) + "/bepusdt.log"
+	}
+	
+	return "/var/log/bepusdt.log"
 }
 
 func GetDbPath() string {
+	if data := help.GetEnv("DB_DIR"); data != "" {
 
-	return runPath + "/bepusdt.db"
+		return strings.TrimSpace(data) + "/bepusdt.db"
+	}
+	
+	return "/var/lib/bepusdt/bepusdt.db"
 }
 
 func GetTemplatePath() string {
+	if data := help.GetEnv("STATIC_DIR"); data != "" {
 
-	return runPath + "/templates/*"
+		return strings.TrimSpace(data) + "/templates/*"
+	}
+	
+	return "/var/share/bepusdt/templates/*"
 }
 
 func GetStaticPath() string {
+	if data := help.GetEnv("STATIC_DIR"); data != "" {
 
-	return runPath + "/static/"
+		return strings.TrimSpace(data) + "/static/*"
+	}
+	
+	return "/var/share/bepusdt/static/"
 }
 
 func GetInitWalletAddress() []string {
