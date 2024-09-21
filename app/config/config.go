@@ -11,7 +11,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"unicode"
 )
 
 const defaultExpireTime = 600     // 订单默认有效期 10分钟
@@ -292,23 +291,4 @@ func GetInitWalletAddress() []string {
 	}
 
 	return []string{}
-}
-
-// decimalPlaces 获取小数点后的位数
-func decimalPlaces(s string) int {
-	for _, r := range s {
-		if !unicode.IsDigit(r) && r != '.' {
-			return -1
-		}
-	}
-
-	// 查找小数点的位置
-	dotIndex := strings.Index(s, ".")
-	if dotIndex == -1 {
-
-		return 0
-	}
-
-	decimalPart := s[dotIndex+1:]
-	return len(decimalPart)
 }
