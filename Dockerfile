@@ -1,4 +1,4 @@
-FROM golang:1.22.2 AS builder
+FROM golang:1.23.1 AS builder
 
 ENV GO111MODULE=on
 WORKDIR /go/release
@@ -8,7 +8,7 @@ RUN set -x \
 
 FROM debian:latest
 
-ENV DEBIAN_FRONTEND noninteractive
+ENV DEBIAN_FRONTEND=noninteractive
 ENV DEBCONF_NOWARNINGS="yes"
 ENV TZ=Asia/Shanghai
 
