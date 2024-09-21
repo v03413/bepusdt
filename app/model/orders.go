@@ -2,6 +2,7 @@ package model
 
 import (
 	"github.com/shopspring/decimal"
+	"github.com/v03413/bepusdt/app/config"
 	"strconv"
 	"sync"
 	"time"
@@ -13,7 +14,6 @@ const OrderStatusWaiting = 1
 
 const OrderNotifyStateSucc = 1
 const OrderNotifyStateFail = 0
-const Atomicity = 0.01 // 原子精度
 
 var _calcMutex sync.Mutex
 
@@ -111,8 +111,8 @@ func CalcTradeAmount(wa []WalletAddress, rate, money float64) (WalletAddress, st
 		_lock[_order.Address+_order.Amount] = true
 	}
 
-	var _atom = decimal.NewFromFloat(Atomicity)
-	var payAmount = strconv.FormatFloat(money/rate, 'f', 2, 64)
+	var _atom, _prec = config.GetAtomicity()
+	var payAmount = strconv.FormatFloat(money/rate, 'f', _prec, 64)
 	var _payAmount, _ = decimal.NewFromString(payAmount)
 	for {
 		for _, address := range wa {

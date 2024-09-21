@@ -2,13 +2,16 @@ package config
 
 import (
 	"github.com/shopspring/decimal"
+	"github.com/spf13/cast"
 	"github.com/v03413/bepusdt/app/help"
+	"math"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 )
 
 const defaultExpireTime = 600     // 订单默认有效期 10分钟
@@ -19,6 +22,7 @@ const TronServerApiScan = "TRON_SCAN"
 const TronServerApiGrid = "TRON_GRID"
 const defaultPaymentMinAmount = 0.01
 const defaultPaymentMaxAmount = 99999
+const defaultAtomicity = "0.01" // 原子精度
 
 var runPath string
 
@@ -30,6 +34,26 @@ func init() {
 	}
 
 	runPath = filepath.Dir(execPath)
+}
+
+func GetAtomicity() (decimal.Decimal, int) {
+	var _defaultAtom, _ = decimal.NewFromString(defaultAtomicity)
+	var _defaultExp = cast.ToInt(math.Abs(float64(_defaultAtom.Exponent())))
+	if data := help.GetEnv("USDT_ATOM"); data != "" {
+		var _atom, err = decimal.NewFromString(data)
+		if err != nil {
+
+			return _defaultAtom, _defaultExp
+		}
+
+		// 如果大于0，且小数点后位数大于0
+		if _atom.GreaterThan(decimal.Zero) && _atom.Exponent() < 0 {
+
+			return _atom, cast.ToInt(math.Abs(float64(_atom.Exponent())))
+		}
+	}
+
+	return _defaultAtom, _defaultExp
 }
 
 func GetPaymentMinAmount() decimal.Decimal {
@@ -268,4 +292,23 @@ func GetInitWalletAddress() []string {
 	}
 
 	return []string{}
+}
+
+// decimalPlaces 获取小数点后的位数
+func decimalPlaces(s string) int {
+	for _, r := range s {
+		if !unicode.IsDigit(r) && r != '.' {
+			return -1
+		}
+	}
+
+	// 查找小数点的位置
+	dotIndex := strings.Index(s, ".")
+	if dotIndex == -1 {
+
+		return 0
+	}
+
+	decimalPart := s[dotIndex+1:]
+	return len(decimalPart)
 }
