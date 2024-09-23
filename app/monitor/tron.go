@@ -30,12 +30,17 @@ var usdtTrc20ContractAddress = []byte{0x41, 0xa6, 0x14, 0xf8, 0x03, 0xb6, 0xfd, 
 
 var currentBlockHeight int64
 
-type simpleTrans struct {
+type transfer struct {
 	ID          string
 	Amount      float64
 	FromAddress string
 	RecvAddress string
 	Timestamp   time.Time
+}
+
+type usdtTrc20TransferRaw struct {
+	RecvAddress string
+	Amount      float64
 }
 
 // BlockScanStart 区块扫描
@@ -97,7 +102,8 @@ func BlockScanStart() {
 func parseBlockTrans(block *api.BlockExtention, nowHeight int64) {
 	currentBlockHeight = nowHeight
 
-	var trans = make([]simpleTrans, 0)
+	var trxTransfer = make([]transfer, 0)
+	var usdtTrc20Transfer = make([]transfer, 0)
 	var timestamp = time.UnixMilli(block.GetBlockHeader().GetRawData().GetTimestamp())
 	for _, v := range block.GetTransactions() {
 		if !v.Result.Result {
@@ -107,76 +113,108 @@ func parseBlockTrans(block *api.BlockExtention, nowHeight int64) {
 
 		var itm = v.GetTransaction()
 		for _, contract := range itm.GetRawData().GetContract() {
-			if contract.GetType() != core.Transaction_Contract_TriggerSmartContract {
+			// 转账交易
+			if contract.GetType() == core.Transaction_Contract_TransferContract {
+				var foo = &core.TransferContract{}
+				err := contract.GetParameter().UnmarshalTo(foo)
+				if err != nil {
+
+					continue
+				}
+
+				trxTransfer = append(trxTransfer, transfer{
+					ID:          hex.EncodeToString(v.Txid),
+					Amount:      float64(foo.Amount),
+					FromAddress: base58CheckEncode(foo.OwnerAddress),
+					RecvAddress: base58CheckEncode(foo.ToAddress),
+					Timestamp:   timestamp,
+				})
 
 				continue
 			}
 
-			var foo = &core.TriggerSmartContract{}
-			err := contract.GetParameter().UnmarshalTo(foo)
-			if err != nil {
+			// 触发智能合约
+			if contract.GetType() == core.Transaction_Contract_TriggerSmartContract {
+				var foo = &core.TriggerSmartContract{}
+				err := contract.GetParameter().UnmarshalTo(foo)
+				if err != nil {
 
-				break
+					continue
+				}
+
+				var transItem = transfer{Timestamp: timestamp, ID: hex.EncodeToString(v.Txid), FromAddress: base58CheckEncode(foo.OwnerAddress)}
+				var reader = bytes.NewReader(foo.GetData())
+				if !bytes.Equal(foo.GetContractAddress(), usdtTrc20ContractAddress) { // usdt trc20 contract
+
+					continue
+				}
+
+				// 解析合约数据
+				var trc20Contract = parseUsdtTrc20Contract(reader)
+				if trc20Contract.Amount == 0 {
+
+					continue
+				}
+
+				transItem.Amount = trc20Contract.Amount
+				transItem.RecvAddress = trc20Contract.RecvAddress
+
+				usdtTrc20Transfer = append(usdtTrc20Transfer, transItem)
 			}
-
-			var reader = bytes.NewReader(foo.GetData())
-			if !bytes.Equal(foo.GetContractAddress(), usdtTrc20ContractAddress) { // usdt trc20 contract
-
-				continue
-			}
-
-			var funcName = make([]byte, 4)
-			_, err = reader.Read(funcName)
-			if err != nil {
-				log.Error("Read funcName", err)
-
-				continue
-			}
-			if !bytes.Equal(funcName, []byte{0xa9, 0x05, 0x9c, 0xbb}) { // a9059cbb transfer(address,uint256)
-
-				continue
-			}
-
-			var addressBytes = make([]byte, 20)
-			_, err = reader.ReadAt(addressBytes, 4+12)
-			if err != nil {
-				log.Error("Read toAddress", err)
-
-				continue
-			}
-
-			var txid = hex.EncodeToString(v.Txid)
-			var toAddress = base58CheckEncode(append([]byte{0x41}, addressBytes...))
-			var value = make([]byte, 32)
-			_, err = reader.ReadAt(value, 36)
-			if err != nil {
-				log.Error("Read value", err)
-
-				continue
-			}
-
-			var amount, _ = strconv.ParseInt(hex.EncodeToString(value), 16, 64)
-
-			trans = append(trans, simpleTrans{
-				Timestamp:   timestamp,
-				FromAddress: base58CheckEncode(foo.OwnerAddress),
-				RecvAddress: toAddress,
-				Amount:      float64(amount),
-				ID:          txid,
-			})
 		}
 	}
 
-	if len(trans) > 0 {
-		handleOrderTransaction(block.GetBlockHeader().GetRawData().GetNumber(), nowHeight, trans)
-		handleOtherNotify(trans)
+	if len(usdtTrc20Transfer) > 0 {
+		handleOrderTransaction(block.GetBlockHeader().GetRawData().GetNumber(), nowHeight, usdtTrc20Transfer)
+		handleOtherNotify(usdtTrc20Transfer)
+	}
+
+	if len(trxTransfer) > 0 {
+
 	}
 
 	log.Info("区块扫描完成：", nowHeight)
 }
 
+// parseUsdtTrc20Contract 解析usdt trc20合约
+func parseUsdtTrc20Contract(reader *bytes.Reader) usdtTrc20TransferRaw {
+	var funcName = make([]byte, 4)
+	_, err = reader.Read(funcName)
+	if err != nil {
+		// 读取funcName失败
+
+		return usdtTrc20TransferRaw{}
+	}
+	if !bytes.Equal(funcName, []byte{0xa9, 0x05, 0x9c, 0xbb}) { // a9059cbb transfer(address,uint256)
+		// funcName不匹配transfer
+
+		return usdtTrc20TransferRaw{}
+	}
+
+	var addressBytes = make([]byte, 20)
+	_, err = reader.ReadAt(addressBytes, 4+12)
+	if err != nil {
+		// 读取toAddress失败
+
+		return usdtTrc20TransferRaw{}
+	}
+
+	var toAddress = base58CheckEncode(append([]byte{0x41}, addressBytes...))
+	var value = make([]byte, 32)
+	_, err = reader.ReadAt(value, 36)
+	if err != nil {
+		// 读取value失败
+
+		return usdtTrc20TransferRaw{}
+	}
+
+	var amount, _ = strconv.ParseInt(hex.EncodeToString(value), 16, 64)
+
+	return usdtTrc20TransferRaw{RecvAddress: toAddress, Amount: float64(amount)}
+}
+
 // handleOrderTransaction 处理支付交易
-func handleOrderTransaction(refBlockNum, nowHeight int64, items []simpleTrans) {
+func handleOrderTransaction(refBlockNum, nowHeight int64, items []transfer) {
 	var orders, err = getAllPendingOrders()
 	if err != nil {
 		log.Error(err.Error())
@@ -247,7 +285,7 @@ func handleOrderTransaction(refBlockNum, nowHeight int64, items []simpleTrans) {
 }
 
 // handleOtherNotify 处理其他通知
-func handleOtherNotify(items []simpleTrans) {
+func handleOtherNotify(items []transfer) {
 	var ads []model.WalletAddress
 	var tx = model.DB.Where("status = ? and other_notify = ?", model.StatusEnable, model.OtherNotifyEnable).Find(&ads)
 	if tx.RowsAffected <= 0 {
