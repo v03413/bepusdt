@@ -29,5 +29,5 @@ func Init() error {
 
 func AutoMigrate() error {
 
-	return DB.AutoMigrate(&WalletAddress{}, &TradeOrders{}, &NotifyRecord{})
+	return DB.AutoMigrate(&WalletAddress{}, &TradeOrders{}, &NotifyRecord{}, &Config{})
 }
