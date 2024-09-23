@@ -32,6 +32,7 @@ type TradeOrders struct {
 	NotifyUrl   string    `gorm:"type:varchar(255);not null;default:'';comment:异步地址"`
 	NotifyNum   int       `gorm:"type:int(11);not null;default:0;comment:回调次数"`
 	NotifyState int       `gorm:"type:tinyint(1);not null;default:0;comment:回调状态 1：成功 0：失败"`
+	RefBlockNum int64     `gorm:"type:bigint(20);not null;default:0;comment:交易所在区块"`
 	ExpiredAt   time.Time `gorm:"type:timestamp;not null;comment:订单失效时间"`
 	CreatedAt   time.Time `gorm:"autoCreateTime;type:timestamp;not null;comment:创建时间"`
 	UpdatedAt   time.Time `gorm:"autoUpdateTime;type:timestamp;not null;comment:更新时间"`
@@ -44,12 +45,19 @@ func (o *TradeOrders) OrderSetExpired() error {
 	return DB.Save(o).Error
 }
 
-func (o *TradeOrders) OrderSetSucc(fromAddress, tradeHash string, confirmedAt time.Time) error {
-	// 订单标记交易成功
-	o.Status = OrderStatusSuccess
+func (o *TradeOrders) OrderUpdateTxInfo(refBlockNum int64, fromAddress, tradeHash string, confirmedAt time.Time) error {
 	o.FromAddress = fromAddress
 	o.ConfirmedAt = confirmedAt
 	o.TradeHash = tradeHash
+	o.RefBlockNum = refBlockNum
+	r := DB.Save(o)
+
+	return r.Error
+}
+
+func (o *TradeOrders) OrderSetSucc() error {
+	o.Status = OrderStatusSuccess // 标记成功
+
 	r := DB.Save(o)
 
 	return r.Error

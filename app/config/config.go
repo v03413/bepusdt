@@ -17,11 +17,10 @@ const defaultExpireTime = 600     // 订单默认有效期 10分钟
 const defaultUsdtRate = 6.4       // 默认汇率
 const defaultAuthToken = "123234" // 默认授权码
 const defaultListen = ":8080"     // 默认监听地址
-const TronServerApiScan = "TRON_SCAN"
-const TronServerApiGrid = "TRON_GRID"
 const defaultPaymentMinAmount = 0.01
 const defaultPaymentMaxAmount = 99999
-const defaultAtomicity = "0.01" // 原子精度
+const defaultAtomicity = "0.01"                  // 原子精度
+const defaultTronGrpcNode = "18.141.79.38:50051" // 默认GRPC节点
 
 var runPath string
 
@@ -33,6 +32,15 @@ func init() {
 	}
 
 	runPath = filepath.Dir(execPath)
+}
+
+func GetTronGrpcNode() string {
+	if data := help.GetEnv("TRON_GRPC_NODE"); data != "" {
+
+		return strings.TrimSpace(data)
+	}
+
+	return defaultTronGrpcNode
 }
 
 func GetAtomicity() (decimal.Decimal, int) {
@@ -124,42 +132,6 @@ func GetUsdtRateRaw() string {
 	}
 
 	return ""
-}
-
-func GetTronServerApi() string {
-	if data := help.GetEnv("TRON_SERVER_API"); data != "" {
-
-		return strings.TrimSpace(data)
-	}
-
-	return ""
-}
-
-func GetTronScanApiKey() string {
-	if data := help.GetEnv("TRON_SCAN_API_KEY"); data != "" {
-
-		return strings.TrimSpace(data)
-	}
-
-	return ""
-}
-
-func GetTronGridApiKey() string {
-	if data := help.GetEnv("TRON_GRID_API_KEY"); data != "" {
-
-		return strings.TrimSpace(data)
-	}
-
-	return ""
-}
-
-func IsTronScanApi() bool {
-	if GetTronServerApi() == TronServerApiScan {
-
-		return true
-	}
-
-	return GetTronServerApi() != TronServerApiGrid
 }
 
 func GetUsdtRate() (string, decimal.Decimal, float64) {

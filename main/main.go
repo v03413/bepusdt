@@ -31,11 +31,11 @@ func main() {
 	// 启动汇率监控
 	go monitor.OkxUsdtRateStart()
 
-	// 启动交易监控
-	go monitor.TradeStart()
-
 	// 启动回调监控
 	go monitor.NotifyStart()
+
+	// 启动区块扫描
+	go monitor.BlockScanStart()
 
 	// 启动web服务
 	go web.Start()
