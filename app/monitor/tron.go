@@ -30,6 +30,15 @@ var usdtTrc20ContractAddress = []byte{0x41, 0xa6, 0x14, 0xf8, 0x03, 0xb6, 0xfd, 
 
 var currentBlockHeight int64
 
+type resource struct {
+	ID          string
+	Type        core.ResourceCode
+	Balance     int64
+	FromAddress string
+	RecvAddress string
+	Timestamp   time.Time
+}
+
 type transfer struct {
 	ID          string
 	Amount      float64
@@ -102,6 +111,8 @@ func BlockScanStart() {
 func parseBlockTrans(block *api.BlockExtention, nowHeight int64) {
 	currentBlockHeight = nowHeight
 
+	var unDelegateResources = make([]resource, 0)
+	var delegateResources = make([]resource, 0)
 	var trxTransfer = make([]transfer, 0)
 	var usdtTrc20Transfer = make([]transfer, 0)
 	var timestamp = time.UnixMilli(block.GetBlockHeader().GetRawData().GetTimestamp())
@@ -112,8 +123,47 @@ func parseBlockTrans(block *api.BlockExtention, nowHeight int64) {
 		}
 
 		var itm = v.GetTransaction()
+		var id = hex.EncodeToString(v.Txid)
 		for _, contract := range itm.GetRawData().GetContract() {
-			// 转账交易
+			// 资源代理 DelegateResourceContract
+			if contract.GetType() == core.Transaction_Contract_DelegateResourceContract {
+				var foo = &core.DelegateResourceContract{}
+				err := contract.GetParameter().UnmarshalTo(foo)
+				if err != nil {
+
+					continue
+				}
+
+				delegateResources = append(delegateResources, resource{
+					ID:          id,
+					Type:        foo.Resource,
+					Balance:     foo.Balance,
+					FromAddress: base58CheckEncode(foo.OwnerAddress),
+					RecvAddress: base58CheckEncode(foo.ReceiverAddress),
+					Timestamp:   timestamp,
+				})
+			}
+
+			// 资源回收 UnDelegateResourceContract
+			if contract.GetType() == core.Transaction_Contract_UnDelegateResourceContract {
+				var foo = &core.UnDelegateResourceContract{}
+				err := contract.GetParameter().UnmarshalTo(foo)
+				if err != nil {
+
+					continue
+				}
+
+				unDelegateResources = append(unDelegateResources, resource{
+					ID:          id,
+					Type:        foo.Resource,
+					Balance:     foo.Balance,
+					FromAddress: base58CheckEncode(foo.OwnerAddress),
+					RecvAddress: base58CheckEncode(foo.ReceiverAddress),
+					Timestamp:   timestamp,
+				})
+			}
+
+			// TRX转账交易
 			if contract.GetType() == core.Transaction_Contract_TransferContract {
 				var foo = &core.TransferContract{}
 				err := contract.GetParameter().UnmarshalTo(foo)
@@ -123,7 +173,7 @@ func parseBlockTrans(block *api.BlockExtention, nowHeight int64) {
 				}
 
 				trxTransfer = append(trxTransfer, transfer{
-					ID:          hex.EncodeToString(v.Txid),
+					ID:          id,
 					Amount:      float64(foo.Amount),
 					FromAddress: base58CheckEncode(foo.OwnerAddress),
 					RecvAddress: base58CheckEncode(foo.ToAddress),
@@ -142,7 +192,7 @@ func parseBlockTrans(block *api.BlockExtention, nowHeight int64) {
 					continue
 				}
 
-				var transItem = transfer{Timestamp: timestamp, ID: hex.EncodeToString(v.Txid), FromAddress: base58CheckEncode(foo.OwnerAddress)}
+				var transItem = transfer{Timestamp: timestamp, ID: id, FromAddress: base58CheckEncode(foo.OwnerAddress)}
 				var reader = bytes.NewReader(foo.GetData())
 				if !bytes.Equal(foo.GetContractAddress(), usdtTrc20ContractAddress) { // usdt trc20 contract
 
@@ -170,6 +220,12 @@ func parseBlockTrans(block *api.BlockExtention, nowHeight int64) {
 	}
 
 	if len(trxTransfer) > 0 {
+
+	}
+	if len(unDelegateResources) > 0 {
+
+	}
+	if len(delegateResources) > 0 {
 
 	}
 
