@@ -15,6 +15,9 @@ const OrderStatusWaiting = 1
 const OrderNotifyStateSucc = 1
 const OrderNotifyStateFail = 0
 
+const OrderTradeTypeUsdtTrc20 = "usdt.trc20"
+const OrderTradeTypeTronTrx = "tron.trx"
+
 var _calcMutex sync.Mutex
 
 type TradeOrders struct {

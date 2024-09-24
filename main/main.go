@@ -30,6 +30,7 @@ func main() {
 
 	// 启动汇率监控
 	go monitor.OkxUsdtRateStart()
+	go monitor.OkxTrxUsdtRateStart()
 
 	// 启动回调监控
 	go monitor.NotifyStart()

@@ -2,12 +2,12 @@ package monitor
 
 import (
 	"errors"
-	"fmt"
 	"github.com/shopspring/decimal"
+	"github.com/spf13/cast"
 	"github.com/tidwall/gjson"
 	"github.com/v03413/bepusdt/app/config"
 	"github.com/v03413/bepusdt/app/log"
-	"github.com/v03413/bepusdt/app/usdt"
+	"github.com/v03413/bepusdt/app/rate"
 	"io"
 	"net/http"
 	"strconv"
@@ -16,34 +16,90 @@ import (
 
 // OkxUsdtRateStart Okx USDT 汇率监控，避免频繁请求
 func OkxUsdtRateStart() {
-	var _act, _value, _defaultRate = config.GetUsdtRate()
 	for {
-		if _act == "" {
-			usdt.SetLatestRate(_defaultRate)
-
-			log.Info("固定汇率", usdt.GetLatestRate())
+		var rawRate, err = getOkxUsdtCnySellPrice()
+		if err != nil {
+			log.Error("Okx USDT_CNY 汇率获取失败", err)
 		} else {
-			_okxRate, _okxErr := getOkxUsdtCnySellPrice()
-			if _okxErr == nil { // 获取成功
-				usdt.SetOkxLatestRate(_okxRate.InexactFloat64())
-
-				switch _act {
-				case "~":
-					usdt.SetLatestRate(_okxRate.Mul(_value).InexactFloat64())
-				case "+":
-					usdt.SetLatestRate(_okxRate.Add(_value).InexactFloat64())
-				case "-":
-					usdt.SetLatestRate(_okxRate.Sub(_value).InexactFloat64())
-				default:
-					usdt.SetLatestRate(_okxRate.InexactFloat64())
-				}
-
-				log.Info(fmt.Sprintf("okx rate: %v act(%v) value(%v) 最终实际汇率：%v", _okxRate, _act, _value, usdt.GetLatestRate()))
-			}
+			rate.SetOkxUsdtCnyRawRate(config.GetUsdtRate(), rawRate.InexactFloat64())
 		}
 
+		log.Info("当前 USDT_CNY 计算汇率：", rate.GetUsdtCalcRate(config.DefaultUsdtCnyRate))
 		time.Sleep(time.Minute)
 	}
+}
+
+// OkxTrxUsdtRateStart  Okx TRX 汇率监控
+func OkxTrxUsdtRateStart() {
+	for {
+		var rawRate, err = getOkxTrxUsdtRate()
+		if err != nil {
+			log.Error("Okx TRX_USDT 汇率获取失败", err)
+		} else {
+			rate.SetOkxTrxUsdtRawRate(config.GetTrxRate(), rawRate.InexactFloat64())
+		}
+
+		log.Info("当前 TRX_CNY 计算汇率：", rate.GetTrxCnyCalcRate(config.DefaultTrxCnyRate))
+		time.Sleep(time.Minute)
+	}
+}
+
+// GetOkxTrxUsdtRate 获取 Okx TRX 汇率 https://www.okx.com/zh-hans/trade-spot/trx-usdt
+func getOkxTrxUsdtRate() (decimal.Decimal, error) {
+	var zero = decimal.Zero
+	var url = "https://www.okx.com/priapi/v5/market/candles?instId=TRX-USDT&before=1727143156000&bar=1s&limit=1&t=" + cast.ToString(time.Now().UnixNano())
+	var client = http.Client{Timeout: time.Second * 5}
+	var req, _ = http.NewRequest("GET", url, nil)
+	req.Header.Set("referer", "https://www.okx.com/zh-hans/trade-spot/trx-usdt")
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36")
+	resp, err := client.Do(req)
+	if err != nil {
+
+		return zero, errors.New("okx resp error:" + err.Error())
+	}
+
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+
+		return zero, errors.New("okx resp status code:" + strconv.Itoa(resp.StatusCode))
+	}
+
+	all, err := io.ReadAll(resp.Body)
+	if err != nil {
+
+		return zero, errors.New("okx resp read body error:" + err.Error())
+	}
+
+	/**
+	{
+	    "code": "0",
+	    "msg": "",
+	    "data": [
+	        [
+	            "1727180821000",
+	            "0.15249",
+	            "0.15249",
+	            "0.15249",
+	            "0.15249",
+	            "1303.088676",
+	            "198.70799220324",
+	            "198.70799220324",
+	            "1"
+	        ]
+	    ]
+	}
+	*/
+
+	result := gjson.ParseBytes(all)
+	if result.Get("data").Exists() {
+		var data = result.Get("data").Array()
+		if len(data) > 0 {
+
+			return decimal.NewFromFloat(data[0].Get("1").Float()), nil
+		}
+	}
+
+	return zero, errors.New("okx resp json data not found")
 }
 
 // getOkxUsdtCnySellPrice  Okx  C2C快捷交易 USDT出售 实时汇率
