@@ -26,14 +26,14 @@ func CheckoutCounter(ctx *gin.Context) {
 		return
 	}
 
-	ctx.HTML(200, "checkout-counter.html", gin.H{
+	ctx.HTML(200, order.TradeType+".html", gin.H{
 		"http_host":  uri.Host,
 		"trade_id":   tradeId,
 		"amount":     order.Amount,
 		"address":    order.Address,
 		"expire":     int64(order.ExpiredAt.Sub(time.Now()).Seconds()),
 		"return_url": order.ReturnUrl,
-		"usdt_rate":  order.UsdtRate,
+		"usdt_rate":  order.TradeRate,
 	})
 }
 

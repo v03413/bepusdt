@@ -48,7 +48,7 @@ func Start() {
 	orderRoute := r.Group("/api/v1/order")
 	{
 		orderRoute.Use(func(ctx *gin.Context) {
-			_data, err := ctx.GetRawData()
+			rawData, err := ctx.GetRawData()
 			if err != nil {
 				log.Error(err.Error())
 				ctx.JSON(400, gin.H{"error": err.Error()})
@@ -56,7 +56,7 @@ func Start() {
 			}
 
 			m := make(map[string]any)
-			err = json.Unmarshal(_data, &m)
+			err = json.Unmarshal(rawData, &m)
 			if err != nil {
 				log.Error(err.Error())
 				ctx.JSON(400, gin.H{"error": err.Error()})

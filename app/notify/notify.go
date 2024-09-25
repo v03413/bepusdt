@@ -23,7 +23,7 @@ func OrderNotify(order model.TradeOrders) {
 		Token              string  `json:"token"`                //  收款钱包地址
 		BlockTransactionId string  `json:"block_transaction_id"` // 区块id
 		Signature          string  `json:"signature"`            // 签名
-		Status             int     `json:"status"`               //  1：等待支付，2：支付成功，3：已过期
+		Status             int     `json:"status"`               //  1：等待支付，2：支付成功，3：订单超时
 	}{
 		TradeId:            order.TradeId,
 		OrderId:            order.OrderId,

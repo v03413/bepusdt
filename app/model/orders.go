@@ -8,24 +8,25 @@ import (
 	"time"
 )
 
-const OrderStatusExpired = 3
-const OrderStatusSuccess = 2
-const OrderStatusWaiting = 1
+const OrderStatusExpired = 3 // 订单过期
+const OrderStatusSuccess = 2 // 订单成功
+const OrderStatusWaiting = 1 // 等待支付
 
-const OrderNotifyStateSucc = 1
-const OrderNotifyStateFail = 0
+const OrderNotifyStateSucc = 1 // 回调成功
+const OrderNotifyStateFail = 0 // 回调失败
 
 const OrderTradeTypeUsdtTrc20 = "usdt.trc20"
 const OrderTradeTypeTronTrx = "tron.trx"
 
-var _calcMutex sync.Mutex
+var calcMutex sync.Mutex
 
 type TradeOrders struct {
 	Id          int64     `gorm:"primary_key;AUTO_INCREMENT;comment:id"`
 	OrderId     string    `gorm:"type:varchar(255);not null;unique;color:blue;comment:客户订单ID"`
 	TradeId     string    `gorm:"type:varchar(255);not null;unique;color:blue;comment:本地订单ID"`
+	TradeType   string    `gorm:"type:varchar(20);not null;comment:交易类型"`
 	TradeHash   string    `gorm:"type:varchar(64);default:'';unique;comment:交易哈希"`
-	UsdtRate    string    `gorm:"type:varchar(10);not null;comment:USDT汇率"`
+	TradeRate   string    `gorm:"type:varchar(10);not null;comment:交易汇率"`
 	Amount      string    `gorm:"type:decimal(10,2);not null;default:0;comment:USDT交易数额"`
 	Money       float64   `gorm:"type:decimal(10,2);not null;default:0;comment:订单交易金额"`
 	Address     string    `gorm:"type:varchar(34);not null;comment:收款地址"`
@@ -110,33 +111,37 @@ func GetNotifyFailedTradeOrders() ([]TradeOrders, error) {
 }
 
 // CalcTradeAmount 计算当前实际可用的交易金额
-func CalcTradeAmount(wa []WalletAddress, rate, money float64) (WalletAddress, string) {
-	_calcMutex.Lock()
-	defer _calcMutex.Unlock()
+func CalcTradeAmount(wa []WalletAddress, rate, money float64, tradeType string) (WalletAddress, string) {
+	calcMutex.Lock()
+	defer calcMutex.Unlock()
 
-	var _orders []TradeOrders
-	var _lock = make(map[string]bool)
-	DB.Where("status = ?", OrderStatusWaiting).Find(&_orders)
-	for _, _order := range _orders {
+	var orders []TradeOrders
+	var lock = make(map[string]bool)
+	DB.Where("status = ? and trade_type = ?", OrderStatusWaiting, tradeType).Find(&orders)
+	for _, _order := range orders {
 
-		_lock[_order.Address+_order.Amount] = true
+		lock[_order.Address+_order.Amount] = true
 	}
 
-	var _atom, _prec = config.GetAtomicity()
-	var payAmount = strconv.FormatFloat(money/rate, 'f', _prec, 64)
-	var _payAmount, _ = decimal.NewFromString(payAmount)
+	var atom, prec = config.GetUsdtAtomicity()
+	if tradeType == OrderTradeTypeTronTrx {
+
+		atom, prec = config.GetTrxAtomicity()
+	}
+
+	var payAmount, _ = decimal.NewFromString(strconv.FormatFloat(money/rate, 'f', prec, 64))
 	for {
 		for _, address := range wa {
-			_key := address.Address + _payAmount.String()
-			if _, ok := _lock[_key]; ok {
+			_key := address.Address + payAmount.String()
+			if _, ok := lock[_key]; ok {
 
 				continue
 			}
 
-			return address, _payAmount.String()
+			return address, payAmount.String()
 		}
 
 		// 已经被占用，每次递增一个原子精度
-		_payAmount = _payAmount.Add(_atom)
+		payAmount = payAmount.Add(atom)
 	}
 }

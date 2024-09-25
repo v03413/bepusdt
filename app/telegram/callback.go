@@ -154,7 +154,7 @@ func cbOrderDetailAction(tradeId string) {
 		var _site = &url.URL{Scheme: urlInfo.Scheme, Host: urlInfo.Host}
 		var _msg = tgbotapi.NewMessage(0, "```"+`
 📌 订单ID：`+o.OrderId+`
-📊 交易汇率：`+o.UsdtRate+`(`+config.GetUsdtRate()+`)
+📊 交易汇率：`+o.TradeRate+`(`+config.GetUsdtRate()+`)
 💰 交易金额：`+fmt.Sprintf("%.2f", o.Money)+` CNY
 💲 交易数额：`+o.Amount+` USDT.TRC20
 🌏 商户网站：`+_site.String()+`

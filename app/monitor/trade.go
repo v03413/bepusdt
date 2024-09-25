@@ -16,7 +16,7 @@ func getAllPendingOrders() (map[string]model.TradeOrders, error) {
 		return nil, fmt.Errorf("待支付订单获取失败: %w", err)
 	}
 
-	var _lock = make(map[string]model.TradeOrders) // 当前所有正在等待支付的订单 Lock Key
+	var lock = make(map[string]model.TradeOrders) // 当前所有正在等待支付的订单 Lock Key
 	for _, order := range tradeOrders {
 		if time.Now().Unix() >= order.ExpiredAt.Unix() { // 订单过期
 			err := order.OrderSetExpired()
@@ -29,10 +29,10 @@ func getAllPendingOrders() (map[string]model.TradeOrders, error) {
 			continue
 		}
 
-		_lock[order.Address+order.Amount] = order
+		lock[order.Address+order.Amount+order.TradeType] = order
 	}
 
-	return _lock, nil
+	return lock, nil
 }
 
 // 解析交易金额

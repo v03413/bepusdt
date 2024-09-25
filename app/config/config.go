@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"github.com/shopspring/decimal"
 	"github.com/spf13/cast"
 	"github.com/v03413/bepusdt/app/help"
@@ -19,7 +20,8 @@ const defaultAuthToken = "123234" // 默认授权码
 const defaultListen = ":8080"     // 默认监听地址
 const defaultPaymentMinAmount = 0.01
 const defaultPaymentMaxAmount = 99999
-const defaultAtomicity = "0.01"                  // 原子精度
+const defaultUsdtAtomicity = "0.01" // 原子精度
+const defaultTrxAtomicity = "0.01"
 const defaultTronGrpcNode = "18.141.79.38:50051" // 默认GRPC节点
 
 var runPath string
@@ -43,24 +45,32 @@ func GetTronGrpcNode() string {
 	return defaultTronGrpcNode
 }
 
-func GetAtomicity() (decimal.Decimal, int) {
-	var _defaultAtom, _ = decimal.NewFromString(defaultAtomicity)
-	var _defaultExp = cast.ToInt(math.Abs(float64(_defaultAtom.Exponent())))
+func GetUsdtAtomicity() (decimal.Decimal, int) {
+	var defaultAtom, _ = decimal.NewFromString(defaultUsdtAtomicity)
+	var defaultExp = cast.ToInt(math.Abs(float64(defaultAtom.Exponent())))
 	if data := help.GetEnv("USDT_ATOM"); data != "" {
-		var _atom, err = decimal.NewFromString(data)
-		if err != nil {
+		var atom, exp, err = parseAtomicity(data)
+		if err == nil {
 
-			return _defaultAtom, _defaultExp
-		}
-
-		// 如果大于0，且小数点后位数大于0
-		if _atom.GreaterThan(decimal.Zero) && _atom.Exponent() < 0 {
-
-			return _atom, cast.ToInt(math.Abs(float64(_atom.Exponent())))
+			return atom, exp
 		}
 	}
 
-	return _defaultAtom, _defaultExp
+	return defaultAtom, defaultExp
+}
+
+func GetTrxAtomicity() (decimal.Decimal, int) {
+	var defaultAtom, _ = decimal.NewFromString(defaultTrxAtomicity)
+	var defaultExp = cast.ToInt(math.Abs(float64(defaultAtom.Exponent())))
+	if data := help.GetEnv("TRX_ATOM"); data != "" {
+		var atom, exp, err = parseAtomicity(data)
+		if err == nil {
+
+			return atom, exp
+		}
+	}
+
+	return defaultAtom, defaultExp
 }
 
 func GetPaymentMinAmount() decimal.Decimal {
@@ -245,4 +255,20 @@ func GetInitWalletAddress() []string {
 	}
 
 	return []string{}
+}
+
+func parseAtomicity(data string) (decimal.Decimal, int, error) {
+	var atom, err = decimal.NewFromString(data)
+	if err != nil {
+
+		return decimal.Zero, 0, err
+	}
+
+	// 如果大于0，且小数点后位数大于0
+	if atom.GreaterThan(decimal.Zero) && atom.Exponent() < 0 {
+
+		return atom, cast.ToInt(math.Abs(float64(atom.Exponent()))), nil
+	}
+
+	return decimal.Zero, 0, errors.New("原子精度参数不合法")
 }

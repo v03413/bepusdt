@@ -3,11 +3,11 @@ package web
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/v03413/bepusdt/app/config"
-	"github.com/v03413/bepusdt/app/help"
 	"github.com/v03413/bepusdt/app/log"
 	"github.com/v03413/bepusdt/app/model"
-	"github.com/v03413/bepusdt/app/usdt"
+	"github.com/v03413/bepusdt/app/rate"
 	"time"
 )
 
@@ -15,10 +15,14 @@ import (
 func CreateTransaction(ctx *gin.Context) {
 	_data, _ := ctx.Get("data")
 	data := _data.(map[string]any)
-	_orderId, ok1 := data["order_id"].(string)
-	_money, ok2 := data["amount"].(float64)
-	_notifyUrl, ok3 := data["notify_url"].(string)
-	_redirectUrl, ok4 := data["redirect_url"].(string)
+	orderId, ok1 := data["order_id"].(string)
+	money, ok2 := data["amount"].(float64)
+	notifyUrl, ok3 := data["notify_url"].(string)
+	redirectUrl, ok4 := data["redirect_url"].(string)
+	tradeType, _ := data["trade_type"].(string)
+	if tradeType != model.OrderTradeTypeTronTrx {
+		tradeType = model.OrderTradeTypeUsdtTrc20
+	}
 	// ---
 	if !ok1 || !ok2 || !ok3 || !ok4 {
 		log.Warn("参数错误", data)
@@ -27,7 +31,11 @@ func CreateTransaction(ctx *gin.Context) {
 	}
 
 	// 获取兑换汇率
-	rate := usdt.GetLatestRate()
+	var calcRate = rate.GetUsdtCalcRate(config.DefaultUsdtCnyRate)
+	if tradeType == model.OrderTradeTypeTronTrx {
+
+		calcRate = rate.GetTrxCnyCalcRate(config.DefaultTrxCnyRate)
+	}
 
 	// 获取钱包地址
 	var wallet = model.GetAvailableAddress()
@@ -39,33 +47,34 @@ func CreateTransaction(ctx *gin.Context) {
 	}
 
 	// 计算交易金额
-	address, _amount := model.CalcTradeAmount(wallet, rate, _money)
+	address, amount := model.CalcTradeAmount(wallet, calcRate, money, tradeType)
 
 	// 解析请求地址
-	var _host = "http://" + ctx.Request.Host
+	var host = "http://" + ctx.Request.Host
 	if ctx.Request.TLS != nil {
-		_host = "https://" + ctx.Request.Host
+		host = "https://" + ctx.Request.Host
 	}
 
 	// 创建交易订单
-	var _tradeId = help.GenerateTradeId()
+	var tradeId = uuid.New().String()
 	var _expiredAt = time.Now().Add(config.GetExpireTime() * time.Second)
-	var _orderData = model.TradeOrders{
-		OrderId:     _orderId,
-		TradeId:     _tradeId,
-		TradeHash:   _tradeId, // 这里默认填充一个本地交易ID，等支付成功后再更新为实际交易哈希
-		UsdtRate:    fmt.Sprintf("%v", rate),
-		Amount:      _amount,
-		Money:       _money,
+	var tradeOrder = model.TradeOrders{
+		OrderId:     orderId,
+		TradeId:     tradeId,
+		TradeHash:   tradeId, // 这里默认填充一个本地交易ID，等支付成功后再更新为实际交易哈希
+		TradeType:   tradeType,
+		TradeRate:   fmt.Sprintf("%v", calcRate),
+		Amount:      amount,
+		Money:       money,
 		Address:     address.Address,
 		Status:      model.OrderStatusWaiting,
-		ReturnUrl:   _redirectUrl,
-		NotifyUrl:   _notifyUrl,
+		ReturnUrl:   redirectUrl,
+		NotifyUrl:   notifyUrl,
 		NotifyNum:   0,
 		NotifyState: model.OrderNotifyStateFail,
 		ExpiredAt:   _expiredAt,
 	}
-	var res = model.DB.Create(&_orderData)
+	var res = model.DB.Create(&tradeOrder)
 	if res.Error != nil {
 		log.Error("订单创建失败：", res.Error.Error())
 		ctx.JSON(200, RespFailJson(fmt.Errorf("订单创建失败")))
@@ -75,13 +84,13 @@ func CreateTransaction(ctx *gin.Context) {
 
 	// 返回响应数据
 	ctx.JSON(200, RespSuccJson(gin.H{
-		"trade_id":        _tradeId,
-		"order_id":        _orderId,
-		"amount":          _money,
-		"actual_amount":   _amount,
+		"trade_id":        tradeId,
+		"order_id":        orderId,
+		"amount":          money,
+		"actual_amount":   amount,
 		"token":           address.Address,
 		"expiration_time": int64(_expiredAt.Sub(time.Now()).Seconds()),
-		"payment_url":     fmt.Sprintf("%s/pay/checkout-counter/%s", config.GetAppUri(_host), _tradeId),
+		"payment_url":     fmt.Sprintf("%s/pay/checkout-counter/%s", config.GetAppUri(host), tradeId),
 	}))
-	log.Info(fmt.Sprintf("订单创建成功，商户订单号：%s", _orderId))
+	log.Info(fmt.Sprintf("订单创建成功，商户订单号：%s", orderId))
 }

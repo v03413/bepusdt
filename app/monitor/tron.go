@@ -45,6 +45,7 @@ type transfer struct {
 	FromAddress string
 	RecvAddress string
 	Timestamp   time.Time
+	TradeType   string
 }
 
 type usdtTrc20TransferRaw struct {
@@ -113,8 +114,7 @@ func parseBlockTrans(block *api.BlockExtention, nowHeight int64) {
 
 	var unDelegateResources = make([]resource, 0)
 	var delegateResources = make([]resource, 0)
-	var trxTransfer = make([]transfer, 0)
-	var usdtTrc20Transfer = make([]transfer, 0)
+	var transfers = make([]transfer, 0)
 	var timestamp = time.UnixMilli(block.GetBlockHeader().GetRawData().GetTimestamp())
 	for _, v := range block.GetTransactions() {
 		if !v.Result.Result {
@@ -172,12 +172,13 @@ func parseBlockTrans(block *api.BlockExtention, nowHeight int64) {
 					continue
 				}
 
-				trxTransfer = append(trxTransfer, transfer{
+				transfers = append(transfers, transfer{
 					ID:          id,
 					Amount:      float64(foo.Amount),
 					FromAddress: base58CheckEncode(foo.OwnerAddress),
 					RecvAddress: base58CheckEncode(foo.ToAddress),
 					Timestamp:   timestamp,
+					TradeType:   model.OrderTradeTypeTronTrx,
 				})
 
 				continue
@@ -206,22 +207,20 @@ func parseBlockTrans(block *api.BlockExtention, nowHeight int64) {
 					continue
 				}
 
+				transItem.TradeType = model.OrderTradeTypeUsdtTrc20
 				transItem.Amount = trc20Contract.Amount
 				transItem.RecvAddress = trc20Contract.RecvAddress
 
-				usdtTrc20Transfer = append(usdtTrc20Transfer, transItem)
+				transfers = append(transfers, transItem)
 			}
 		}
 	}
 
-	if len(usdtTrc20Transfer) > 0 {
-		handleOrderTransaction(block.GetBlockHeader().GetRawData().GetNumber(), nowHeight, usdtTrc20Transfer)
-		handleOtherNotify(usdtTrc20Transfer)
+	if len(transfers) > 0 {
+		handleOrderTransaction(block.GetBlockHeader().GetRawData().GetNumber(), nowHeight, transfers)
+		handleOtherNotify(transfers)
 	}
 
-	if len(trxTransfer) > 0 {
-
-	}
 	if len(unDelegateResources) > 0 {
 
 	}
@@ -270,7 +269,7 @@ func parseUsdtTrc20Contract(reader *bytes.Reader) usdtTrc20TransferRaw {
 }
 
 // handleOrderTransaction 处理支付交易
-func handleOrderTransaction(refBlockNum, nowHeight int64, items []transfer) {
+func handleOrderTransaction(refBlockNum, nowHeight int64, transfers []transfer) {
 	var orders, err = getAllPendingOrders()
 	if err != nil {
 		log.Error(err.Error())
@@ -278,9 +277,9 @@ func handleOrderTransaction(refBlockNum, nowHeight int64, items []transfer) {
 		return
 	}
 
-	for _, tx := range items {
+	for _, t := range transfers {
 		// 计算交易金额
-		var amount, quant = parseTransAmount(tx.Amount)
+		var amount, quant = parseTransAmount(t.Amount)
 
 		// 判断金额是否在允许范围内
 		if !inPaymentAmountRange(amount) {
@@ -289,21 +288,21 @@ func handleOrderTransaction(refBlockNum, nowHeight int64, items []transfer) {
 		}
 
 		// 判断是否存在对应订单
-		order, isOrder := orders[fmt.Sprintf("%s%v", tx.RecvAddress, quant)]
+		order, isOrder := orders[fmt.Sprintf("%s%v%s", t.RecvAddress, quant, t.TradeType)]
 		if !isOrder {
 
 			continue
 		}
 
 		// 判断时间是否在有效期内
-		if tx.Timestamp.Unix() < order.CreatedAt.Unix() || tx.Timestamp.Unix() > order.ExpiredAt.Unix() {
+		if t.Timestamp.Unix() < order.CreatedAt.Unix() || t.Timestamp.Unix() > order.ExpiredAt.Unix() {
 			// 已失效
 
 			continue
 		}
 
 		// 更新订单交易信息
-		var err = order.OrderUpdateTxInfo(refBlockNum, tx.FromAddress, tx.ID, tx.Timestamp)
+		var err = order.OrderUpdateTxInfo(refBlockNum, t.FromAddress, t.ID, t.Timestamp)
 		if err != nil {
 
 			log.Error("OrderUpdateTxInfo", err)
