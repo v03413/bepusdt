@@ -57,7 +57,7 @@ func CreateTransaction(ctx *gin.Context) {
 
 	// 创建交易订单
 	var tradeId = uuid.New().String()
-	var _expiredAt = time.Now().Add(config.GetExpireTime() * time.Second)
+	var expiredAt = time.Now().Add(config.GetExpireTime() * time.Second)
 	var tradeOrder = model.TradeOrders{
 		OrderId:     orderId,
 		TradeId:     tradeId,
@@ -72,7 +72,7 @@ func CreateTransaction(ctx *gin.Context) {
 		NotifyUrl:   notifyUrl,
 		NotifyNum:   0,
 		NotifyState: model.OrderNotifyStateFail,
-		ExpiredAt:   _expiredAt,
+		ExpiredAt:   expiredAt,
 	}
 	var res = model.DB.Create(&tradeOrder)
 	if res.Error != nil {
@@ -89,7 +89,7 @@ func CreateTransaction(ctx *gin.Context) {
 		"amount":          money,
 		"actual_amount":   amount,
 		"token":           address.Address,
-		"expiration_time": int64(_expiredAt.Sub(time.Now()).Seconds()),
+		"expiration_time": int64(expiredAt.Sub(time.Now()).Seconds()),
 		"payment_url":     fmt.Sprintf("%s/pay/checkout-counter/%s", config.GetAppUri(host), tradeId),
 	}))
 	log.Info(fmt.Sprintf("订单创建成功，商户订单号：%s", orderId))

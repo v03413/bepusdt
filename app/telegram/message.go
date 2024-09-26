@@ -16,13 +16,21 @@ func SendTradeSuccMsg(order model.TradeOrders) {
 
 		return
 	}
+
+	var tradeType = "USDT"
+	var tradeUnit = "USDT\\.TRC20"
+	if order.TradeType == model.OrderTradeTypeTronTrx {
+		tradeType = "TRX"
+		tradeUnit = "TRX"
+	}
+
 	var text = `
-#收款成功 #订单交易
+#收款成功 #订单交易 #` + tradeType + `
 ---
 ` + "```" + `
 🚦商户订单：%v
 💰请求金额：%v CNY(%v)
-💲支付数额：%v USDT.TRC20
+💲支付数额：%v ` + tradeUnit + `
 ✅收款地址：%s
 ⏱️创建时间：%s
 ️🎯️支付时间：%s

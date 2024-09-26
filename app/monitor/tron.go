@@ -368,8 +368,15 @@ func handleOtherNotify(items []transfer) {
 				title = "支出"
 			}
 
+			var transferUnit = "USDT.TRC20"
+			var transferType = "USDT"
+			if trans.TradeType == model.OrderTradeTypeTronTrx {
+				transferUnit = "TRX"
+				transferType = "TRX"
+			}
+
 			var text = fmt.Sprintf(
-				"#账户%s #非订单交易\n---\n```\n💲交易数额：%v USDT.TRC20\n⏱️交易时间：%v\n✅接收地址：%v\n🅾️发送地址：%v```\n",
+				"#账户%s #非订单交易 #"+transferType+"\n---\n```\n💲交易数额：%v "+transferUnit+"\n⏱️交易时间：%v\n✅接收地址：%v\n🅾️发送地址：%v```\n",
 				title,
 				amount,
 				trans.Timestamp.Format(time.DateTime),

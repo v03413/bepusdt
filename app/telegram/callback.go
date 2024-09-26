@@ -151,12 +151,17 @@ func cbOrderDetailAction(tradeId string) {
 			_notifyStateLabel = "🈚️ 没有回调"
 		}
 
+		var tradeUnit = "USDT.TRC20"
+		if o.TradeType == model.OrderTradeTypeTronTrx {
+			tradeUnit = "TRX"
+		}
+
 		var _site = &url.URL{Scheme: urlInfo.Scheme, Host: urlInfo.Host}
 		var _msg = tgbotapi.NewMessage(0, "```"+`
 📌 订单ID：`+o.OrderId+`
 📊 交易汇率：`+o.TradeRate+`(`+config.GetUsdtRate()+`)
 💰 交易金额：`+fmt.Sprintf("%.2f", o.Money)+` CNY
-💲 交易数额：`+o.Amount+` USDT.TRC20
+💲 交易数额：`+o.Amount+` `+tradeUnit+`
 🌏 商户网站：`+_site.String()+`
 🔋 收款状态：`+o.GetStatusLabel()+`
 🍀 回调状态：`+_notifyStateLabel+`
