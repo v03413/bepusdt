@@ -45,7 +45,7 @@ func OkxTrxUsdtRateStart() {
 
 // GetOkxTrxUsdtRate 获取 Okx TRX 汇率 https://www.okx.com/zh-hans/trade-spot/trx-usdt
 func getOkxTrxUsdtRate() (float64, error) {
-	var url = "https://www.okx.com/priapi/v5/market/candles?instId=TRX-USDT&before=1727143156000&bar=1s&limit=1&t=" + cast.ToString(time.Now().UnixNano())
+	var url = "https://www.okx.com/priapi/v5/market/candles?instId=TRX-USDT&before=1727143156000&bar=4H&limit=1&t=" + cast.ToString(time.Now().UnixNano())
 	var client = http.Client{Timeout: time.Second * 5}
 	var req, _ = http.NewRequest("GET", url, nil)
 	req.Header.Set("referer", "https://www.okx.com/zh-hans/trade-spot/trx-usdt")
@@ -67,26 +67,6 @@ func getOkxTrxUsdtRate() (float64, error) {
 
 		return 0, errors.New("okx resp read body error:" + err.Error())
 	}
-
-	/**
-	{
-	    "code": "0",
-	    "msg": "",
-	    "data": [
-	        [
-	            "1727180821000",
-	            "0.15249",
-	            "0.15249",
-	            "0.15249",
-	            "0.15249",
-	            "1303.088676",
-	            "198.70799220324",
-	            "198.70799220324",
-	            "1"
-	        ]
-	    ]
-	}
-	*/
 
 	result := gjson.ParseBytes(all)
 	if result.Get("data").Exists() {
