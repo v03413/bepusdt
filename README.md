@@ -77,6 +77,71 @@ Telegram 搜索`@userinfobot`机器人并启用，返回的ID就是`TG_BOT_ADMIN
 - 订单交易强依赖时间，请确保服务器时间准确性，否则可能导致订单异常！
 - 部分功能依赖网络，请确保服务器网络纯洁性，否则可能导致功能异常！
 
+## 📚 接口文档
+
+<details>
+<summary>支付订单创建请求</summary>  
+
+### 请求地址
+
+```http
+POST /api/v1/order/create-transaction
+```
+
+### 请求数据
+
+```json
+{
+  "trade_type": "usdt.trc20",  // usdt.trc20(默认) 或 tron.trx
+  "order_id": "787240927112940881",   // 商户订单编号
+  "amount": 28.88,   // 请求支付金额，CNY
+  "signature":"123456abcd", // 签名
+  "notify_url": "https://example.com/callback",   // 回调地址
+  "redirect_url": "https://example.com/callback" // 支付成功跳转地址
+}
+```
+
+### 响应内容
+
+```json
+{
+  "status_code": 200,
+  "message": "success",
+  "data": {
+    "trade_id": "b3d2477c-d945-41da-96b7-f925bbd1b415", // 本地交易ID
+    "order_id": "787240927112940881", // 商户订单编号
+    "amount": "28.88", // 请求支付金额，CNY
+    "actual_amount": "10", // 实际支付数额 usdt or trx
+    "token": "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t", // 收款地址
+    "expiration_time": 1200, // 订单有效期，秒
+    "payment_url": "https://example.com//pay/checkout-counter/b3d2477c-d945-41da-96b7-f925bbd1b415"  // 收银台地址
+  },
+  "request_id": ""
+}
+
+```
+
+</details>
+
+
+<details>
+<summary>支付成功回调通知</summary>
+
+```json
+{
+  "trade_id": "b3d2477c-d945-41da-96b7-f925bbd1b415",
+  "order_id": "787240927112940881",
+  "amount": 28.88,
+  "actual_amount": 10,
+  "token": "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t",
+  "block_transaction_id": "12ef6267b42e43959795cf31808d0cc72b3d0a48953ed19c61d4b6665a341d10",
+  "signature": "123456abcd",
+  "status": 2   //  1:等待支付  2:支付成功  3:支付超时
+}
+```
+
+</details>
+
 ## 🙏 感谢
 
 - https://github.com/assimon/epusdt
