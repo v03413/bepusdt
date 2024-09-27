@@ -26,9 +26,9 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Generate App Version
-        run: echo APP_VERSION=`grep -o 'Version = "[^"]*"' ./main/main.go | cut -d'"' -f2` >> $GITHUB_ENV
+        run: echo APP_VERSION=`grep -o 'Version = "[^"]*"' ./app/version.go | cut -d'"' -f2` >> $GITHUB_ENV
       - name: Build and push
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           platforms: |
