@@ -18,7 +18,7 @@ func SendTradeSuccMsg(order model.TradeOrders) {
 	}
 
 	var tradeType = "USDT"
-	var tradeUnit = "USDT\\.TRC20"
+	var tradeUnit = `USDT.TRC20`
 	if order.TradeType == model.OrderTradeTypeTronTrx {
 		tradeType = "TRX"
 		tradeUnit = "TRX"
