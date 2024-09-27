@@ -8,9 +8,13 @@ import (
 	"time"
 )
 
-func NotifyStart() {
+func init() {
+	RegisterSchedule(time.Second*3, NotifyStart)
+}
+
+func NotifyStart(duration time.Duration) {
 	log.Info("回调监控启动.")
-	for range time.Tick(time.Second * 5) {
+	for range time.Tick(duration) {
 		tradeOrders, err := model.GetNotifyFailedTradeOrders()
 		if err != nil {
 			log.Error("待回调订单获取失败", err)

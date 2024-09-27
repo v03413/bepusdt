@@ -13,8 +13,13 @@ import (
 	"time"
 )
 
+func init() {
+	RegisterSchedule(0, OkxUsdtRateStart)
+	RegisterSchedule(0, OkxTrxUsdtRateStart)
+}
+
 // OkxUsdtRateStart Okx USDT_CNY 汇率监控
-func OkxUsdtRateStart() {
+func OkxUsdtRateStart(time.Duration) {
 	for {
 		var rawRate, err = getOkxUsdtCnySellPrice()
 		if err != nil {
@@ -29,7 +34,7 @@ func OkxUsdtRateStart() {
 }
 
 // OkxTrxUsdtRateStart  Okx TRX_USDT 汇率监控
-func OkxTrxUsdtRateStart() {
+func OkxTrxUsdtRateStart(time.Duration) {
 	for {
 		var rawRate, err = getOkxTrxUsdtRate()
 		if err != nil {

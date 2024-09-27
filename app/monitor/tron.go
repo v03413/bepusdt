@@ -8,6 +8,7 @@ import (
 	"github.com/btcsuite/btcd/btcutil/base58"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/shopspring/decimal"
 	"github.com/spf13/cast"
 	"github.com/v03413/bepusdt/app/config"
 	"github.com/v03413/bepusdt/app/help"
@@ -55,8 +56,12 @@ type usdtTrc20TransferRaw struct {
 	Amount      float64
 }
 
+func init() {
+	RegisterSchedule(time.Second*3, BlockScanStart)
+}
+
 // BlockScanStart 区块扫描
-func BlockScanStart() {
+func BlockScanStart(duration time.Duration) {
 	var node = config.GetTronGrpcNode()
 	log.Info("区块扫描启动：", node)
 
@@ -69,7 +74,7 @@ func BlockScanStart() {
 	var ctx = context.Background()
 	var client = api.NewWalletClient(conn)
 
-	for range time.Tick(time.Second * 3) { // 3秒产生一个区块
+	for range time.Tick(duration) { // 3秒产生一个区块
 		nowBlock, err := client.GetNowBlock2(ctx, nil) // 获取当前区块高度
 		if err != nil {
 			log.Warn("GetNowBlock", err)
@@ -408,6 +413,7 @@ func handleOtherNotify(items []transfer) {
 	}
 }
 
+// handleResourceNotify 处理资源通知
 func handleResourceNotify(items []resource) {
 	var ads []model.WalletAddress
 	var tx = model.DB.Where("status = ? and other_notify = ?", model.StatusEnable, model.OtherNotifyEnable).Find(&ads)
@@ -478,4 +484,40 @@ func base58CheckEncode(input []byte) string {
 	input = append(input, checksum...)
 
 	return base58.Encode(input)
+}
+
+// 列出所有等待支付的交易订单
+func getAllPendingOrders() (map[string]model.TradeOrders, error) {
+	tradeOrders, err := model.GetTradeOrderByStatus(model.OrderStatusWaiting)
+	if err != nil {
+
+		return nil, fmt.Errorf("待支付订单获取失败: %w", err)
+	}
+
+	var lock = make(map[string]model.TradeOrders) // 当前所有正在等待支付的订单 Lock Key
+	for _, order := range tradeOrders {
+		if time.Now().Unix() >= order.ExpiredAt.Unix() { // 订单过期
+			err := order.OrderSetExpired()
+			if err != nil {
+				log.Error("订单过期标记失败：", err, order.OrderId)
+			} else {
+				log.Info("订单过期：", order.OrderId)
+			}
+
+			continue
+		}
+
+		lock[order.Address+order.Amount+order.TradeType] = order
+	}
+
+	return lock, nil
+}
+
+// 解析交易金额
+func parseTransAmount(amount float64) (decimal.Decimal, string) {
+	var _decimalAmount = decimal.NewFromFloat(amount)
+	var _decimalDivisor = decimal.NewFromFloat(1000000)
+	var result = _decimalAmount.Div(_decimalDivisor)
+
+	return result, result.String()
 }

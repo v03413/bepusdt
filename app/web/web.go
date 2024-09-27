@@ -82,10 +82,12 @@ func Start() {
 		orderRoute.POST("/create-transaction", CreateTransaction)
 	}
 
-	log.Info("Web启动 Listen: ", listen)
-	err := r.Run(listen)
-	if err != nil {
+	log.Info("WEB尝试启动 Listen: ", listen)
+	go func() {
+		err := r.Run(listen)
+		if err != nil {
 
-		log.Error(err.Error())
-	}
+			log.Error("Web启动失败", err)
+		}
+	}()
 }
