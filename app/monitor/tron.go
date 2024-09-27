@@ -380,6 +380,18 @@ func handleOtherNotify(items []transfer) {
 				transferType = "TRX"
 			}
 
+			{
+				// 忽视小额非订单交易监控通知，暂时写死，等待后续优化
+				if trans.TradeType == model.OrderTradeTypeTronTrx && cast.ToFloat64(amount) < 0.01 {
+
+					continue
+				}
+				if trans.TradeType == model.OrderTradeTypeUsdtTrc20 && cast.ToFloat64(amount) < 0.0001 {
+
+					continue
+				}
+			}
+
 			var text = fmt.Sprintf(
 				"#账户%s #非订单交易 #"+transferType+"\n---\n```\n💲交易数额：%v "+transferUnit+"\n⏱️交易时间：%v\n✅接收地址：%v\n🅾️发送地址：%v```\n",
 				title,
