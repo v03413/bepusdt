@@ -225,8 +225,7 @@ func parseBlockTrans(block *api.BlockExtention, nowHeight int64) {
 	}
 
 	if len(transfers) > 0 {
-		handleOrderTransaction(block.GetBlockHeader().GetRawData().GetNumber(), nowHeight, transfers)
-		handleOtherNotify(transfers)
+		handleOtherNotify(handleOrderTransaction(block.GetBlockHeader().GetRawData().GetNumber(), nowHeight, transfers))
 	}
 
 	if len(resources) > 0 {
@@ -274,12 +273,13 @@ func parseUsdtTrc20Contract(reader *bytes.Reader) usdtTrc20TransferRaw {
 }
 
 // handleOrderTransaction 处理支付交易
-func handleOrderTransaction(refBlockNum, nowHeight int64, transfers []transfer) {
+func handleOrderTransaction(refBlockNum, nowHeight int64, transfers []transfer) []transfer {
 	var orders, err = getAllPendingOrders()
+	var notOrderTransfers []transfer
 	if err != nil {
 		log.Error(err.Error())
 
-		return
+		return notOrderTransfers
 	}
 
 	for _, t := range transfers {
@@ -295,6 +295,7 @@ func handleOrderTransaction(refBlockNum, nowHeight int64, transfers []transfer) 
 		// 判断是否存在对应订单
 		order, isOrder := orders[fmt.Sprintf("%s%v%s", t.RecvAddress, quant, t.TradeType)]
 		if !isOrder {
+			notOrderTransfers = append(notOrderTransfers, t)
 
 			continue
 		}
@@ -342,6 +343,8 @@ func handleOrderTransaction(refBlockNum, nowHeight int64, transfers []transfer) 
 		go notify.OrderNotify(order)        // 通知订单支付成功
 		go telegram.SendTradeSuccMsg(order) // TG发送订单信息
 	}
+
+	return notOrderTransfers
 }
 
 // handleOtherNotify 处理其他通知
