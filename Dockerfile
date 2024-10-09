@@ -1,4 +1,4 @@
-FROM golang:1.23.1 AS builder
+FROM golang:1.23.2-alpine3.20 AS builder
 
 ENV GO111MODULE=on
 WORKDIR /go/release
@@ -6,21 +6,19 @@ ADD . .
 RUN set -x \
     && CGO_ENABLED=0 go build -trimpath -ldflags="-s -w -buildid=" -o bepusdt ./main
 
-FROM debian:latest
+FROM alpine:3.20
 
-ENV DEBIAN_FRONTEND=noninteractive
-ENV DEBCONF_NOWARNINGS="yes"
 ENV TZ=Asia/Shanghai
 
-COPY --from=builder /go/release/bepusdt /runtime/bepusdt
+# 安装所需的依赖
+RUN apk add --no-cache tzdata ca-certificates
 
+COPY --from=builder /go/release/bepusdt /runtime/bepusdt
 ADD ./templates /runtime/templates
 ADD ./static /runtime/static
 
-RUN apt-get update && apt-get install -y --no-install-recommends tzdata ca-certificates libc6 libgcc1 libstdc++6 \
-    && ln -fs /usr/share/zoneinfo/Asia/Shanghai /etc/localtime \
-    && dpkg-reconfigure -f noninteractive tzdata \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
+# 设置时区
+RUN ln -fs /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
 
 EXPOSE 8080
 CMD ["/runtime/bepusdt"]
