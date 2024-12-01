@@ -48,7 +48,7 @@ func SetOkxUsdtCnyRawRate(syntax string, rawRate float64) {
 func parseFloatRate(syntax string, rawVal float64) float64 {
 	if syntax == "" {
 
-		return 0
+		return rawVal
 	}
 
 	if help.IsNumber(syntax) {
