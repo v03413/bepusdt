@@ -45,8 +45,8 @@ func cmdStartHandle() {
 }
 
 func cmdUsdtHandle() {
-	var msg = tgbotapi.NewMessage(0, fmt.Sprintf("🪧交易所基准汇率：`%v`\n✅订单实际浮动汇率：`%v`",
-		rate.GetOkxUsdtRawRate(), rate.GetUsdtCalcRate(config.DefaultUsdtCnyRate)))
+	var msg = tgbotapi.NewMessage(0, fmt.Sprintf("🪧 交易所基准汇率：`%v`\n✅ 订单实际汇率(USDT)：`%v`\n✅ 订单实际汇率(TRX)：`%v`",
+		rate.GetOkxUsdtRawRate(), rate.GetUsdtCalcRate(config.DefaultUsdtCnyRate), rate.GetTrxCnyCalcRate(config.DefaultTrxCnyRate)))
 	msg.ParseMode = tgbotapi.ModeMarkdown
 
 	SendMsg(msg)

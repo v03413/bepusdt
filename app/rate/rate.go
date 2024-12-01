@@ -3,6 +3,7 @@ package rate
 import (
 	"github.com/shopspring/decimal"
 	"github.com/spf13/cast"
+	"github.com/v03413/bepusdt/app/config"
 	"github.com/v03413/bepusdt/app/help"
 	"github.com/v03413/bepusdt/app/log"
 	"regexp"
@@ -10,7 +11,7 @@ import (
 
 var okxTrxCnyCalcRate = 0.0
 var okxUsdtCnyCalcRate = 0.0
-var okxUsdtCnyRawRate = 0.0 // okx 交易所 usdt 兑 cny原始汇率
+var okxUsdtCnyRawRate = config.DefaultUsdtCnyRate // okx 交易所 usdt 兑 cny原始汇率
 
 func GetTrxCnyCalcRate(defaultRate float64) float64 {
 	if okxTrxCnyCalcRate > 0 {
