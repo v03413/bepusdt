@@ -6,6 +6,10 @@ import (
 	"github.com/v03413/bepusdt/app/config"
 	"github.com/v03413/bepusdt/app/help"
 	"github.com/v03413/bepusdt/app/log"
+	"github.com/v03413/bepusdt/static"
+	"html/template"
+	"io/fs"
+	"net/http"
 )
 
 func Start() {
@@ -13,10 +17,15 @@ func Start() {
 
 	listen := config.GetListen()
 	r := gin.New()
-	r.Static("/img", config.GetStaticPath()+"img")
-	r.Static("/css", config.GetStaticPath()+"css")
-	r.Static("/js", config.GetStaticPath()+"js")
-	r.LoadHTMLGlob(config.GetTemplatePath())
+
+	// ----- 静态资源 -----
+	r.StaticFS("/img", http.FS(subFs(static.Img, "img")))
+	r.StaticFS("/css", http.FS(subFs(static.Css, "css")))
+	r.StaticFS("/js", http.FS(subFs(static.Js, "js")))
+	tmpl := template.Must(template.New("").ParseFS(static.Views, "views/*.html"))
+	r.SetHTMLTemplate(tmpl)
+	// ----- 静态资源 -----
+
 	r.Use(gin.LoggerWithWriter(log.GetWriter()), gin.Recovery())
 	r.Use(func(ctx *gin.Context) {
 		// 解析请求地址
@@ -90,4 +99,10 @@ func Start() {
 			log.Error("Web启动失败", err)
 		}
 	}()
+}
+
+func subFs(src fs.FS, dir string) fs.FS {
+	subFS, _ := fs.Sub(src, dir)
+
+	return subFS
 }

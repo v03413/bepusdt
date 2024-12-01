@@ -45,8 +45,6 @@ jobs:
           go build -v -o ${{ env.BUILD_DIR }}/${{ env.APP_NAME }} -trimpath -ldflags "-s -w -buildid=" ./main
       - name: Prepare package
         run: |
-          cp -v -R ./templates ./${{ env.BUILD_DIR }}
-          cp -v -R ./static ./${{ env.BUILD_DIR }}
           cp -v ./docs/${{ env.APP_NAME }}.service ./${{ env.BUILD_DIR }}
           cp -v ./docs/Environment.conf ./${{ env.BUILD_DIR }}
           mv -v ./${{ env.BUILD_DIR }} ./${{ env.APP_NAME }}

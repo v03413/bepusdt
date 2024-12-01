@@ -14,8 +14,6 @@ ENV TZ=Asia/Shanghai
 RUN apk add --no-cache tzdata ca-certificates
 
 COPY --from=builder /go/release/bepusdt /runtime/bepusdt
-ADD ./templates /runtime/templates
-ADD ./static /runtime/static
 
 # 设置时区
 RUN ln -fs /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
