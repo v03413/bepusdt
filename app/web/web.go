@@ -16,16 +16,8 @@ func Start() {
 	gin.SetMode(gin.ReleaseMode)
 
 	listen := config.GetListen()
-	r := gin.New()
 
-	// ----- 静态资源 -----
-	r.StaticFS("/img", http.FS(subFs(static.Img, "img")))
-	r.StaticFS("/css", http.FS(subFs(static.Css, "css")))
-	r.StaticFS("/js", http.FS(subFs(static.Js, "js")))
-	tmpl := template.Must(template.New("").ParseFS(static.Views, "views/*.html"))
-	r.SetHTMLTemplate(tmpl)
-	// ----- 静态资源 -----
-
+	r := loadStatic(gin.New())
 	r.Use(gin.LoggerWithWriter(log.GetWriter()), gin.Recovery())
 	r.Use(func(ctx *gin.Context) {
 		// 解析请求地址
@@ -99,6 +91,26 @@ func Start() {
 			log.Error("Web启动失败", err)
 		}
 	}()
+}
+
+// 加载静态资源
+func loadStatic(engine *gin.Engine) *gin.Engine {
+	var staticPath = config.GetStaticPath()
+	if staticPath != "" {
+		engine.Static("/img", config.GetStaticPath()+"/img")
+		engine.Static("/css", config.GetStaticPath()+"/css")
+		engine.Static("/js", config.GetStaticPath()+"/js")
+		engine.LoadHTMLGlob(config.GetStaticPath() + "/views/*")
+
+		return engine
+	}
+
+	engine.StaticFS("/img", http.FS(subFs(static.Img, "img")))
+	engine.StaticFS("/css", http.FS(subFs(static.Css, "css")))
+	engine.StaticFS("/js", http.FS(subFs(static.Js, "js")))
+	engine.SetHTMLTemplate(template.Must(template.New("").ParseFS(static.Views, "views/*.html")))
+
+	return engine
 }
 
 func subFs(src fs.FS, dir string) fs.FS {

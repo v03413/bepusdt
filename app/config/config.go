@@ -238,14 +238,13 @@ func GetDbPath() string {
 	return runPath + "/bepusdt.db"
 }
 
-func GetTemplatePath() string {
-
-	return runPath + "/templates/*"
-}
-
 func GetStaticPath() string {
+	if data := help.GetEnv("STATIC_PATH"); data != "" {
 
-	return runPath + "/static/"
+		return strings.TrimSpace(data)
+	}
+
+	return ""
 }
 
 func GetInitWalletAddress() []string {
