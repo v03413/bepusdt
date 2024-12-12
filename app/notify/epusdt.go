@@ -3,6 +3,7 @@ package notify
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/spf13/cast"
 	"github.com/v03413/bepusdt/app/config"
 	"github.com/v03413/bepusdt/app/help"
 	"github.com/v03413/bepusdt/app/log"
@@ -13,7 +14,74 @@ import (
 	"time"
 )
 
-func OrderNotify(order model.TradeOrders) {
+func Handle(order model.TradeOrders) {
+	if order.ApiType == model.OrderApiTypeEpay {
+		epay(order)
+
+		return
+	}
+
+	epusdt(order)
+}
+
+func BuildEpayNotifyQuery(order model.TradeOrders) string {
+	var query = fmt.Sprintf("money=%s&name=%s&out_trade_no=%s&pid=1000&trade_no=%s&trade_status=TRADE_SUCCESS&type=%s",
+		cast.ToString(order.Money), order.Name, order.OrderId, order.TradeId, order.TradeType)
+
+	var sign = help.Md5String(query + config.GetAuthToken())
+
+	return fmt.Sprintf("%s&sign=%s", query, sign)
+}
+
+func epay(order model.TradeOrders) {
+	var client = http.Client{Timeout: time.Second * 5}
+	var notifyUrl = fmt.Sprintf("%s?%s", order.NotifyUrl, BuildEpayNotifyQuery(order))
+
+	postReq, err2 := http.NewRequest("GET", notifyUrl, nil)
+	if err2 != nil {
+		log.Error("Notify NewRequest Error：", err2)
+
+		return
+	}
+
+	postReq.Header.Set("Powered-By", "https://github.com/v03413/bepusdt")
+	resp, err := client.Do(postReq)
+	if err != nil {
+		log.Error("Notify Handle Error：", err)
+
+		return
+	}
+
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		log.Warn(fmt.Sprintf("订单回调失败(%v)：resp.StatusCode != 200", order.OrderId), order.OrderSetNotifyState(model.OrderNotifyStateFail))
+
+		return
+	}
+
+	all, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Warn(fmt.Sprintf("订单回调失败(%v)：io.ReadAll(resp.Body) Error:", order.OrderId), err, order.OrderSetNotifyState(model.OrderNotifyStateFail))
+
+		return
+	}
+
+	// 判断是否包含 success
+	if !strings.Contains(strings.ToLower(string(all)), "success") {
+		log.Warn(fmt.Sprintf("订单回调失败(%v)：body not contains success (%s)", order.OrderId, string(all)), err, order.OrderSetNotifyState(model.OrderNotifyStateFail))
+
+		return
+	}
+
+	err = order.OrderSetNotifyState(model.OrderNotifyStateSucc)
+	if err != nil {
+		log.Error("订单标记通知成功错误：", err, order.OrderId)
+	} else {
+		log.Info("订单通知成功：", order.OrderId)
+	}
+}
+
+func epusdt(order model.TradeOrders) {
 	var data = make(map[string]interface{})
 	var body = struct {
 		TradeId            string  `json:"trade_id"`             //  本地订单号
@@ -63,7 +131,7 @@ func OrderNotify(order model.TradeOrders) {
 	postReq.Header.Set("Powered-By", "https://github.com/v03413/bepusdt")
 	resp, err := client.Do(postReq)
 	if err != nil {
-		log.Error("Notify Do Error：", err)
+		log.Error("Notify Handle Error：", err)
 
 		return
 	}

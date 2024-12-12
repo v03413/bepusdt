@@ -29,7 +29,7 @@ func NotifyStart(duration time.Duration) {
 			if time.Now().Unix() >= _nextNotifyTime.Unix() {
 				// 到达下次回调时间
 
-				go notify.OrderNotify(order)
+				go notify.Handle(order)
 			}
 		}
 	}

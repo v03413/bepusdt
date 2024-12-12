@@ -30,13 +30,9 @@ func Start() {
 		ctx.Set("HTTP_HOST", _host)
 	})
 	r.GET("/", func(c *gin.Context) {
-		c.HTML(200, "index.html", gin.H{
-			"title": "一款更易用的USDT收款网关",
-			"url":   "https://github.com/v03413/bepusdt",
-		})
+		c.HTML(200, "index.html", gin.H{"title": "一款更易用的USDT收款网关", "url": "https://github.com/v03413/bepusdt"})
 	})
 
-	// ==== 支付相关=====
 	payRoute := r.Group("/pay")
 	{
 		// 收银台
@@ -79,9 +75,11 @@ func Start() {
 
 			ctx.Set("data", m)
 		})
-
 		orderRoute.POST("/create-transaction", CreateTransaction)
 	}
+
+	// 易支付兼容
+	r.POST("/submit.php", EpaySubmit)
 
 	log.Info("WEB尝试启动 Listen: ", listen)
 	go func() {

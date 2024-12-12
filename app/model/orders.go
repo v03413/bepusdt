@@ -18,6 +18,9 @@ const OrderNotifyStateFail = 0 // 回调失败
 const OrderTradeTypeUsdtTrc20 = "usdt.trc20"
 const OrderTradeTypeTronTrx = "tron.trx"
 
+const OrderApiTypeEpusdt = "epusdt" // epusdt
+const OrderApiTypeEpay = "epay"     // 彩虹易支付
+
 var calcMutex sync.Mutex
 
 type TradeOrders struct {
@@ -32,6 +35,8 @@ type TradeOrders struct {
 	Address     string    `gorm:"type:varchar(34);not null;comment:收款地址"`
 	FromAddress string    `gorm:"type:varchar(34);not null;default:'';comment:支付地址"`
 	Status      int       `gorm:"type:tinyint(1);not null;default:0;comment:交易状态 1：等待支付 2：支付成功 3：订单过期"`
+	Name        string    `gorm:"type:varchar(64);not null;default:'';comment:商品名称"`
+	ApiType     string    `gorm:"type:varchar(20);not null;default:'epusdt';comment:API类型"`
 	ReturnUrl   string    `gorm:"type:varchar(255);not null;default:'';comment:同步地址"`
 	NotifyUrl   string    `gorm:"type:varchar(255);not null;default:'';comment:异步地址"`
 	NotifyNum   int       `gorm:"type:int(11);not null;default:0;comment:回调次数"`

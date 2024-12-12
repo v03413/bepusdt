@@ -340,7 +340,7 @@ func handleOrderTransaction(refBlockNum, nowHeight int64, transfers []transfer) 
 			continue
 		}
 
-		go notify.OrderNotify(order)        // 通知订单支付成功
+		go notify.Handle(order)             // 通知订单支付成功
 		go telegram.SendTradeSuccMsg(order) // TG发送订单信息
 	}
 
