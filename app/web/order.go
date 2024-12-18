@@ -14,8 +14,8 @@ import (
 	"time"
 )
 
-// CreateTransaction 创建订单
-func CreateTransaction(ctx *gin.Context) {
+// createTransaction 创建订单
+func createTransaction(ctx *gin.Context) {
 	_data, _ := ctx.Get("data")
 	data := _data.(map[string]any)
 	orderId, ok1 := data["order_id"].(string)
@@ -29,7 +29,7 @@ func CreateTransaction(ctx *gin.Context) {
 	// ---
 	if !ok1 || !ok2 || !ok3 || !ok4 {
 		log.Warn("参数错误", data)
-		ctx.JSON(200, RespFailJson(fmt.Errorf("参数错误")))
+		ctx.JSON(200, respFailJson(fmt.Errorf("参数错误")))
 		return
 	}
 
@@ -41,13 +41,13 @@ func CreateTransaction(ctx *gin.Context) {
 
 	var order, err = buildOrder(money, model.OrderApiTypeEpusdt, orderId, tradeType, redirectUrl, notifyUrl, orderId)
 	if err != nil {
-		ctx.JSON(200, RespFailJson(fmt.Errorf("订单创建失败：%w", err)))
+		ctx.JSON(200, respFailJson(fmt.Errorf("订单创建失败：%w", err)))
 
 		return
 	}
 
 	// 返回响应数据
-	ctx.JSON(200, RespSuccJson(gin.H{
+	ctx.JSON(200, respSuccJson(gin.H{
 		"trade_id":        order.TradeId,
 		"order_id":        orderId,
 		"amount":          money,
@@ -116,7 +116,7 @@ func buildOrder(money float64, apiType, orderId, tradeType, redirectUrl, notifyU
 	return tradeOrder, nil
 }
 
-func CheckoutCounter(ctx *gin.Context) {
+func checkoutCounter(ctx *gin.Context) {
 	var tradeId = ctx.Param("trade_id")
 	var order, ok = model.GetTradeOrder(tradeId)
 	if !ok {
@@ -144,11 +144,11 @@ func CheckoutCounter(ctx *gin.Context) {
 	})
 }
 
-func CheckStatus(ctx *gin.Context) {
+func checkStatus(ctx *gin.Context) {
 	var tradeId = ctx.Param("trade_id")
 	var order, ok = model.GetTradeOrder(tradeId)
 	if !ok {
-		ctx.JSON(200, RespFailJson(fmt.Errorf("订单不存在")))
+		ctx.JSON(200, respFailJson(fmt.Errorf("订单不存在")))
 
 		return
 	}

@@ -36,9 +36,9 @@ func Start() {
 	payRoute := r.Group("/pay")
 	{
 		// 收银台
-		payRoute.GET("/checkout-counter/:trade_id", CheckoutCounter)
+		payRoute.GET("/checkout-counter/:trade_id", checkoutCounter)
 		// 状态检测
-		payRoute.GET("/check-status/:trade_id", CheckStatus)
+		payRoute.GET("/check-status/:trade_id", checkStatus)
 	}
 
 	// 创建订单
@@ -75,11 +75,11 @@ func Start() {
 
 			ctx.Set("data", m)
 		})
-		orderRoute.POST("/create-transaction", CreateTransaction)
+		orderRoute.POST("/create-transaction", createTransaction)
 	}
 
 	// 易支付兼容
-	r.POST("/submit.php", EpaySubmit)
+	r.POST("/submit.php", epaySubmit)
 
 	log.Info("WEB尝试启动 Listen: ", listen)
 	go func() {

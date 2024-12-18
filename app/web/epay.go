@@ -10,8 +10,8 @@ import (
 	"net/http"
 )
 
-// EpaySubmit 【兼容】易支付提交
-func EpaySubmit(ctx *gin.Context) {
+// epaySubmit 【兼容】易支付提交
+func epaySubmit(ctx *gin.Context) {
 	if err := ctx.Request.ParseForm(); err != nil {
 		ctx.String(200, "参数解析错误："+err.Error())
 
