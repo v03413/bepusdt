@@ -3,8 +3,8 @@ package notify
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/spf13/cast"
 	"github.com/v03413/bepusdt/app/config"
+	e "github.com/v03413/bepusdt/app/epay"
 	"github.com/v03413/bepusdt/app/help"
 	"github.com/v03413/bepusdt/app/log"
 	"github.com/v03413/bepusdt/app/model"
@@ -24,18 +24,9 @@ func Handle(order model.TradeOrders) {
 	epusdt(order)
 }
 
-func BuildEpayNotifyQuery(order model.TradeOrders) string {
-	var query = fmt.Sprintf("money=%s&name=%s&out_trade_no=%s&pid=1000&trade_no=%s&trade_status=TRADE_SUCCESS&type=%s",
-		cast.ToString(order.Money), order.Name, order.OrderId, order.TradeId, order.TradeType)
-
-	var sign = help.Md5String(query + config.GetAuthToken())
-
-	return fmt.Sprintf("%s&sign=%s", query, sign)
-}
-
 func epay(order model.TradeOrders) {
 	var client = http.Client{Timeout: time.Second * 5}
-	var notifyUrl = fmt.Sprintf("%s?%s", order.NotifyUrl, BuildEpayNotifyQuery(order))
+	var notifyUrl = fmt.Sprintf("%s?%s", order.NotifyUrl, e.BuildNotifyParams(order))
 
 	postReq, err2 := http.NewRequest("GET", notifyUrl, nil)
 	if err2 != nil {

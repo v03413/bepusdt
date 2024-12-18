@@ -5,9 +5,9 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/v03413/bepusdt/app/config"
+	"github.com/v03413/bepusdt/app/epay"
 	"github.com/v03413/bepusdt/app/log"
 	"github.com/v03413/bepusdt/app/model"
-	"github.com/v03413/bepusdt/app/notify"
 	"github.com/v03413/bepusdt/app/rate"
 	"net/url"
 	"sync"
@@ -158,7 +158,7 @@ func CheckStatus(ctx *gin.Context) {
 		returnUrl = order.ReturnUrl
 		if order.ApiType == model.OrderApiTypeEpay {
 			// 易支付兼容
-			returnUrl = fmt.Sprintf("%s?%s", returnUrl, notify.BuildEpayNotifyQuery(order))
+			returnUrl = fmt.Sprintf("%s?%s", returnUrl, epay.BuildNotifyParams(order))
 		}
 	}
 
