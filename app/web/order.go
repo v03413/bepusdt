@@ -3,9 +3,9 @@ package web
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 	"github.com/v03413/bepusdt/app/config"
 	"github.com/v03413/bepusdt/app/epay"
+	"github.com/v03413/bepusdt/app/help"
 	"github.com/v03413/bepusdt/app/log"
 	"github.com/v03413/bepusdt/app/model"
 	"github.com/v03413/bepusdt/app/rate"
@@ -84,9 +84,13 @@ func buildOrder(money float64, apiType, orderId, tradeType, redirectUrl, notifyU
 
 	// 计算交易金额
 	address, amount := model.CalcTradeAmount(wallet, calcRate, money, tradeType)
+	tradeId, err := help.GenerateTradeId()
+	if err != nil {
+
+		return order, err
+	}
 
 	// 创建交易订单
-	var tradeId = uuid.New().String()
 	var expiredAt = time.Now().Add(config.GetExpireTime() * time.Second)
 	var tradeOrder = model.TradeOrders{
 		OrderId:     orderId,

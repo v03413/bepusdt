@@ -3,7 +3,7 @@ package help
 import (
 	"crypto/md5"
 	"fmt"
-	"github.com/google/uuid"
+	gonanoid "github.com/matoous/go-nanoid/v2"
 	"os"
 	"regexp"
 	"sort"
@@ -61,9 +61,10 @@ func GenerateSignature(data map[string]interface{}, token string) string {
 	return Md5String(signString + token)
 }
 
-func GenerateTradeId() string {
+func GenerateTradeId() (string, error) {
+	var defaultAlphabet = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
-	return uuid.New().String()
+	return gonanoid.Generate(defaultAlphabet, 18)
 }
 
 func Md5String(text string) string {
