@@ -143,6 +143,11 @@ POST /api/v1/order/create-transaction
 
 </details>
 
+## 🏝️ 交流反馈
+
+- Telegram 频道：[https://t.me/bepusdt](https://t.me/bepusdt)  
+- Telegram 群组：[https://t.me/bepusdt_group](https://t.me/bepusdt_group)
+
 ## 🙏 感谢
 
 - https://github.com/assimon/epusdt
