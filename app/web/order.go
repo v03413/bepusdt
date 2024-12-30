@@ -71,7 +71,7 @@ func buildOrder(money float64, apiType, orderId, tradeType, redirectUrl, notifyU
 	var calcRate = rate.GetUsdtCalcRate(config.DefaultUsdtCnyRate)
 	if tradeType == model.OrderTradeTypeTronTrx {
 
-		calcRate = rate.GetTrxCnyCalcRate(config.DefaultTrxCnyRate)
+		calcRate = rate.GetTrxCalcRate(config.DefaultTrxCnyRate)
 	}
 
 	// 获取钱包地址

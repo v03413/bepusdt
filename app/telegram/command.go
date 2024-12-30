@@ -10,7 +10,7 @@ import (
 
 const cmdGetId = "id"
 const cmdStart = "start"
-const cmdUsdt = "usdt"
+const cmdUsdt = "rate"
 const cmdWallet = "wallet"
 const cmdOrder = "order"
 
@@ -45,9 +45,14 @@ func cmdStartHandle() {
 }
 
 func cmdUsdtHandle() {
-	var msg = tgbotapi.NewMessage(0, fmt.Sprintf("🪧 交易所基准汇率：`%v`\n✅ 订单实际汇率(USDT)：`%v`\n✅ 订单实际汇率(TRX)：`%v`",
-		rate.GetOkxUsdtRawRate(), rate.GetUsdtCalcRate(config.DefaultUsdtCnyRate), rate.GetTrxCnyCalcRate(config.DefaultTrxCnyRate)))
-	msg.ParseMode = tgbotapi.ModeMarkdown
+	var notice = "\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\n>❗️基准汇率：来源于交易所的原始数据，订单汇率：订单创建过程中实际使用的汇率。"
+	var msg = tgbotapi.NewMessage(0, fmt.Sprintf("*🪧 基准汇率\\(TRX\\)：*`%v`\n*🪧 基准汇率\\(USDT\\)：*`%v`\n*✅ 订单汇率\\(TRX\\)：*`%v`\n*✅ 订单汇率\\(USDT\\)：*`%v`\n"+notice,
+		rate.GetOkxTrxRawRate(),
+		rate.GetOkxUsdtRawRate(),
+		rate.GetTrxCalcRate(config.DefaultTrxCnyRate),
+		rate.GetUsdtCalcRate(config.DefaultUsdtCnyRate),
+	))
+	msg.ParseMode = tgbotapi.ModeMarkdownV2
 
 	SendMsg(msg)
 }

@@ -6,14 +6,17 @@ import (
 	"github.com/v03413/bepusdt/app/config"
 	"github.com/v03413/bepusdt/app/help"
 	"github.com/v03413/bepusdt/app/log"
+	"math"
 	"regexp"
 )
 
 var okxTrxCnyCalcRate = 0.0
 var okxUsdtCnyCalcRate = 0.0
 var okxUsdtCnyRawRate = config.DefaultUsdtCnyRate // okx 交易所 usdt 兑 cny原始汇率
+var okxTrxCnyRawRate = config.DefaultTrxCnyRate   // okx 交易所 trx/cny 市场价
+var okxRatePrecision = 2                          // 汇率保留位数，强迫症，另一方面两位小数足以覆盖大部分CNY使用场景
 
-func GetTrxCnyCalcRate(defaultRate float64) float64 {
+func GetTrxCalcRate(defaultRate float64) float64 {
 	if okxTrxCnyCalcRate > 0 {
 
 		return okxTrxCnyCalcRate
@@ -36,12 +39,19 @@ func GetOkxUsdtRawRate() float64 {
 	return okxUsdtCnyRawRate
 }
 
-func SetOkxTrxUsdtRawRate(syntax string, rawRate float64) {
+func GetOkxTrxRawRate() float64 {
 
-	okxTrxCnyCalcRate = parseFloatRate(syntax, rawRate*okxUsdtCnyRawRate)
+	return okxTrxCnyRawRate
 }
 
-func SetOkxUsdtCnyRawRate(syntax string, rawRate float64) {
+func SetOkxTrxCnyRate(syntax string, rawRate float64) {
+	rawRate = round(rawRate, okxRatePrecision)
+	okxTrxCnyRawRate = rawRate
+	okxTrxCnyCalcRate = parseFloatRate(syntax, rawRate)
+}
+
+func SetOkxUsdtCnyRate(syntax string, rawRate float64) {
+	rawRate = round(rawRate, okxRatePrecision)
 	okxUsdtCnyRawRate = rawRate
 	okxUsdtCnyCalcRate = parseFloatRate(syntax, rawRate)
 }
@@ -67,15 +77,32 @@ func parseFloatRate(syntax string, rawVal float64) float64 {
 	var act = syntax[0:1]
 	var raw = decimal.NewFromFloat(rawVal)
 	var base = decimal.NewFromFloat(cast.ToFloat64(syntax[1:]))
+	var result float64 = 0
 
 	switch act {
 	case "~":
-		return raw.Mul(base).InexactFloat64()
+		result = raw.Mul(base).InexactFloat64()
 	case "+":
-		return raw.Add(base).InexactFloat64()
+		result = raw.Add(base).InexactFloat64()
 	case "-":
-		return raw.Sub(base).InexactFloat64()
+		result = raw.Sub(base).InexactFloat64()
 	}
 
-	return 0
+	return round(result, okxRatePrecision)
+}
+
+func round(val float64, precision int) float64 {
+	// Round 四舍五入，ROUND_HALF_UP 模式实现
+	// 返回将 val 根据指定精度 precision（十进制小数点后数字的数目）进行四舍五入的结果。precision 也可以是负数或零。
+
+	if precision == 0 {
+		return math.Round(val)
+	}
+
+	p := math.Pow10(precision)
+	if precision < 0 {
+		return math.Floor(val*p+0.5) * math.Pow10(-precision)
+	}
+
+	return math.Floor(val*p+0.5) / p
 }
