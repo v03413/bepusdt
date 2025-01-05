@@ -8,18 +8,27 @@ import (
 	"time"
 )
 
-const OrderStatusExpired = 3 // 订单过期
-const OrderStatusSuccess = 2 // 订单成功
-const OrderStatusWaiting = 1 // 等待支付
+const (
+	OrderStatusCanceled = 4 // 订单取消
+	OrderStatusExpired  = 3 // 订单过期
+	OrderStatusSuccess  = 2 // 订单成功
+	OrderStatusWaiting  = 1 // 等待支付
+)
 
-const OrderNotifyStateSucc = 1 // 回调成功
-const OrderNotifyStateFail = 0 // 回调失败
+const (
+	OrderNotifyStateSucc = 1 // 回调成功
+	OrderNotifyStateFail = 0 // 回调失败
+)
 
-const OrderTradeTypeUsdtTrc20 = "usdt.trc20"
-const OrderTradeTypeTronTrx = "tron.trx"
+const (
+	OrderTradeTypeUsdtTrc20 = "usdt.trc20"
+	OrderTradeTypeTronTrx   = "tron.trx"
+)
 
-const OrderApiTypeEpusdt = "epusdt" // epusdt
-const OrderApiTypeEpay = "epay"     // 彩虹易支付
+const (
+	OrderApiTypeEpusdt = "epusdt" // epusdt
+	OrderApiTypeEpay   = "epay"   // 彩虹易支付
+)
 
 var calcMutex sync.Mutex
 
@@ -46,6 +55,12 @@ type TradeOrders struct {
 	CreatedAt   time.Time `gorm:"autoCreateTime;type:timestamp;not null;comment:创建时间"`
 	UpdatedAt   time.Time `gorm:"autoUpdateTime;type:timestamp;not null;comment:更新时间"`
 	ConfirmedAt time.Time `gorm:"type:timestamp;null;comment:交易确认时间"`
+}
+
+func (o *TradeOrders) OrderSetCanceled() error {
+	o.Status = OrderStatusCanceled
+
+	return DB.Save(o).Error
 }
 
 func (o *TradeOrders) OrderSetExpired() error {

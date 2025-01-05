@@ -81,7 +81,7 @@ Telegram 搜索`@userinfobot`机器人并启用，返回的ID就是`TG_BOT_ADMIN
 ## 📚 接口文档
 
 <details>
-<summary>支付订单创建请求</summary>  
+<summary>创建订单</summary>  
 
 ### 请求地址
 
@@ -124,9 +124,42 @@ POST /api/v1/order/create-transaction
 
 </details>
 
+<details>
+<summary>取消订单</summary>  
+
+商户端系统可以通过此接口取消订单，取消后，系统将不再监控此订单，同时释放对应金额占用。
+
+### 请求地址
+
+```http
+POST /api/v1/order/cancel-transaction
+```
+
+### 请求数据
+
+```json
+{
+  "trade_id": "0TJV0br98YbNTQe7nQ",   // 交易ID
+  "signature":"123456abcd" // 签名内容
+}
+```
+
+### 响应内容
+
+```json
+{
+  "data": {
+    "trade_id": "0TJV0br98YbNTQe7nQ"
+  },
+  "message": "success",
+  "request_id": "",
+  "status_code": 200
+}
+```
+</details>
 
 <details>
-<summary>支付成功回调通知</summary>
+<summary>回调通知</summary>
 
 ```json
 {

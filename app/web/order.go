@@ -29,7 +29,7 @@ func createTransaction(ctx *gin.Context) {
 	// ---
 	if !ok1 || !ok2 || !ok3 || !ok4 {
 		log.Warn("参数错误", data)
-		ctx.JSON(200, respFailJson(fmt.Errorf("参数错误")))
+		ctx.JSON(200, respFailJson("参数错误"))
 		return
 	}
 
@@ -41,7 +41,7 @@ func createTransaction(ctx *gin.Context) {
 
 	var order, err = buildOrder(money, model.OrderApiTypeEpusdt, orderId, tradeType, redirectUrl, notifyUrl, orderId)
 	if err != nil {
-		ctx.JSON(200, respFailJson(fmt.Errorf("订单创建失败：%w", err)))
+		ctx.JSON(200, respFailJson(fmt.Sprintf("订单创建失败：%s", err.Error())))
 
 		return
 	}
@@ -57,6 +57,38 @@ func createTransaction(ctx *gin.Context) {
 		"payment_url":     fmt.Sprintf("%s/pay/checkout-counter/%s", config.GetAppUri(host), order.TradeId),
 	}))
 	log.Info(fmt.Sprintf("订单创建成功，商户订单号：%s", orderId))
+}
+
+// cancelTransaction 取消订单
+func cancelTransaction(ctx *gin.Context) {
+	var data = ctx.GetStringMap("data")
+	tradeId, ok := data["trade_id"].(string)
+	if !ok {
+		ctx.JSON(200, respFailJson("参数 trade_id 不存在"))
+
+		return
+	}
+
+	var order, ok2 = model.GetTradeOrder(tradeId)
+	if !ok2 {
+		ctx.JSON(200, respFailJson("订单不存在"))
+
+		return
+	}
+
+	if order.Status != model.OrderStatusWaiting {
+		ctx.JSON(200, respFailJson(fmt.Sprintf("当前订单(%s)状态不允许取消", tradeId)))
+
+		return
+	}
+
+	if err := order.OrderSetCanceled(); err != nil {
+		ctx.JSON(200, respFailJson(fmt.Sprintf("订单取消失败：%s", err.Error())))
+
+		return
+	}
+
+	ctx.JSON(200, respSuccJson(gin.H{"trade_id": tradeId}))
 }
 
 func buildOrder(money float64, apiType, orderId, tradeType, redirectUrl, notifyUrl, name string) (model.TradeOrders, error) {
@@ -153,7 +185,7 @@ func checkStatus(ctx *gin.Context) {
 	var tradeId = ctx.Param("trade_id")
 	var order, ok = model.GetTradeOrder(tradeId)
 	if !ok {
-		ctx.JSON(200, respFailJson(fmt.Errorf("订单不存在")))
+		ctx.JSON(200, respFailJson("订单不存在"))
 
 		return
 	}

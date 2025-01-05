@@ -37,7 +37,6 @@ func Start() {
 		payGrp.GET("/check-status/:trade_id", checkStatus)
 	}
 
-	// 创建订单
 	orderGrp := engine.Group("/api/v1/order")
 	{
 		orderGrp.Use(func(ctx *gin.Context) {
@@ -46,6 +45,8 @@ func Start() {
 				log.Error(err.Error())
 				ctx.JSON(400, gin.H{"error": err.Error()})
 				ctx.Abort()
+
+				return
 			}
 
 			m := make(map[string]any)
@@ -54,6 +55,8 @@ func Start() {
 				log.Error(err.Error())
 				ctx.JSON(400, gin.H{"error": err.Error()})
 				ctx.Abort()
+
+				return
 			}
 
 			sign, ok := m["signature"]
@@ -61,17 +64,23 @@ func Start() {
 				log.Warn("signature not found", m)
 				ctx.JSON(400, gin.H{"error": "signature not found"})
 				ctx.Abort()
+
+				return
 			}
 
 			if help.GenerateSignature(m, config.GetAuthToken()) != sign {
 				log.Warn("签名错误", m)
 				ctx.JSON(400, gin.H{"error": "签名错误"})
 				ctx.Abort()
+
+				return
 			}
 
 			ctx.Set("data", m)
 		})
-		orderGrp.POST("/create-transaction", createTransaction)
+
+		orderGrp.POST("/create-transaction", createTransaction) // 创建订单
+		orderGrp.POST("/cancel-transaction", cancelTransaction) // 取消订单
 	}
 
 	// 易支付兼容

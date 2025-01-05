@@ -2,9 +2,9 @@ package web
 
 import "github.com/gin-gonic/gin"
 
-func respFailJson(err error) gin.H {
+func respFailJson(message string) gin.H {
 
-	return gin.H{"status_code": 400, "message": err.Error()}
+	return gin.H{"status_code": 400, "message": message}
 }
 
 func respSuccJson(data interface{}) gin.H {
