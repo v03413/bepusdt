@@ -16,8 +16,7 @@ import (
 
 // createTransaction 创建订单
 func createTransaction(ctx *gin.Context) {
-	_data, _ := ctx.Get("data")
-	data := _data.(map[string]any)
+	var data = ctx.GetStringMap("data")
 	orderId, ok1 := data["order_id"].(string)
 	money, ok2 := data["amount"].(float64)
 	notifyUrl, ok3 := data["notify_url"].(string)

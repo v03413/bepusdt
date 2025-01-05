@@ -138,9 +138,9 @@ func CalcTradeAmount(wa []WalletAddress, rate, money float64, tradeType string) 
 	var orders []TradeOrders
 	var lock = make(map[string]bool)
 	DB.Where("status = ? and trade_type = ?", OrderStatusWaiting, tradeType).Find(&orders)
-	for _, _order := range orders {
+	for _, order := range orders {
 
-		lock[_order.Address+_order.Amount] = true
+		lock[order.Address+order.Amount] = true
 	}
 
 	var atom, prec = config.GetUsdtAtomicity()
