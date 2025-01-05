@@ -15,36 +15,32 @@ import (
 func Start() {
 	gin.SetMode(gin.ReleaseMode)
 
-	listen := config.GetListen()
+	var listen = config.GetListen()
+	var engine = loadStatic(gin.New())
 
-	r := loadStatic(gin.New())
-	r.Use(gin.LoggerWithWriter(log.GetWriter()), gin.Recovery())
-	r.Use(func(ctx *gin.Context) {
-		// 解析请求地址
-		var _host = "http://" + ctx.Request.Host
-		if ctx.Request.TLS != nil {
-			_host = "https://" + ctx.Request.Host
-		}
-		_host = config.GetAppUri(_host)
+	// Init gin
+	{
+		engine.Use(gin.LoggerWithWriter(log.GetWriter()), gin.Recovery())
+		engine.Use(func(ctx *gin.Context) {
+			ctx.Writer.Header().Set("Payment-Gateway", "https://github.com/v03413/bepusdt")
+		})
+		engine.GET("/", func(c *gin.Context) {
+			c.HTML(200, "index.html", gin.H{"title": "一款更易用的USDT收款网关", "url": "https://github.com/v03413/bepusdt"})
+		})
+	}
 
-		ctx.Set("HTTP_HOST", _host)
-	})
-	r.GET("/", func(c *gin.Context) {
-		c.HTML(200, "index.html", gin.H{"title": "一款更易用的USDT收款网关", "url": "https://github.com/v03413/bepusdt"})
-	})
-
-	payRoute := r.Group("/pay")
+	payGrp := engine.Group("/pay")
 	{
 		// 收银台
-		payRoute.GET("/checkout-counter/:trade_id", checkoutCounter)
+		payGrp.GET("/checkout-counter/:trade_id", checkoutCounter)
 		// 状态检测
-		payRoute.GET("/check-status/:trade_id", checkStatus)
+		payGrp.GET("/check-status/:trade_id", checkStatus)
 	}
 
 	// 创建订单
-	orderRoute := r.Group("/api/v1/order")
+	orderGrp := engine.Group("/api/v1/order")
 	{
-		orderRoute.Use(func(ctx *gin.Context) {
+		orderGrp.Use(func(ctx *gin.Context) {
 			rawData, err := ctx.GetRawData()
 			if err != nil {
 				log.Error(err.Error())
@@ -75,15 +71,15 @@ func Start() {
 
 			ctx.Set("data", m)
 		})
-		orderRoute.POST("/create-transaction", createTransaction)
+		orderGrp.POST("/create-transaction", createTransaction)
 	}
 
 	// 易支付兼容
-	r.POST("/submit.php", epaySubmit)
+	engine.POST("/submit.php", epaySubmit)
 
 	log.Info("WEB尝试启动 Listen: ", listen)
 	go func() {
-		err := r.Run(listen)
+		err := engine.Run(listen)
 		if err != nil {
 
 			log.Error("Web启动失败", err)
