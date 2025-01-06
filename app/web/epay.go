@@ -12,14 +12,19 @@ import (
 
 // epaySubmit 【兼容】易支付提交
 func epaySubmit(ctx *gin.Context) {
-	if err := ctx.Request.ParseForm(); err != nil {
-		ctx.String(200, "参数解析错误："+err.Error())
+	var rawParams = ctx.Request.URL.Query()
+	if ctx.Request.Method == http.MethodPost {
+		if err := ctx.Request.ParseForm(); err != nil {
+			ctx.String(200, "参数解析错误："+err.Error())
 
-		return
+			return
+		}
+
+		rawParams = ctx.Request.PostForm
 	}
 
 	var data = make(map[string]string)
-	for k, v := range ctx.Request.PostForm {
+	for k, v := range rawParams {
 		if len(v) == 0 {
 			data[k] = ""
 

@@ -84,7 +84,10 @@ func Start() {
 	}
 
 	// 易支付兼容
-	engine.POST("/submit.php", epaySubmit)
+	{
+		engine.POST("/submit.php", epaySubmit)
+		engine.GET("/submit.php", epaySubmit)
+	}
 
 	log.Info("WEB尝试启动 Listen: ", listen)
 	go func() {
