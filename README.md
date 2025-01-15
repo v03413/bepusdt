@@ -1,3 +1,8 @@
+**❗️特别声明：本项目纯粹作者研究学习开源项目，也不提供任何形式的收费服务(谨防诈骗)；使用过程中遇见问题请提`issue`
+或群里交流，对于信息完整的问题看心情回复，作者很忙也不靠它吃饭，请自重！**
+
+---  
+
 # Bepusdt (Better Easy Payment Usdt)
 
 <p align="center">
@@ -29,7 +34,7 @@
 - ✅ 底层直接采用区块扫描，不依赖三方API，秒级响应
 - ✅ <u>支持【TRX】收款</u>， TRX余额变动监控通知
 - ✅ 支持钱包地址 <u>能量代理</u>和<u>能量回收</u> 监控通知
-- ✅️ <u>原生支持易支付对接</u>，无需第三方插件依赖  
+- ✅️ <u>原生支持易支付对接</u>，无需第三方插件依赖
 - ⭕️ 待实现：支持<u>等待支付</u>和<u>支付超时</u> 订单状态回调
 
 ## 🛠 参数配置
@@ -158,6 +163,7 @@ POST /api/v1/order/cancel-transaction
   "status_code": 200
 }
 ```
+
 </details>
 
 <details>
@@ -180,7 +186,7 @@ POST /api/v1/order/cancel-transaction
 
 ## 🏝️ 交流反馈
 
-- Telegram 频道：[https://t.me/bepusdt](https://t.me/bepusdt)  
+- Telegram 频道：[https://t.me/bepusdt](https://t.me/bepusdt)
 - Telegram 群组：[https://t.me/bepusdt_group](https://t.me/bepusdt_group)
 
 ## 🙏 感谢
