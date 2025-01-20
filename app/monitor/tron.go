@@ -19,6 +19,7 @@ import (
 	"github.com/v03413/tronprotocol/api"
 	"github.com/v03413/tronprotocol/core"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/backoff"
 	"google.golang.org/grpc/credentials/insecure"
 	"strconv"
 	"time"
@@ -65,19 +66,32 @@ func BlockScanStart(duration time.Duration) {
 	var node = config.GetTronGrpcNode()
 	log.Info("区块扫描启动：", node)
 
-	conn, err := grpc.NewClient(node, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	// 设置重连参数
+	reParams := grpc.ConnectParams{
+		Backoff: backoff.Config{
+			BaseDelay:  1 * time.Second,  // 初始重连延迟
+			MaxDelay:   30 * time.Second, // 最大重连延迟
+			Multiplier: 1.5,              // 延迟增长乘数
+		},
+		MinConnectTimeout: 1 * time.Minute, // 最小连接超时时间
+	}
+
+	conn, err := grpc.NewClient(node, grpc.WithConnectParams(reParams), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 
 		log.Error("grpc.NewClient", err)
 	}
 
-	var ctx = context.Background()
+	defer conn.Close()
+
 	var client = api.NewWalletClient(conn)
 
 	for range time.Tick(duration) { // 3秒产生一个区块
-		nowBlock, err := client.GetNowBlock2(ctx, nil) // 获取当前区块高度
-		if err != nil {
-			log.Warn("GetNowBlock", err)
+		var ctx1, cancel1 = context.WithTimeout(context.Background(), time.Second*3)
+		nowBlock, err1 := client.GetNowBlock2(ctx1, nil) // 获取当前区块高度
+		cancel1()
+		if err1 != nil {
+			log.Warn("GetNowBlock 超时：", err1)
 
 			continue
 		}
@@ -100,16 +114,17 @@ func BlockScanStart(duration time.Duration) {
 		var endBlockHeight = nowBlock.BlockHeader.RawData.Number
 
 		// 扫描丢失的区块
-		blocks, err := client.GetBlockByLimitNext2(ctx, &api.BlockLimit{StartNum: startBlockHeight, EndNum: endBlockHeight})
-		if err != nil {
-			log.Warn("GetBlockByLimitNext2", err)
+		var ctx2, cancel2 = context.WithTimeout(context.Background(), time.Second*3)
+		blocks, err2 := client.GetBlockByLimitNext2(ctx2, &api.BlockLimit{StartNum: startBlockHeight, EndNum: endBlockHeight})
+		cancel2()
+		if err2 != nil {
+			log.Warn("GetBlockByLimitNext2 超时：", err2)
 
 			continue
 		}
 
 		// 扫描丢失区块
 		for _, block := range blocks.GetBlock() {
-
 			parseBlockTrans(block, block.BlockHeader.RawData.Number)
 		}
 	}
