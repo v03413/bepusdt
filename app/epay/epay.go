@@ -8,6 +8,7 @@ import (
 	"github.com/v03413/bepusdt/app/config"
 	"github.com/v03413/bepusdt/app/help"
 	"github.com/v03413/bepusdt/app/model"
+	"net/url"
 	"sort"
 )
 
@@ -41,10 +42,10 @@ func Sign(params map[string]string, key string) string {
 }
 
 func BuildNotifyParams(order model.TradeOrders) string {
-	var query = fmt.Sprintf("money=%s&name=%s&out_trade_no=%s&pid=%s&trade_no=%s&trade_status=TRADE_SUCCESS&type=%s",
-		cast.ToString(order.Money), order.Name, order.OrderId, Pid, order.TradeId, order.TradeType)
+	var sign = help.Md5String(fmt.Sprintf("money=%s&name=%s&out_trade_no=%s&pid=%s&trade_no=%s&trade_status=TRADE_SUCCESS&type=%s",
+		cast.ToString(order.Money), order.Name, order.OrderId, Pid, order.TradeId, order.TradeType) + config.GetAuthToken())
+	var params = fmt.Sprintf("money=%s&name=%s&out_trade_no=%s&pid=%s&trade_no=%s&trade_status=TRADE_SUCCESS&type=%s",
+		cast.ToString(order.Money), url.QueryEscape(order.Name), url.QueryEscape(order.OrderId), Pid, order.TradeId, order.TradeType)
 
-	var sign = help.Md5String(query + config.GetAuthToken())
-
-	return fmt.Sprintf("%s&sign=%s", query, sign)
+	return fmt.Sprintf("%s&sign=%s", params, sign)
 }
