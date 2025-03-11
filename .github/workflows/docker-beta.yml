@@ -32,6 +32,7 @@ jobs:
           context: .
           platforms: |
             linux/amd64
+            linux/arm64
           push: true
           build-args: |
             APP_NAME=${{ env.APP_NAME }}
