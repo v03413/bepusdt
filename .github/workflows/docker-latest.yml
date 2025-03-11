@@ -1,15 +1,12 @@
-name: docker-image
-
+name: docker-latest
 on:
   workflow_dispatch:
   create:
     tags:
       - v*
-
 env:
   APP_NAME: bepusdt
   DOCKERHUB_REPO: v03413/bepusdt
-
 jobs:
   docker:
     runs-on: ubuntu-latest
@@ -33,6 +30,7 @@ jobs:
           context: .
           platforms: |
             linux/amd64
+            linux/arm64
           push: true
           build-args: |
             APP_NAME=${{ env.APP_NAME }}
