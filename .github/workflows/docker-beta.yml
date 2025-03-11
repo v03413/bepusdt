@@ -2,24 +2,19 @@ name: docker-beta
 on:
   push:
     branches:
-      - '**'  # 表示所有分支
-    tags-ignore:
-      - '*'  # 忽略所有标签
-  pull_request:
-    branches:
-      - '**'  # 表示所有分支
-
+      - 'main'
 env:
   APP_NAME: bepusdt
   DOCKER_HUB_USER: v03413
   DOCKER_HUB_REPO: v03413/bepusdt
-
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: 'main'
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
