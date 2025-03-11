@@ -68,14 +68,18 @@
 </div>
 <script>
     let expire = {{.expire}};
+    let startTime = Date.now();
 
     // 支付时间倒计时
     function clock() {
-        let seconds = --expire;
+        let now = Date.now();
+        let elapsed = Math.floor((now - startTime) / 1000);  // 计算已过去的秒数
+        let seconds = expire - elapsed;  // 计算剩余秒数
+
         let minute = Math.floor(seconds / 60);
         let hour = Math.floor(minute / 60);
-        if (seconds <= 0) {
 
+        if (seconds <= 0) {
             return layer.alert("支付超时，请重新发起支付！", {icon: 5});
         }
 
@@ -83,7 +87,7 @@
         $('.minutes').text(minute.toString().padStart(2, '0'));
         $('.seconds').text((seconds % 60).toString().padStart(2, '0'));
 
-        return setTimeout(clock, 1000);
+        setTimeout(clock, 1000);
     }
 
     function checkStatus() {
