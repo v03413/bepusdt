@@ -95,17 +95,21 @@ func (o *TradeOrders) OrderSetNotifyState(state int) error {
 }
 
 func (o *TradeOrders) GetStatusLabel() string {
-	var _label = "🟢 收款成功"
+	var label = "🟢 收款成功"
 	if o.Status == OrderStatusExpired {
 
-		_label = "🔴 交易过期"
+		label = "🔴 交易过期"
 	}
 	if o.Status == OrderStatusWaiting {
 
-		_label = "🟡 等待支付"
+		label = "🟡 等待支付"
+	}
+	if o.Status == OrderStatusCanceled {
+
+		label = "⚪️ 订单取消"
 	}
 
-	return _label
+	return label
 }
 
 func GetTradeOrder(tradeId string) (TradeOrders, bool) {
