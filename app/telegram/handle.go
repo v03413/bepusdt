@@ -2,14 +2,14 @@ package telegram
 
 import (
 	"fmt"
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	api "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/v03413/bepusdt/app/config"
 	"github.com/v03413/bepusdt/app/help"
 	"github.com/v03413/bepusdt/app/model"
 	"strings"
 )
 
-func HandleMessage(msg *tgbotapi.Message) {
+func HandleMessage(msg *api.Message) {
 	if msg.IsCommand() {
 		botCommandHandle(msg)
 
@@ -26,7 +26,7 @@ func HandleMessage(msg *tgbotapi.Message) {
 	}
 }
 
-func HandleCallback(query *tgbotapi.CallbackQuery) {
+func HandleCallback(query *api.CallbackQuery) {
 	if fmt.Sprintf("%v", query.From.ID) != config.GetTGBotAdminId() {
 
 		return
@@ -56,14 +56,16 @@ func HandleCallback(query *tgbotapi.CallbackQuery) {
 		go cbAddressOtherNotifyAction(query, args[1])
 	case cbOrderDetail:
 		go cbOrderDetailAction(args[1])
+	case cbMarkNotifySucc:
+		go cbMarkNotifySuccAction(args[1])
 	}
 }
 
-func addWalletAddress(msg *tgbotapi.Message) {
+func addWalletAddress(msg *api.Message) {
 	var address = strings.TrimSpace(msg.Text)
 	// 简单检测地址是否合法
 	if !help.IsValidTRONWalletAddress(address) {
-		SendMsg(tgbotapi.NewMessage(msg.Chat.ID, "钱包地址不合法"))
+		SendMsg(api.NewMessage(msg.Chat.ID, "钱包地址不合法"))
 
 		return
 	}
@@ -72,32 +74,32 @@ func addWalletAddress(msg *tgbotapi.Message) {
 	var r = model.DB.Create(&wa)
 	if r.Error != nil {
 		if r.Error.Error() == "UNIQUE constraint failed: wallet_address.address" {
-			SendMsg(tgbotapi.NewMessage(msg.Chat.ID, "❌地址添加失败，地址重复！"))
+			SendMsg(api.NewMessage(msg.Chat.ID, "❌地址添加失败，地址重复！"))
 
 			return
 		}
 
-		SendMsg(tgbotapi.NewMessage(msg.Chat.ID, "❌地址添加失败，错误信息："+r.Error.Error()))
+		SendMsg(api.NewMessage(msg.Chat.ID, "❌地址添加失败，错误信息："+r.Error.Error()))
 
 		return
 	}
 
-	SendMsg(tgbotapi.NewMessage(msg.Chat.ID, "✅添加且成功启用"))
+	SendMsg(api.NewMessage(msg.Chat.ID, "✅添加且成功启用"))
 	cmdStartHandle()
 }
 
-func botCommandHandle(_msg *tgbotapi.Message) {
-	if _msg.Command() == cmdGetId {
+func botCommandHandle(msg *api.Message) {
+	if msg.Command() == cmdGetId {
 
-		go cmdGetIdHandle(_msg)
+		go cmdGetIdHandle(msg)
 	}
 
-	if fmt.Sprintf("%v", _msg.Chat.ID) != config.GetTGBotAdminId() {
+	if fmt.Sprintf("%v", msg.Chat.ID) != config.GetTGBotAdminId() {
 
 		return
 	}
 
-	switch _msg.Command() {
+	switch msg.Command() {
 	case cmdStart:
 		go cmdStartHandle()
 	case cmdUsdt:
@@ -109,16 +111,16 @@ func botCommandHandle(_msg *tgbotapi.Message) {
 	}
 }
 
-func queryAnyTrc20AddressInfo(msg *tgbotapi.Message, address string) {
+func queryAnyTrc20AddressInfo(msg *api.Message, address string) {
 	var info = getWalletInfoByAddress(address)
-	var reply = tgbotapi.NewMessage(msg.Chat.ID, "❌查询失败")
+	var reply = api.NewMessage(msg.Chat.ID, "❌查询失败")
 	if info != "" {
 		reply.ReplyToMessageID = msg.MessageID
 		reply.Text = info
-		reply.ReplyMarkup = tgbotapi.InlineKeyboardMarkup{
-			InlineKeyboard: [][]tgbotapi.InlineKeyboardButton{
+		reply.ReplyMarkup = api.InlineKeyboardMarkup{
+			InlineKeyboard: [][]api.InlineKeyboardButton{
 				{
-					tgbotapi.NewInlineKeyboardButtonURL("📝查看详细信息", "https://tronscan.org/#/address/"+address),
+					api.NewInlineKeyboardButtonURL("📝查看详细信息", "https://tronscan.org/#/address/"+address),
 				},
 			},
 		}

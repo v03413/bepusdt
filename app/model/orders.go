@@ -49,7 +49,7 @@ type TradeOrders struct {
 	ReturnUrl   string    `gorm:"type:varchar(255);not null;default:'';comment:同步地址"`
 	NotifyUrl   string    `gorm:"type:varchar(255);not null;default:'';comment:异步地址"`
 	NotifyNum   int       `gorm:"type:int(11);not null;default:0;comment:回调次数"`
-	NotifyState int       `gorm:"type:tinyint(1);not null;default:0;comment:回调状态 1：成功 0：失败"`
+	NotifyState int       `gorm:"column:notify_state;type:tinyint(1);not null;default:0;comment:回调状态 1：成功 0：失败"`
 	RefBlockNum int64     `gorm:"type:bigint(20);not null;default:0;comment:交易所在区块"`
 	ExpiredAt   time.Time `gorm:"type:timestamp;not null;comment:订单失效时间"`
 	CreatedAt   time.Time `gorm:"autoCreateTime;type:timestamp;not null;comment:创建时间"`

@@ -8,6 +8,7 @@ import (
 	"github.com/v03413/bepusdt/app/help"
 	"github.com/v03413/bepusdt/app/log"
 	"github.com/v03413/bepusdt/app/model"
+	"github.com/v03413/bepusdt/app/telegram"
 	"io"
 	"net/http"
 	"strings"
@@ -45,21 +46,21 @@ func epay(order model.TradeOrders) {
 
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		log.Warn(fmt.Sprintf("订单回调失败(%v)：resp.StatusCode != 200", order.OrderId), order.OrderSetNotifyState(model.OrderNotifyStateFail))
+		markNotifyFail(order, fmt.Sprintf("resp.StatusCode != 200"))
 
 		return
 	}
 
 	all, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Warn(fmt.Sprintf("订单回调失败(%v)：io.ReadAll(resp.Body) Error:", order.OrderId), err, order.OrderSetNotifyState(model.OrderNotifyStateFail))
+		markNotifyFail(order, fmt.Sprintf("io.ReadAll(resp.Body) Error: %v", err))
 
 		return
 	}
 
 	// 判断是否包含 success
 	if !strings.Contains(strings.ToLower(string(all)), "success") {
-		log.Warn(fmt.Sprintf("订单回调失败(%v)：body not contains success (%s)", order.OrderId, string(all)), err, order.OrderSetNotifyState(model.OrderNotifyStateFail))
+		markNotifyFail(order, fmt.Sprintf("body not contains success (%s)", string(all)))
 
 		return
 	}
@@ -129,20 +130,20 @@ func epusdt(order model.TradeOrders) {
 
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		log.Warn(fmt.Sprintf("订单回调失败(%v)：resp.StatusCode != 200", order.OrderId), order.OrderSetNotifyState(model.OrderNotifyStateFail))
+		markNotifyFail(order, fmt.Sprintf("resp.StatusCode != 200"))
 
 		return
 	}
 
 	all, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Warn(fmt.Sprintf("订单回调失败(%v)：io.ReadAll(resp.Body) Error:", order.OrderId), err, order.OrderSetNotifyState(model.OrderNotifyStateFail))
+		markNotifyFail(order, fmt.Sprintf("io.ReadAll(resp.Body) Error: %v", err))
 
 		return
 	}
 
 	if string(all) != "ok" {
-		log.Warn(fmt.Sprintf("订单回调失败(%v)：body != ok (%s)", order.OrderId, string(all)), err, order.OrderSetNotifyState(model.OrderNotifyStateFail))
+		markNotifyFail(order, fmt.Sprintf("body != ok (%s)", string(all)))
 
 		return
 	}
@@ -153,4 +154,11 @@ func epusdt(order model.TradeOrders) {
 	} else {
 		log.Info("订单通知成功：", order.OrderId)
 	}
+}
+
+func markNotifyFail(order model.TradeOrders, reason string) {
+	log.Warn(fmt.Sprintf("订单回调失败(%v)：%s %v", order.TradeId, reason, order.OrderSetNotifyState(model.OrderNotifyStateFail)))
+	go func() {
+		telegram.SendNotifyFailed(order, reason)
+	}()
 }

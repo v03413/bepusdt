@@ -23,6 +23,7 @@ const cbAddressDisable = "address_disable"
 const cbAddressDelete = "address_del"
 const cbAddressOtherNotify = "address_other_notify"
 const cbOrderDetail = "order_detail"
+const cbMarkNotifySucc = "mark_notify_succ"
 
 func cbWalletAction(query *tgbotapi.CallbackQuery, address string) {
 	var info = getWalletInfoByAddress(address)
@@ -182,6 +183,17 @@ func cbOrderDetailAction(tradeId string) {
 
 		SendMsg(_msg)
 	}
+}
+
+func cbMarkNotifySuccAction(tradeId string) {
+
+	model.DB.Model(&model.TradeOrders{}).Where("trade_id = ?", tradeId).Update("notify_state", model.OrderNotifyStateSucc)
+
+	var msg = tgbotapi.NewMessage(0, fmt.Sprintf("✅订单（`%s`）回调状态手动标记成功，后续将不会再次回调。", tradeId))
+
+	msg.ParseMode = tgbotapi.ModeMarkdownV2
+
+	SendMsg(msg)
 }
 
 func getWalletInfoByAddress(address string) string {

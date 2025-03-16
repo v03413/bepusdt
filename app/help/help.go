@@ -4,10 +4,12 @@ import (
 	"crypto/md5"
 	"fmt"
 	gonanoid "github.com/matoous/go-nanoid/v2"
+	"math"
 	"os"
 	"regexp"
 	"sort"
 	"strings"
+	"time"
 )
 
 // IsExist 判断文件是否存在
@@ -101,4 +103,9 @@ func MaskAddress(address string) string {
 	}
 
 	return address[:8] + " ***** " + address[len(address)-10:]
+}
+
+func CalcNextNotifyTime(base time.Time, num int) time.Time {
+
+	return base.Add(time.Minute * time.Duration(math.Pow(2, float64(num))))
 }
