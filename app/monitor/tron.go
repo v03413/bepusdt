@@ -22,6 +22,7 @@ import (
 	"google.golang.org/grpc/backoff"
 	"google.golang.org/grpc/credentials/insecure"
 	"strconv"
+	"sync/atomic"
 	"time"
 )
 
@@ -66,14 +67,9 @@ func BlockScanStart(duration time.Duration) {
 	var node = config.GetTronGrpcNode()
 	log.Info("区块扫描启动：", node)
 
-	// 设置重连参数
 	reParams := grpc.ConnectParams{
-		Backoff: backoff.Config{
-			BaseDelay:  1 * time.Second,  // 初始重连延迟
-			MaxDelay:   30 * time.Second, // 最大重连延迟
-			Multiplier: 1.5,              // 延迟增长乘数
-		},
-		MinConnectTimeout: 1 * time.Minute, // 最小连接超时时间
+		Backoff:           backoff.Config{BaseDelay: 1 * time.Second, MaxDelay: 30 * time.Second, Multiplier: 1.5},
+		MinConnectTimeout: 1 * time.Minute,
 	}
 
 	conn, err := grpc.NewClient(node, grpc.WithConnectParams(reParams), grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -87,14 +83,18 @@ func BlockScanStart(duration time.Duration) {
 	var client = api.NewWalletClient(conn)
 
 	for range time.Tick(duration) { // 3秒产生一个区块
-		var ctx1, cancel1 = context.WithTimeout(context.Background(), time.Second*3)
-		nowBlock, err1 := client.GetNowBlock2(ctx1, nil) // 获取当前区块高度
-		cancel1()
+		atomic.AddUint64(&config.BlockScanTotal, 1)
+
+		var ctx, cancel = context.WithTimeout(context.Background(), time.Second*3)
+		nowBlock, err1 := client.GetNowBlock2(ctx, nil)
+		cancel()
 		if err1 != nil {
 			log.Warn("GetNowBlock 超时：", err1)
 
 			continue
 		}
+
+		atomic.AddUint64(&config.BlockScanSucc, 1)
 
 		if currentBlockHeight == 0 { // 初始化当前区块高度
 

@@ -28,7 +28,7 @@ func init() {
 	_, err = botApi.Request(tgbotapi.NewSetMyCommands([]tgbotapi.BotCommand{
 		{Command: "/" + cmdGetId, Description: "获取ID"},
 		{Command: "/" + cmdStart, Description: "开始使用"},
-		{Command: "/" + cmdUsdt, Description: "实时汇率"},
+		{Command: "/" + cmdState, Description: "收款状态"},
 		{Command: "/" + cmdWallet, Description: "钱包信息"},
 		{Command: "/" + cmdOrder, Description: "最近订单"},
 	}...))

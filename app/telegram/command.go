@@ -3,14 +3,16 @@ package telegram
 import (
 	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/spf13/cast"
 	"github.com/v03413/bepusdt/app/config"
 	"github.com/v03413/bepusdt/app/model"
 	"github.com/v03413/bepusdt/app/rate"
+	"time"
 )
 
 const cmdGetId = "id"
 const cmdStart = "start"
-const cmdUsdt = "rate"
+const cmdState = "state"
 const cmdWallet = "wallet"
 const cmdOrder = "order"
 
@@ -44,13 +46,43 @@ func cmdStartHandle() {
 	SendMsg(msg)
 }
 
-func cmdUsdtHandle() {
-	var notice = "\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\n>❗️基准汇率：来源于交易所的原始数据，订单汇率：订单创建过程中实际使用的汇率。"
-	var msg = tgbotapi.NewMessage(0, fmt.Sprintf("*🪧 基准汇率\\(TRX\\)：*`%v`\n*🪧 基准汇率\\(USDT\\)：*`%v`\n*✅ 订单汇率\\(TRX\\)：*`%v`\n*✅ 订单汇率\\(USDT\\)：*`%v`\n"+notice,
-		rate.GetOkxTrxRawRate(),
-		rate.GetOkxUsdtRawRate(),
-		rate.GetTrxCalcRate(config.DefaultTrxCnyRate),
-		rate.GetUsdtCalcRate(config.DefaultUsdtCnyRate),
+func cmdStateHandle() {
+	var rows []model.TradeOrders
+	model.DB.Where("created_at > ?", time.Now().Format(time.DateOnly)).Find(&rows)
+	var succ uint64
+	var money float64
+	for _, o := range rows {
+		if o.Status == model.OrderStatusSuccess {
+			succ++
+			money += o.Money
+		}
+	}
+
+	var text = "```" + `
+🎁今日成功数量：%d
+💎今日订单总数：%d
+💰今日成功收款：%.2f
+🌟扫块成功数据：%s
+-----------------------
+🪧基准汇率(TRX)：%v
+🪧基准汇率(USDT)：%v
+✅订单汇率(TRX)：%v
+✅订单汇率(USDT)：%v
+-----------------------
+` + "```" + `
+>基准汇率：来源于交易所的原始数据。
+>订单汇率：订单创建过程中实际使用的汇率。
+>扫块成功数据：如果该值过低，说明您的服务器与区块链网络连接不稳定，请尝试更换区块节点。
+`
+	var msg = tgbotapi.NewMessage(0, fmt.Sprintf(text,
+		succ,
+		len(rows),
+		money,
+		config.GetBlockScanSuccRate(),
+		cast.ToString(rate.GetOkxTrxRawRate()),
+		cast.ToString(rate.GetOkxUsdtRawRate()),
+		cast.ToString(rate.GetTrxCalcRate(config.DefaultTrxCnyRate)),
+		cast.ToString(rate.GetUsdtCalcRate(config.DefaultUsdtCnyRate)),
 	))
 	msg.ParseMode = tgbotapi.ModeMarkdownV2
 

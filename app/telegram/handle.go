@@ -102,8 +102,8 @@ func botCommandHandle(msg *api.Message) {
 	switch msg.Command() {
 	case cmdStart:
 		go cmdStartHandle()
-	case cmdUsdt:
-		go cmdUsdtHandle()
+	case cmdState:
+		go cmdStateHandle()
 	case cmdWallet:
 		go cmdWalletHandle()
 	case cmdOrder:

@@ -2,6 +2,7 @@ package config
 
 import (
 	"errors"
+	"fmt"
 	"github.com/shopspring/decimal"
 	"github.com/spf13/cast"
 	"github.com/v03413/bepusdt/app/help"
@@ -26,6 +27,11 @@ const defaultTronGrpcNode = "18.141.79.38:50051" // 默认GRPC节点
 
 var runPath string
 
+var (
+	BlockScanSucc  uint64
+	BlockScanTotal uint64
+)
+
 func init() {
 	execPath, err := os.Executable()
 	if err != nil {
@@ -34,6 +40,15 @@ func init() {
 	}
 
 	runPath = filepath.Dir(execPath)
+}
+
+func GetBlockScanSuccRate() string {
+	if BlockScanTotal == 0 {
+
+		return "100.00%"
+	}
+
+	return fmt.Sprintf("%.2f%%", cast.ToFloat64(BlockScanSucc/BlockScanTotal)*100)
 }
 
 func GetTronGrpcNode() string {
