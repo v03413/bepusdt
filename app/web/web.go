@@ -2,9 +2,7 @@ package web
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/goccy/go-json"
 	"github.com/v03413/bepusdt/app/config"
-	"github.com/v03413/bepusdt/app/help"
 	"github.com/v03413/bepusdt/app/log"
 	"github.com/v03413/bepusdt/static"
 	"html/template"
@@ -18,7 +16,6 @@ func Start() {
 	var listen = config.GetListen()
 	var engine = loadStatic(gin.New())
 
-	// Init gin
 	{
 		engine.Use(gin.LoggerWithWriter(log.GetWriter()), gin.Recovery())
 		engine.Use(func(ctx *gin.Context) {
@@ -31,56 +28,15 @@ func Start() {
 
 	payGrp := engine.Group("/pay")
 	{
-		// 收银台
 		payGrp.GET("/checkout-counter/:trade_id", checkoutCounter)
-		// 状态检测
 		payGrp.GET("/check-status/:trade_id", checkStatus)
 	}
 
 	orderGrp := engine.Group("/api/v1/order")
 	{
-		orderGrp.Use(func(ctx *gin.Context) {
-			rawData, err := ctx.GetRawData()
-			if err != nil {
-				log.Error(err.Error())
-				ctx.JSON(400, gin.H{"error": err.Error()})
-				ctx.Abort()
-
-				return
-			}
-
-			m := make(map[string]any)
-			err = json.Unmarshal(rawData, &m)
-			if err != nil {
-				log.Error(err.Error())
-				ctx.JSON(400, gin.H{"error": err.Error()})
-				ctx.Abort()
-
-				return
-			}
-
-			sign, ok := m["signature"]
-			if !ok {
-				log.Warn("signature not found", m)
-				ctx.JSON(400, gin.H{"error": "signature not found"})
-				ctx.Abort()
-
-				return
-			}
-
-			if help.GenerateSignature(m, config.GetAuthToken()) != sign {
-				log.Warn("签名错误", m)
-				ctx.JSON(400, gin.H{"error": "签名错误"})
-				ctx.Abort()
-
-				return
-			}
-
-			ctx.Set("data", m)
-		})
-
-		orderGrp.POST("/create-transaction", createTransaction) // 创建订单
-		orderGrp.POST("/cancel-transaction", cancelTransaction) // 取消订单
+		orderGrp.Use(signVerify)
+		orderGrp.POST("/create-transaction", createTransaction)
+		orderGrp.POST("/cancel-transaction", cancelTransaction)
 	}
 
 	// 易支付兼容

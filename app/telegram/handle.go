@@ -70,7 +70,7 @@ func addWalletAddress(msg *api.Message) {
 		return
 	}
 
-	var wa = model.WalletAddress{Address: address, Status: model.StatusEnable}
+	var wa = model.WalletAddress{Address: address, Status: model.StatusEnable, OtherNotify: model.OtherNotifyEnable}
 	var r = model.DB.Create(&wa)
 	if r.Error != nil {
 		if r.Error.Error() == "UNIQUE constraint failed: wallet_address.address" {

@@ -107,7 +107,7 @@ func epusdt(order model.TradeOrders) {
 	}
 
 	// 签名
-	body.Signature = help.GenerateSignature(data, config.GetAuthToken())
+	body.Signature = help.EpusdtSign(data, config.GetAuthToken())
 
 	// 再次序列化
 	jsonBody, err = json.Marshal(body)

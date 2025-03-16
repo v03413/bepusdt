@@ -33,7 +33,7 @@ func GetEnv(key string) string {
 	return os.Getenv(key)
 }
 
-func GenerateSignature(data map[string]interface{}, token string) string {
+func EpusdtSign(data map[string]interface{}, token string) string {
 	keys := make([]string, 0, len(data))
 	for k := range data {
 		if k == "signature" {
@@ -43,6 +43,7 @@ func GenerateSignature(data map[string]interface{}, token string) string {
 
 		keys = append(keys, k)
 	}
+
 	sort.Strings(keys)
 	var sign strings.Builder
 	for _, k := range keys {

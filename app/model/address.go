@@ -11,14 +11,14 @@ import (
 
 const StatusEnable = 1
 const StatusDisable = 0
-const OtherNotifyEnable = 1
-const OtherNotifyDisable = 0
+const OtherNotifyEnable uint8 = 1
+const OtherNotifyDisable uint8 = 0
 
 type WalletAddress struct {
 	Id          int64     `gorm:"integer;primaryKey;not null;comment:id"`
-	Address     string    `gorm:"type:varchar(255);not null;unique;comment:钱包地址"`
-	Status      int       `gorm:"type:tinyint(1);not null;default:1;comment:地址状态 1启动 0禁止"`
-	OtherNotify int       `gorm:"type:tinyint(1);not null;default:1;comment:其它转账通知 1启动 0禁止"`
+	Address     string    `gorm:"column:address;type:varchar(34);not null;uniqueIndex;comment:钱包地址"`
+	Status      int       `gorm:"column:status;type:tinyint(1);not null;default:1;comment:地址状态 1启动 0禁止"`
+	OtherNotify uint8     `gorm:"column:other_notify;type:tinyint(1);not null;default:0;comment:其它转账通知 1启动 0禁止"`
 	CreatedAt   time.Time `gorm:"autoCreateTime;type:timestamp;not null;comment:创建时间"`
 	UpdatedAt   time.Time `gorm:"autoUpdateTime;type:timestamp;not null;comment:更新时间"`
 }
@@ -51,7 +51,7 @@ func (wa *WalletAddress) SetStatus(status int) {
 	DB.Save(wa)
 }
 
-func (wa *WalletAddress) SetOtherNotify(notify int) {
+func (wa *WalletAddress) SetOtherNotify(notify uint8) {
 	wa.OtherNotify = notify
 
 	DB.Save(wa)
@@ -61,10 +61,22 @@ func (wa *WalletAddress) Delete() {
 	DB.Delete(wa)
 }
 
-func GetAvailableAddress() []WalletAddress {
+func GetAvailableAddress(address string) []WalletAddress {
 	var rows []WalletAddress
+	if address == "" {
+		DB.Where("status = ?", StatusEnable).Find(&rows)
 
-	DB.Where("status = ?", StatusEnable).Find(&rows)
+		return rows
+	}
+
+	DB.Where("address = ?", address).Find(&rows)
+	if len(rows) == 0 {
+		var wa = WalletAddress{Address: address, Status: StatusEnable, OtherNotify: OtherNotifyDisable}
+
+		DB.Create(&wa)
+
+		return []WalletAddress{wa}
+	}
 
 	return rows
 }

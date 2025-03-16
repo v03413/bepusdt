@@ -35,6 +35,7 @@
 - ✅ <u>支持【TRX】收款</u>， TRX余额变动监控通知
 - ✅ 支持钱包地址 <u>能量代理</u>和<u>能量回收</u> 监控通知
 - ✅️ <u>原生支持易支付对接</u>，无需第三方插件依赖
+- ✅ 支持创建订单时指定收款地址，不必提前创建  
 - ⭕️ 待实现：支持<u>等待支付</u>和<u>支付超时</u> 订单状态回调
 
 ## 🛠 参数配置
@@ -101,6 +102,7 @@ POST /api/v1/order/create-transaction
 
 ```json
 {
+  "address": "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t",  // 可根据实际情况传入收款地址，亦可留空
   "trade_type": "usdt.trc20",  // usdt.trc20(默认) 或 tron.trx
   "order_id": "787240927112940881",   // 商户订单编号
   "amount": 28.88,   // 请求支付金额，CNY
