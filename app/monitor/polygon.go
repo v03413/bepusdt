@@ -5,12 +5,14 @@ import (
 	"context"
 	"fmt"
 	"github.com/panjf2000/ants/v2"
-	"github.com/shopspring/decimal"
 	"github.com/smallnest/chanx"
 	"github.com/tidwall/gjson"
 	"github.com/v03413/bepusdt/app/config"
 	"github.com/v03413/bepusdt/app/help"
 	"github.com/v03413/bepusdt/app/log"
+	"github.com/v03413/bepusdt/app/model"
+	"github.com/v03413/bepusdt/app/notify"
+	"github.com/v03413/bepusdt/app/telegram"
 	"io"
 	"math/big"
 	"net/http"
@@ -20,15 +22,16 @@ import (
 type polygonUsdtTransfer struct {
 	From      string
 	To        string
-	Amount    string
+	Amount    float64
 	Hash      string
 	BlockNum  int64
-	Timestamp int64
+	Timestamp time.Time
+	TradeType string
 }
 
 var polygonLastBlockNumber int64
 var polygonBlockScanQueue = chanx.NewUnboundedChan[int64](context.Background(), 30)
-var polygonUsdtTransferQueue = chanx.NewUnboundedChan[polygonUsdtTransfer](context.Background(), 30)
+var polygonUsdtTransferQueue = chanx.NewUnboundedChan[[]polygonUsdtTransfer](context.Background(), 30)
 
 const usdtPolygonContractAddress = "0xc2132d05d31c914a87c6611c10748aeb04b58e8f"
 const usdtPolygonTransferMethodID = "0xa9059cbb" // Function: transfer(address recipient, uint256 amount)
@@ -43,8 +46,40 @@ func init() {
 func polygonUsdtTransferHandle(time.Duration) {
 	for {
 		select {
-		case t := <-polygonUsdtTransferQueue.Out:
-			fmt.Println(t.Hash, t.Timestamp, t.From, t.To, t.Amount)
+		case transfers := <-polygonUsdtTransferQueue.Out:
+			var orders = getAllWaitingOrders()
+			for _, t := range transfers {
+				// 计算交易金额
+				var amount, quant = parseTransAmount(t.Amount)
+
+				// 判断金额是否在允许范围内
+				if !inPaymentAmountRange(amount) {
+
+					continue
+				}
+
+				// 判断是否存在对应订单
+				order, is := orders[fmt.Sprintf("%s%v%s", t.To, quant, t.TradeType)]
+				if !is {
+
+					continue
+				}
+
+				// 有效期检测
+				if !order.CreatedAt.Before(t.Timestamp) || !order.ExpiredAt.After(t.Timestamp) {
+
+					continue
+				}
+
+				// 更新信息
+				order.OrderUpdateTxInfo(t.BlockNum, t.From, t.Hash, t.Timestamp)
+
+				// 标记成功
+				order.MarkSuccess()
+
+				go notify.Handle(order)             // 通知订单支付成功
+				go telegram.SendTradeSuccMsg(order) // TG发送订单信息
+			}
 		}
 	}
 }
@@ -53,9 +88,9 @@ func polygonProcessBlock(n any) {
 	var num = n.(int64)
 	var url = config.GetPolygonRpcEndpoint()
 	var client = &http.Client{Timeout: time.Second * 5}
-	var data = []byte(fmt.Sprintf(`{"jsonrpc":"2.0","method":"eth_getBlockByNumber","params":["0x%x",true],"id":1}`, num))
+	var post = []byte(fmt.Sprintf(`{"jsonrpc":"2.0","method":"eth_getBlockByNumber","params":["0x%x",true],"id":1}`, num))
 
-	resp, err := client.Post(url, contentType, bytes.NewBuffer(data))
+	resp, err := client.Post(url, contentType, bytes.NewBuffer(post))
 	if err != nil {
 		polygonBlockScanQueue.In <- num
 		log.Warn("Error sending request:", err)
@@ -73,8 +108,17 @@ func polygonProcessBlock(n any) {
 
 	defer resp.Body.Close()
 
-	var result = gjson.ParseBytes(body).Get("result")
+	var data = gjson.ParseBytes(body)
+	if data.Get("error").Exists() {
+		polygonBlockScanQueue.In <- num
+		log.Warn("Polygon getBlockByNumber response error ", data.Get("error").String())
+
+		return
+	}
+
+	var result = data.Get("result")
 	var timestamp = help.HexStr2Int(result.Get("timestamp").String())
+	var transfers = make([]polygonUsdtTransfer, 0)
 	for _, v := range result.Get("transactions").Array() {
 		if v.Get("to").String() != usdtPolygonContractAddress {
 
@@ -95,15 +139,25 @@ func polygonProcessBlock(n any) {
 			continue
 		}
 
-		polygonUsdtTransferQueue.In <- polygonUsdtTransfer{
+		transfers = append(transfers, polygonUsdtTransfer{
 			From:      v.Get("from").String(),
 			To:        "0x" + input[34:74],
-			Amount:    decimal.NewFromInt(amount.Int64()).Div(decimal.NewFromInt(1e6)).String(),
+			Amount:    float64(amount.Int64()),
 			Hash:      v.Get("hash").String(),
 			BlockNum:  num,
-			Timestamp: timestamp,
-		}
+			Timestamp: time.Unix(timestamp, 0),
+			TradeType: model.OrderTradeTypeUsdtPolygon,
+		})
 	}
+
+	log.Info("区块扫描完成", num, "POLYGON")
+
+	if len(transfers) == 0 {
+
+		return
+	}
+
+	polygonUsdtTransferQueue.In <- transfers
 }
 
 func polygonBlockScan(time.Duration) {
@@ -152,6 +206,11 @@ func polygonBlockNumber(d time.Duration) {
 		if number == 0 {
 
 			continue
+		}
+
+		if config.GetTradeConfirmed() { // 暂且认为30个区块之前的交易已经被全网确认
+
+			number = number - 30
 		}
 
 		// 首次启动

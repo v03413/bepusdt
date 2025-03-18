@@ -66,13 +66,13 @@ func createTransaction(ctx *gin.Context) {
 		}
 	}
 
-	if v, ok := data["trade_type"]; ok && cast.ToString(v) == model.OrderTradeTypeTronTrx {
+	if v, ok := data["trade_type"]; ok {
 
-		tradeType = model.OrderTradeTypeTronTrx
+		tradeType = model.GetTradeType(cast.ToString(v))
 	}
 	if v, ok := data["address"]; ok && cast.ToString(v) != "" {
 		address = cast.ToString(v)
-		if !help.IsValidTronAddress(address) {
+		if !help.IsValidTronAddress(address) && !help.IsValidPolygonAddress(address) {
 			ctx.JSON(200, respFailJson(fmt.Sprintf("收款钱包地址(%s)不合法", address)))
 
 			return

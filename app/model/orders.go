@@ -64,28 +64,25 @@ func (o *TradeOrders) OrderSetCanceled() error {
 	return DB.Save(o).Error
 }
 
-func (o *TradeOrders) OrderSetExpired() error {
+func (o *TradeOrders) OrderSetExpired() {
 	o.Status = OrderStatusExpired
 
-	return DB.Save(o).Error
+	DB.Save(o)
 }
 
-func (o *TradeOrders) OrderUpdateTxInfo(refBlockNum int64, fromAddress, tradeHash string, confirmedAt time.Time) error {
+func (o *TradeOrders) OrderUpdateTxInfo(refBlockNum int64, fromAddress, tradeHash string, confirmedAt time.Time) {
 	o.FromAddress = fromAddress
 	o.ConfirmedAt = confirmedAt
 	o.TradeHash = tradeHash
 	o.RefBlockNum = refBlockNum
-	r := DB.Save(o)
 
-	return r.Error
+	DB.Save(o)
 }
 
-func (o *TradeOrders) OrderSetSucc() error {
+func (o *TradeOrders) MarkSuccess() {
 	o.Status = OrderStatusSuccess // 标记成功
 
-	r := DB.Save(o)
-
-	return r.Error
+	DB.Save(o)
 }
 
 func (o *TradeOrders) OrderSetNotifyState(state int) error {
@@ -113,6 +110,19 @@ func (o *TradeOrders) GetStatusLabel() string {
 	return label
 }
 
+func GetTradeType(trade string) string {
+	if trade == OrderTradeTypeTronTrx {
+
+		return OrderTradeTypeTronTrx
+	}
+	if trade == OrderTradeTypeUsdtPolygon {
+
+		return OrderTradeTypeUsdtPolygon
+	}
+
+	return OrderTradeTypeUsdtTrc20
+}
+
 func GetTradeOrder(tradeId string) (TradeOrders, bool) {
 	var order TradeOrders
 	var res = DB.Where("trade_id = ?", tradeId).First(&order)
@@ -120,11 +130,12 @@ func GetTradeOrder(tradeId string) (TradeOrders, bool) {
 	return order, res.Error == nil
 }
 
-func GetTradeOrderByStatus(Status int) ([]TradeOrders, error) {
-	var orders []TradeOrders
-	var res = DB.Where("status = ?", Status).Find(&orders)
+func GetTradeOrderByStatus(Status int) []TradeOrders {
+	var orders = make([]TradeOrders, 0)
 
-	return orders, res.Error
+	DB.Where("status = ?", Status).Find(&orders)
+
+	return orders
 }
 
 func GetNotifyFailedTradeOrders() ([]TradeOrders, error) {

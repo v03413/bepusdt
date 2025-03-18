@@ -84,17 +84,17 @@ func (wa *WalletAddress) Delete() {
 	DB.Delete(wa)
 }
 
-func GetAvailableAddress(address string) []WalletAddress {
+func GetAvailableAddress(address, chain string) []WalletAddress {
 	var rows []WalletAddress
 	if address == "" {
-		DB.Where("status = ?", StatusEnable).Find(&rows)
+		DB.Where("chain = ? and status = ?", chain, StatusEnable).Find(&rows)
 
 		return rows
 	}
 
 	DB.Where("address = ?", address).Find(&rows)
 	if len(rows) == 0 {
-		var wa = WalletAddress{Address: address, Status: StatusEnable, OtherNotify: OtherNotifyDisable}
+		var wa = WalletAddress{Chain: chain, Address: address, Status: StatusEnable, OtherNotify: OtherNotifyDisable}
 
 		DB.Create(&wa)
 

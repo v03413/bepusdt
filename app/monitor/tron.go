@@ -22,6 +22,7 @@ import (
 	"google.golang.org/grpc/backoff"
 	"google.golang.org/grpc/credentials/insecure"
 	"strconv"
+	"strings"
 	"sync/atomic"
 	"time"
 )
@@ -247,7 +248,7 @@ func parseBlockTrans(block *api.BlockExtention, nowHeight int64) {
 		handleResourceNotify(resources)
 	}
 
-	log.Info("区块扫描完成：", nowHeight)
+	log.Info("区块扫描完成", nowHeight, "TRON")
 }
 
 // parseUsdtTrc20Contract 解析usdt trc20合约
@@ -289,13 +290,8 @@ func parseUsdtTrc20Contract(reader *bytes.Reader) usdtTrc20TransferRaw {
 
 // handleOrderTransaction 处理支付交易
 func handleOrderTransaction(refBlockNum, nowHeight int64, transfers []transfer) []transfer {
-	var orders, err = getAllPendingOrders()
+	var orders = getAllWaitingOrders()
 	var notOrderTransfers []transfer
-	if err != nil {
-		log.Error(err.Error())
-
-		return notOrderTransfers
-	}
 
 	for _, t := range transfers {
 		// 计算交易金额
@@ -323,11 +319,7 @@ func handleOrderTransaction(refBlockNum, nowHeight int64, transfers []transfer) 
 		}
 
 		// 更新订单交易信息
-		var err = order.OrderUpdateTxInfo(refBlockNum, t.FromAddress, t.ID, t.Timestamp)
-		if err != nil {
-
-			log.Error("OrderUpdateTxInfo", err)
-		}
+		order.OrderUpdateTxInfo(refBlockNum, t.FromAddress, t.ID, t.Timestamp)
 	}
 
 	for _, order := range orders {
@@ -348,12 +340,7 @@ func handleOrderTransaction(refBlockNum, nowHeight int64, transfers []transfer) 
 			continue
 		}
 
-		var err = order.OrderSetSucc()
-		if err != nil {
-			log.Error("OrderSetSucc", err)
-
-			continue
-		}
+		order.MarkSuccess()
 
 		go notify.Handle(order)             // 通知订单支付成功
 		go telegram.SendTradeSuccMsg(order) // TG发送订单信息
@@ -516,38 +503,31 @@ func base58CheckEncode(input []byte) string {
 	return base58.Encode(input)
 }
 
-// 列出所有等待支付的交易订单
-func getAllPendingOrders() (map[string]model.TradeOrders, error) {
-	tradeOrders, err := model.GetTradeOrderByStatus(model.OrderStatusWaiting)
-	if err != nil {
-
-		return nil, fmt.Errorf("待支付订单获取失败: %w", err)
-	}
-
-	var lock = make(map[string]model.TradeOrders) // 当前所有正在等待支付的订单 Lock Key
+// 列出所有待支付交易订单
+func getAllWaitingOrders() map[string]model.TradeOrders {
+	var tradeOrders = model.GetTradeOrderByStatus(model.OrderStatusWaiting)
+	var data = make(map[string]model.TradeOrders) // 当前所有正在等待支付的订单 Lock Key
 	for _, order := range tradeOrders {
 		if time.Now().Unix() >= order.ExpiredAt.Unix() { // 订单过期
-			err := order.OrderSetExpired()
-			if err != nil {
-				log.Error("订单过期标记失败：", err, order.OrderId)
-			} else {
-				log.Info("订单过期：", order.OrderId)
-			}
+			order.OrderSetExpired()
 
 			continue
 		}
 
-		lock[order.Address+order.Amount+order.TradeType] = order
+		if order.TradeType == model.OrderTradeTypeUsdtPolygon {
+
+			order.Address = strings.ToLower(order.Address)
+		}
+
+		data[order.Address+order.Amount+order.TradeType] = order
 	}
 
-	return lock, nil
+	return data
 }
 
 // 解析交易金额
 func parseTransAmount(amount float64) (decimal.Decimal, string) {
-	var _decimalAmount = decimal.NewFromFloat(amount)
-	var _decimalDivisor = decimal.NewFromFloat(1000000)
-	var result = _decimalAmount.Div(_decimalDivisor)
+	var result = decimal.NewFromFloat(amount).Div(decimal.NewFromFloat(1000000))
 
 	return result, result.String()
 }
