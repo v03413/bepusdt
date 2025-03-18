@@ -8,19 +8,19 @@ import (
 )
 
 const (
-	StatusEnable  = 1
-	StatusDisable = 0
-)
-
-const (
+	StatusEnable       uint8 = 1
+	StatusDisable      uint8 = 0
 	OtherNotifyEnable  uint8 = 1
 	OtherNotifyDisable uint8 = 0
+	WaChainTron              = "tron"
+	WaChainPolygon           = "polygon"
 )
 
-const (
-	WaChainTron    = "tron"
-	WaChainPolygon = "polygon"
-)
+var tradeChain = map[string]string{
+	OrderTradeTypeTronTrx:     WaChainTron,
+	OrderTradeTypeUsdtTrc20:   WaChainTron,
+	OrderTradeTypeUsdtPolygon: WaChainPolygon,
+}
 
 type WalletAddress struct {
 	ID          int64     `gorm:"integer;primaryKey;not null;comment:id"`
@@ -84,8 +84,9 @@ func (wa *WalletAddress) Delete() {
 	DB.Delete(wa)
 }
 
-func GetAvailableAddress(address, chain string) []WalletAddress {
+func GetAvailableAddress(address, tradeType string) []WalletAddress {
 	var rows []WalletAddress
+	var chain = tradeChain[tradeType]
 	if address == "" {
 		DB.Where("chain = ? and status = ?", chain, StatusEnable).Find(&rows)
 
