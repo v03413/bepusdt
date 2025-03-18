@@ -32,10 +32,10 @@
 - ✅ 订单收款成功和余额变动通知 支持指定群组推送
 - ✅ 支持可自定义USDT支付数额的精度，递增颗粒度
 - ✅ 底层直接采用区块扫描，不依赖三方API，秒级响应
-- ✅ <u>支持【TRX】收款</u>， TRX余额变动监控通知
+- ✅ <u>支持 TRX USDT.Polygon 收款</u>，余额变动监控
 - ✅ 支持钱包地址 <u>能量代理</u>和<u>能量回收</u> 监控通知
 - ✅️ <u>原生支持易支付对接</u>，无需第三方插件依赖
-- ✅ 支持创建订单时动态钱包地址，不再强制固定  
+- ✅ 支持创建订单时动态钱包地址，不再强制固定
 - ⭕️ 待实现：支持<u>等待支付</u>和<u>支付超时</u> 订单状态回调
 
 ## 🛠 参数配置
@@ -103,7 +103,7 @@ POST /api/v1/order/create-transaction
 ```json
 {
   "address": "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t",  // 可根据实际情况传入收款地址，亦可留空
-  "trade_type": "usdt.trc20",  // usdt.trc20(默认) 或 tron.trx
+  "trade_type": "usdt.trc20",  // usdt.trc20(默认) tron.trx usdt.polygon
   "order_id": "787240927112940881",   // 商户订单编号
   "amount": 28.88,   // 请求支付金额，CNY
   "signature":"123456abcd", // 签名
