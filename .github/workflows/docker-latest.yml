@@ -2,6 +2,8 @@ name: docker-latest
 on:
   workflow_dispatch:
   create:
+    branches:
+      - main
     tags:
       - v*
 env:
