@@ -21,8 +21,9 @@ const (
 )
 
 const (
-	OrderTradeTypeUsdtTrc20 = "usdt.trc20"
-	OrderTradeTypeTronTrx   = "tron.trx"
+	OrderTradeTypeTronTrx     = "tron.trx"
+	OrderTradeTypeUsdtTrc20   = "usdt.trc20"
+	OrderTradeTypeUsdtPolygon = "usdt.polygon"
 )
 
 const (
@@ -34,14 +35,14 @@ var calcMutex sync.Mutex
 
 type TradeOrders struct {
 	Id          int64     `gorm:"primary_key;AUTO_INCREMENT;comment:id"`
-	OrderId     string    `gorm:"type:varchar(255);not null;unique;color:blue;comment:客户订单ID"`
-	TradeId     string    `gorm:"type:varchar(255);not null;unique;color:blue;comment:本地订单ID"`
+	OrderId     string    `gorm:"type:varchar(128);not null;unique;color:blue;comment:商户ID"`
+	TradeId     string    `gorm:"type:varchar(128);not null;unique;color:blue;comment:本地ID"`
 	TradeType   string    `gorm:"type:varchar(20);not null;comment:交易类型"`
 	TradeHash   string    `gorm:"type:varchar(64);default:'';unique;comment:交易哈希"`
 	TradeRate   string    `gorm:"type:varchar(10);not null;comment:交易汇率"`
-	Amount      string    `gorm:"type:decimal(10,2);not null;default:0;comment:USDT交易数额"`
+	Amount      string    `gorm:"type:decimal(10,2);not null;default:0;comment:交易数额"`
 	Money       float64   `gorm:"type:decimal(10,2);not null;default:0;comment:订单交易金额"`
-	Address     string    `gorm:"type:varchar(34);not null;comment:收款地址"`
+	Address     string    `gorm:"column:address;type:varchar(64);not null;comment:收款地址"`
 	FromAddress string    `gorm:"type:varchar(34);not null;default:'';comment:支付地址"`
 	Status      int       `gorm:"type:tinyint(1);not null;default:0;comment:交易状态 1：等待支付 2：支付成功 3：订单过期"`
 	Name        string    `gorm:"type:varchar(64);not null;default:'';comment:商品名称"`

@@ -1,43 +1,66 @@
 package model
 
 import (
-	"errors"
 	"fmt"
 	"github.com/v03413/bepusdt/app/config"
 	"github.com/v03413/bepusdt/app/help"
-	"gorm.io/gorm"
 	"time"
 )
 
-const StatusEnable = 1
-const StatusDisable = 0
-const OtherNotifyEnable uint8 = 1
-const OtherNotifyDisable uint8 = 0
+const (
+	StatusEnable  = 1
+	StatusDisable = 0
+)
+
+const (
+	OtherNotifyEnable  uint8 = 1
+	OtherNotifyDisable uint8 = 0
+)
+
+const (
+	WaChainTron    = "tron"
+	WaChainPolygon = "polygon"
+)
 
 type WalletAddress struct {
-	Id          int64     `gorm:"integer;primaryKey;not null;comment:id"`
-	Address     string    `gorm:"column:address;type:varchar(34);not null;uniqueIndex;comment:钱包地址"`
-	Status      int       `gorm:"column:status;type:tinyint(1);not null;default:1;comment:地址状态 1启动 0禁止"`
+	ID          int64     `gorm:"integer;primaryKey;not null;comment:id"`
+	Status      uint8     `gorm:"column:status;type:tinyint(1);not null;default:1;comment:地址状态 1启动 0禁止"`
+	Chain       string    `gorm:"column:chain;type:varchar(16);not null;default:'tron';comment:链类型"`
+	Address     string    `gorm:"column:address;type:varchar(64);not null;uniqueIndex;comment:钱包地址"`
 	OtherNotify uint8     `gorm:"column:other_notify;type:tinyint(1);not null;default:0;comment:其它转账通知 1启动 0禁止"`
-	CreatedAt   time.Time `gorm:"autoCreateTime;type:timestamp;not null;comment:创建时间"`
-	UpdatedAt   time.Time `gorm:"autoUpdateTime;type:timestamp;not null;comment:更新时间"`
+	CreatedAt   time.Time `gorm:"column:created_at;autoCreateTime;type:timestamp;not null;comment:创建时间"`
+	UpdatedAt   time.Time `gorm:"column:updated_at;autoUpdateTime;type:timestamp;not null;comment:更新时间"`
 }
 
 // 启动时添加初始钱包地址
 func addStartWalletAddress() {
-	var _wa WalletAddress
-
 	for _, address := range config.GetInitWalletAddress() {
-		if help.IsValidTRONWalletAddress(address) {
-			var _res2 = DB.Where("address = ?", address).First(&_wa)
-			if errors.Is(_res2.Error, gorm.ErrRecordNotFound) {
-				var _row = WalletAddress{Address: address, Status: StatusEnable}
-				var _res = DB.Create(&_row)
-				if _res.Error == nil && _res.RowsAffected == 1 {
-					fmt.Println("✅钱包地址添加成功：", address)
-				}
-			}
+		if !help.IsValidTronAddress(address) && !help.IsValidPolygonAddress(address) {
+			fmt.Println("❌钱包地址不合法：", address)
+
+			continue
 		}
+
+		var chain = WaChainTron
+		if help.IsValidPolygonAddress(address) {
+			chain = WaChainPolygon
+		}
+
+		var wa WalletAddress
+		DB.Where("address = ?", address).Limit(1).Find(&wa)
+		if wa.ID != 0 {
+
+			continue
+		}
+
+		var err = DB.Create(&WalletAddress{Chain: chain, Address: address, Status: StatusEnable}).Error
+		if err != nil {
+			fmt.Println("❌钱包地址添加失败：", err)
+
+			continue
+		}
+
+		fmt.Println("✅钱包地址添加成功：", chain, address)
 	}
 }
 
@@ -46,7 +69,7 @@ func (wa *WalletAddress) TableName() string {
 	return "wallet_address"
 }
 
-func (wa *WalletAddress) SetStatus(status int) {
+func (wa *WalletAddress) SetStatus(status uint8) {
 	wa.Status = status
 	DB.Save(wa)
 }

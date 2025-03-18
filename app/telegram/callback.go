@@ -26,7 +26,11 @@ const cbOrderDetail = "order_detail"
 const cbMarkNotifySucc = "mark_notify_succ"
 
 func cbWalletAction(query *tgbotapi.CallbackQuery, address string) {
-	var info = getWalletInfoByAddress(address)
+	var info = "暂时只支持 Tron 钱包查询..."
+	if strings.HasPrefix(address, "T") {
+		info = getTronWalletInfo(address)
+	}
+
 	var msg = tgbotapi.NewMessage(query.Message.Chat.ID, "❌查询失败")
 	if info != "" {
 		msg.Text = info
@@ -196,7 +200,7 @@ func cbMarkNotifySuccAction(tradeId string) {
 	SendMsg(msg)
 }
 
-func getWalletInfoByAddress(address string) string {
+func getTronWalletInfo(address string) string {
 	var url = "https://apilist.tronscanapi.com/api/accountv2?address=" + address
 	var client = http.Client{Timeout: time.Second * 5}
 	resp, err := client.Get(url)
@@ -248,4 +252,10 @@ func getWalletInfoByAddress(address string) string {
 	}
 
 	return text
+}
+
+func getPolygonWallerInfo(address string) string {
+	// TODO: 开发中...
+
+	return "开发中..."
 }

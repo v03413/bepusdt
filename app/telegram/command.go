@@ -36,7 +36,7 @@ func cmdStartHandle() {
 				_address = fmt.Sprintf("[❌已禁用] %s", wa.Address)
 			}
 
-			inlineBtn = append(inlineBtn, tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData(_address, fmt.Sprintf("%s|%v", cbAddress, wa.Id))))
+			inlineBtn = append(inlineBtn, tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData(_address, fmt.Sprintf("%s|%v", cbAddress, wa.ID))))
 		}
 	}
 

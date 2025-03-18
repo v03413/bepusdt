@@ -23,7 +23,8 @@ const defaultPaymentMinAmount = 0.01
 const defaultPaymentMaxAmount = 99999
 const defaultUsdtAtomicity = "0.01" // 原子精度
 const defaultTrxAtomicity = "0.01"
-const defaultTronGrpcNode = "18.141.79.38:50051" // 默认GRPC节点
+const defaultTronGrpcNode = "18.141.79.38:50051"             // 默认GRPC节点
+const defaultPolygonRpcEndpoint = "https://polygon-rpc.com/" // 默认Polygon RPC节点
 
 var runPath string
 
@@ -40,6 +41,15 @@ func init() {
 	}
 
 	runPath = filepath.Dir(execPath)
+}
+
+func GetPolygonRpcEndpoint() string {
+	if data := help.GetEnv("POLYGON_RPC_ENDPOINT"); data != "" {
+
+		return strings.TrimSpace(data)
+	}
+
+	return defaultPolygonRpcEndpoint
 }
 
 func GetBlockScanSuccRate() string {

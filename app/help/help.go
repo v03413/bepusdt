@@ -2,12 +2,14 @@ package help
 
 import (
 	"crypto/md5"
+	"encoding/hex"
 	"fmt"
 	gonanoid "github.com/matoous/go-nanoid/v2"
 	"math"
 	"os"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -91,10 +93,25 @@ func IsNumber(s string) bool {
 	return match && err == nil
 }
 
-func IsValidTRONWalletAddress(address string) bool {
+func IsValidTronAddress(address string) bool {
 	match, err := regexp.MatchString(`^T[a-zA-Z0-9]{33}$`, address)
 
 	return match && err == nil
+}
+
+func IsValidPolygonAddress(address string) bool {
+	if len(address) != 42 || !strings.HasPrefix(address, "0x") {
+
+		return false
+	}
+
+	addrWithoutPrefix := address[2:]
+	if _, err := hex.DecodeString(addrWithoutPrefix); err != nil {
+
+		return false
+	}
+
+	return true
 }
 
 func MaskAddress(address string) string {
@@ -109,4 +126,10 @@ func MaskAddress(address string) string {
 func CalcNextNotifyTime(base time.Time, num int) time.Time {
 
 	return base.Add(time.Minute * time.Duration(math.Pow(2, float64(num))))
+}
+
+func HexStr2Int(hex string) int64 {
+	v, _ := strconv.ParseInt(strings.TrimPrefix(hex, "0x"), 16, 64)
+
+	return v
 }

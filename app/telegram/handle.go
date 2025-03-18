@@ -21,8 +21,8 @@ func HandleMessage(msg *api.Message) {
 		addWalletAddress(msg)
 	}
 
-	if msg.Text != "" && help.IsValidTRONWalletAddress(msg.Text) {
-		go queryAnyTrc20AddressInfo(msg, msg.Text)
+	if msg.Text != "" && help.IsValidTronAddress(msg.Text) {
+		go queryTronAddressInfo(msg, msg.Text)
 	}
 }
 
@@ -64,13 +64,19 @@ func HandleCallback(query *api.CallbackQuery) {
 func addWalletAddress(msg *api.Message) {
 	var address = strings.TrimSpace(msg.Text)
 	// 简单检测地址是否合法
-	if !help.IsValidTRONWalletAddress(address) {
+	if !help.IsValidTronAddress(address) && !help.IsValidPolygonAddress(address) {
 		SendMsg(api.NewMessage(msg.Chat.ID, "钱包地址不合法"))
 
 		return
 	}
 
-	var wa = model.WalletAddress{Address: address, Status: model.StatusEnable, OtherNotify: model.OtherNotifyEnable}
+	var chain = model.WaChainTron
+	if help.IsValidPolygonAddress(address) {
+
+		chain = model.WaChainPolygon
+	}
+
+	var wa = model.WalletAddress{Chain: chain, Address: address, Status: model.StatusEnable, OtherNotify: model.OtherNotifyEnable}
 	var r = model.DB.Create(&wa)
 	if r.Error != nil {
 		if r.Error.Error() == "UNIQUE constraint failed: wallet_address.address" {
@@ -111,8 +117,8 @@ func botCommandHandle(msg *api.Message) {
 	}
 }
 
-func queryAnyTrc20AddressInfo(msg *api.Message, address string) {
-	var info = getWalletInfoByAddress(address)
+func queryTronAddressInfo(msg *api.Message, address string) {
+	var info = getTronWalletInfo(address)
 	var reply = api.NewMessage(msg.Chat.ID, "❌查询失败")
 	if info != "" {
 		reply.ReplyToMessageID = msg.MessageID
