@@ -21,8 +21,14 @@ func HandleMessage(msg *api.Message) {
 		addWalletAddress(msg)
 	}
 
-	if msg.Text != "" && help.IsValidTronAddress(msg.Text) {
-		go queryTronAddressInfo(msg, msg.Text)
+	if msg.Text != "" {
+		if help.IsValidTronAddress(msg.Text) {
+			go queryTronAddressInfo(msg, msg.Text)
+		}
+
+		if help.IsValidPolygonAddress(msg.Text) {
+			go queryPolygonAddressInfo(msg, msg.Text)
+		}
 	}
 }
 
@@ -123,6 +129,7 @@ func queryTronAddressInfo(msg *api.Message, address string) {
 	if info != "" {
 		reply.ReplyToMessageID = msg.MessageID
 		reply.Text = info
+		reply.ParseMode = api.ModeMarkdownV2
 		reply.ReplyMarkup = api.InlineKeyboardMarkup{
 			InlineKeyboard: [][]api.InlineKeyboardButton{
 				{
@@ -130,6 +137,22 @@ func queryTronAddressInfo(msg *api.Message, address string) {
 				},
 			},
 		}
+	}
+
+	_, _ = botApi.Send(reply)
+}
+
+func queryPolygonAddressInfo(msg *api.Message, address string) {
+	var reply = api.NewMessage(msg.Chat.ID, getPolygonWalletInfo(address))
+
+	reply.ReplyToMessageID = msg.MessageID
+	reply.ParseMode = api.ModeMarkdownV2
+	reply.ReplyMarkup = api.InlineKeyboardMarkup{
+		InlineKeyboard: [][]api.InlineKeyboardButton{
+			{
+				api.NewInlineKeyboardButtonURL("📝查看详细信息", "https://polygonscan.com/address/"+address),
+			},
+		},
 	}
 
 	_, _ = botApi.Send(reply)

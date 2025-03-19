@@ -5,6 +5,7 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/spf13/cast"
 	"github.com/v03413/bepusdt/app/config"
+	"github.com/v03413/bepusdt/app/help"
 	"github.com/v03413/bepusdt/app/model"
 	"github.com/v03413/bepusdt/app/rate"
 	"time"
@@ -95,12 +96,12 @@ func cmdWalletHandle() {
 	var inlineBtn [][]tgbotapi.InlineKeyboardButton
 	if model.DB.Find(&was).Error == nil {
 		for _, wa := range was {
-			var _address = fmt.Sprintf("[✅已启用] %s", wa.Address)
+			var text = fmt.Sprintf("[✅已启用] %s", help.MaskAddress(wa.Address))
 			if wa.Status == model.StatusDisable {
-				_address = fmt.Sprintf("[❌已禁用] %s", wa.Address)
+				text = fmt.Sprintf("[❌已禁用] %s", help.MaskAddress(wa.Address))
 			}
 
-			inlineBtn = append(inlineBtn, tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData(_address, fmt.Sprintf("%s|%v", cbWallet, wa.Address))))
+			inlineBtn = append(inlineBtn, tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData(text, fmt.Sprintf("%s|%v", cbWallet, wa.Address))))
 		}
 	}
 

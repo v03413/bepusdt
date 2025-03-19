@@ -1,14 +1,17 @@
 package telegram
 
 import (
+	"bytes"
 	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/shopspring/decimal"
 	"github.com/tidwall/gjson"
 	"github.com/v03413/bepusdt/app/config"
 	"github.com/v03413/bepusdt/app/help"
 	"github.com/v03413/bepusdt/app/log"
 	"github.com/v03413/bepusdt/app/model"
 	"io"
+	"math/big"
 	"net/http"
 	"net/url"
 	"strings"
@@ -26,14 +29,18 @@ const cbOrderDetail = "order_detail"
 const cbMarkNotifySucc = "mark_notify_succ"
 
 func cbWalletAction(query *tgbotapi.CallbackQuery, address string) {
-	var info = "暂时只支持 Tron 钱包查询..."
+	var info = "暂不支持..."
 	if strings.HasPrefix(address, "T") {
 		info = getTronWalletInfo(address)
+	}
+	if help.IsValidPolygonAddress(address) {
+		info = getPolygonWalletInfo(address)
 	}
 
 	var msg = tgbotapi.NewMessage(query.Message.Chat.ID, "❌查询失败")
 	if info != "" {
 		msg.Text = info
+		msg.ParseMode = tgbotapi.ModeMarkdownV2
 		msg.ReplyMarkup = tgbotapi.InlineKeyboardMarkup{
 			InlineKeyboard: [][]tgbotapi.InlineKeyboardButton{
 				{
@@ -229,7 +236,7 @@ func getTronWalletInfo(address string) string {
 	var latestOperationTime = time.UnixMilli(result.Get("latest_operation_time").Int())
 	var netRemaining = result.Get("bandwidth.netRemaining").Int() + result.Get("bandwidth.freeNetRemaining").Int()
 	var netLimit = result.Get("bandwidth.netLimit").Int() + result.Get("bandwidth.freeNetLimit").Int()
-	var text = `
+	var text = "```" + `
 ☘️ 查询地址：` + address + `
 💰 TRX余额：0.00 TRX
 💲 USDT余额：0.00 USDT
@@ -238,8 +245,7 @@ func getTronWalletInfo(address string) string {
 📡 宽带资源：` + fmt.Sprintf("%v", netRemaining) + ` / ` + fmt.Sprintf("%v", netLimit) + ` 
 🔋 能量资源：` + result.Get("bandwidth.energyRemaining").String() + ` / ` + result.Get("bandwidth.energyLimit").String() + `
 ⏰ 创建时间：` + dateCreated.Format(time.DateTime) + `
-⏰ 最后活动：` + latestOperationTime.Format(time.DateTime) + `
-`
+⏰ 最后活动：` + latestOperationTime.Format(time.DateTime) + "\n```"
 
 	for _, v := range result.Get("withPriceTokens").Array() {
 		if v.Get("tokenName").String() == "trx" {
@@ -254,8 +260,42 @@ func getTronWalletInfo(address string) string {
 	return text
 }
 
-func getPolygonWallerInfo(address string) string {
-	// TODO: 开发中...
+func getPolygonWalletInfo(address string) string {
+	var usdt = polygonBalanceOf("0xc2132d05d31c914a87c6611c10748aeb04b58e8f", address)
+	var pol = polygonBalanceOf("0x0000000000000000000000000000000000001010", address)
 
-	return "开发中..."
+	return fmt.Sprintf("```"+`
+💰POL 余额：%s
+💲USDT余额：%s
+☘️查询地址：`+address+`
+`+"```",
+		decimal.NewFromBigInt(pol, -18).Round(4).String(),
+		help.Ec(decimal.NewFromBigInt(usdt, -6).String()))
+}
+
+func polygonBalanceOf(contract, address string) *big.Int {
+	var url = config.GetPolygonRpcEndpoint()
+	var jsonData = []byte(fmt.Sprintf(`{"jsonrpc":"2.0","id":%d,"method":"eth_call","params":[{"from":"0x0000000000000000000000000000000000000000","data":"0x70a08231000000000000000000000000%s","to":"%s"},"latest"]}`,
+		time.Now().Unix(), strings.ToLower(strings.Trim(address, "0x")), strings.ToLower(contract)))
+	var client = &http.Client{Timeout: time.Second * 5}
+	resp, err := client.Post(url, "application/json", bytes.NewBuffer(jsonData))
+	if err != nil {
+		log.Warn("Error Post response:", err)
+
+		return big.NewInt(0)
+	}
+
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Warn("Error reading response body:", err)
+
+		return big.NewInt(0)
+	}
+
+	var data = gjson.ParseBytes(body)
+	var result = data.Get("result").String()
+
+	return help.HexStr2Int(result)
 }

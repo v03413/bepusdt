@@ -6,10 +6,10 @@ import (
 	"fmt"
 	gonanoid "github.com/matoous/go-nanoid/v2"
 	"math"
+	"math/big"
 	"os"
 	"regexp"
 	"sort"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -128,8 +128,11 @@ func CalcNextNotifyTime(base time.Time, num int) time.Time {
 	return base.Add(time.Minute * time.Duration(math.Pow(2, float64(num))))
 }
 
-func HexStr2Int(hex string) int64 {
-	v, _ := strconv.ParseInt(strings.TrimPrefix(hex, "0x"), 16, 64)
+func HexStr2Int(str string) *big.Int {
+	var n = new(big.Int)
+	var val = strings.TrimLeft(strings.TrimPrefix(str, "0x"), "0")
 
-	return v
+	n.SetString(val, 16)
+
+	return n
 }

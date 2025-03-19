@@ -145,7 +145,7 @@ func polygonProcessBlock(n any) {
 			Amount:    float64(amount.Int64()),
 			Hash:      v.Get("hash").String(),
 			BlockNum:  num,
-			Timestamp: time.Unix(timestamp, 0),
+			Timestamp: time.Unix(timestamp.Int64(), 0),
 			TradeType: model.OrderTradeTypeUsdtPolygon,
 		})
 	}
@@ -202,7 +202,7 @@ func polygonBlockNumber(d time.Duration) {
 		_ = resp.Body.Close()
 
 		var res = gjson.ParseBytes(body)
-		var number = help.HexStr2Int(res.Get("result").String())
+		var number = help.HexStr2Int(res.Get("result").String()).Int64()
 		if number == 0 {
 
 			continue
