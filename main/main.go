@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/v03413/bepusdt/app"
-	"github.com/v03413/bepusdt/app/monitor"
+	"github.com/v03413/bepusdt/app/task"
 	"github.com/v03413/bepusdt/app/web"
 	"os"
 	"os/signal"
@@ -16,7 +16,7 @@ func main() {
 		panic(err)
 	}
 
-	monitor.Start()
+	task.Start()
 
 	web.Start()
 

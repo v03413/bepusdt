@@ -1,4 +1,4 @@
-package monitor
+package task
 
 import (
 	"github.com/shopspring/decimal"
@@ -13,11 +13,11 @@ type task struct {
 
 var scheduleList []task
 
-var _paymentMinAmount, _paymentMaxAmount decimal.Decimal
+var minAmount, maxAmount decimal.Decimal
 
 func init() {
-	_paymentMinAmount = config.GetPaymentMinAmount()
-	_paymentMaxAmount = config.GetPaymentMaxAmount()
+	minAmount = config.GetPaymentMinAmount()
+	maxAmount = config.GetPaymentMaxAmount()
 }
 
 func Start() {
@@ -34,12 +34,12 @@ func RegisterSchedule(tick time.Duration, callback func(tick time.Duration)) {
 }
 
 func inPaymentAmountRange(payAmount decimal.Decimal) bool {
-	if payAmount.GreaterThan(_paymentMaxAmount) {
+	if payAmount.GreaterThan(maxAmount) {
 
 		return false
 	}
 
-	if payAmount.LessThan(_paymentMinAmount) {
+	if payAmount.LessThan(minAmount) {
 
 		return false
 	}

@@ -1,4 +1,4 @@
-package monitor
+package task
 
 import (
 	"bytes"
@@ -302,8 +302,8 @@ func getAllWaitingOrders() map[string]model.TradeOrders {
 }
 
 // 解析交易金额
-func parseTransAmount(amount float64) (decimal.Decimal, string) {
+func parseTransAmount(amount float64) decimal.Decimal {
 	var result = decimal.NewFromFloat(amount).Div(decimal.NewFromFloat(1000000))
 
-	return result, result.String()
+	return result
 }
