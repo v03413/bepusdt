@@ -144,56 +144,55 @@ func cbAddressOtherNotifyAction(query *tgbotapi.CallbackQuery, id string) {
 func cbOrderDetailAction(tradeId string) {
 	var o model.TradeOrders
 
-	if model.DB.Where("trade_id = ?", tradeId).First(&o).Error == nil {
-		var urlInfo, er2 = url.Parse(o.NotifyUrl)
-		if er2 != nil {
-			log.Error("商户网站地址解析错误：" + er2.Error())
+	if model.DB.Where("trade_id = ?", tradeId).First(&o).Error != nil {
 
-			return
-		}
-
-		var _notifyStateLabel = "✅ 回调成功"
-		if o.NotifyState != model.OrderNotifyStateSucc {
-			_notifyStateLabel = "❌ 回调失败"
-		}
-		if model.OrderStatusWaiting == o.Status {
-			_notifyStateLabel = o.GetStatusLabel()
-		}
-		if model.OrderStatusExpired == o.Status {
-			_notifyStateLabel = "🈚️ 没有回调"
-		}
-
-		var tradeUnit = "USDT.TRC20"
-		if o.TradeType == model.OrderTradeTypeTronTrx {
-			tradeUnit = "TRX"
-		}
-
-		var _site = &url.URL{Scheme: urlInfo.Scheme, Host: urlInfo.Host}
-		var _msg = tgbotapi.NewMessage(0, "```"+`
-📌 订单ID：`+o.OrderId+`
-📊 交易汇率：`+o.TradeRate+`(`+config.GetUsdtRate()+`)
-💰 交易金额：`+fmt.Sprintf("%.2f", o.Money)+` CNY
-💲 交易数额：`+o.Amount+` `+tradeUnit+`
-🌏 商户网站：`+_site.String()+`
-🔋 收款状态：`+o.GetStatusLabel()+`
-🍀 回调状态：`+_notifyStateLabel+`
-💎️ 收款地址：`+help.MaskAddress(o.Address)+`
-🕒 创建时间：`+o.CreatedAt.Format(time.DateTime)+`
-🕒 失效时间：`+o.ExpiredAt.Format(time.DateTime)+`
-⚖️️ 确认时间：`+o.ConfirmedAt.Format(time.DateTime)+`
-`+"\n```")
-		_msg.ParseMode = tgbotapi.ModeMarkdown
-		_msg.ReplyMarkup = tgbotapi.InlineKeyboardMarkup{
-			InlineKeyboard: [][]tgbotapi.InlineKeyboardButton{
-				{
-					tgbotapi.NewInlineKeyboardButtonURL("🌏商户网站", _site.String()),
-					tgbotapi.NewInlineKeyboardButtonURL("📝交易明细", "https://tronscan.org/#/transaction/"+o.TradeHash),
-				},
-			},
-		}
-
-		SendMsg(_msg)
+		return
 	}
+
+	var urlInfo, er2 = url.Parse(o.NotifyUrl)
+	if er2 != nil {
+		log.Error("商户网站地址解析错误：" + er2.Error())
+
+		return
+	}
+
+	var notifyStateLabel = "✅ 回调成功"
+	if o.NotifyState != model.OrderNotifyStateSucc {
+		notifyStateLabel = "❌ 回调失败"
+	}
+	if model.OrderStatusWaiting == o.Status {
+		notifyStateLabel = o.GetStatusLabel()
+	}
+	if model.OrderStatusExpired == o.Status {
+		notifyStateLabel = "🈚️ 没有回调"
+	}
+
+	var site = &url.URL{Scheme: urlInfo.Scheme, Host: urlInfo.Host}
+	var msg = tgbotapi.NewMessage(0, "```"+`
+📌订单ID：`+o.OrderId+`
+📊交易汇率：`+o.TradeRate+`(`+config.GetUsdtRate()+`)
+💲交易数额：`+o.Amount+`
+💰交易金额：`+fmt.Sprintf("%.2f", o.Money)+` CNY
+💍交易类别：`+strings.ToUpper(o.TradeType)+fmt.Sprintf("(%s)", o.GetTradeChain())+` 
+🌏商户网站：`+site.String()+`
+🔋收款状态：`+o.GetStatusLabel()+`
+🍀回调状态：`+notifyStateLabel+`
+💎️收款地址：`+help.MaskAddress(o.Address)+`
+🕒创建时间：`+o.CreatedAt.Format(time.DateTime)+`
+🕒失效时间：`+o.ExpiredAt.Format(time.DateTime)+`
+⚖️️确认时间：`+o.ConfirmedAt.Format(time.DateTime)+`
+`+"\n```")
+	msg.ParseMode = tgbotapi.ModeMarkdown
+	msg.ReplyMarkup = tgbotapi.InlineKeyboardMarkup{
+		InlineKeyboard: [][]tgbotapi.InlineKeyboardButton{
+			{
+				tgbotapi.NewInlineKeyboardButtonURL("🌏商户网站", site.String()),
+				tgbotapi.NewInlineKeyboardButtonURL("📝交易明细", o.GetTxDetailUrl()),
+			},
+		},
+	}
+
+	SendMsg(msg)
 }
 
 func cbMarkNotifySuccAction(tradeId string) {

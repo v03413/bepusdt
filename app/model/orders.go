@@ -3,24 +3,19 @@ package model
 import (
 	"github.com/shopspring/decimal"
 	"github.com/v03413/bepusdt/app/config"
+	"github.com/v03413/bepusdt/app/help"
 	"strconv"
 	"sync"
 	"time"
 )
 
 const (
-	OrderStatusCanceled = 4 // 订单取消
-	OrderStatusExpired  = 3 // 订单过期
-	OrderStatusSuccess  = 2 // 订单成功
-	OrderStatusWaiting  = 1 // 等待支付
-)
-
-const (
-	OrderNotifyStateSucc = 1 // 回调成功
-	OrderNotifyStateFail = 0 // 回调失败
-)
-
-const (
+	OrderNotifyStateSucc      = 1 // 回调成功
+	OrderNotifyStateFail      = 0 // 回调失败
+	OrderStatusCanceled       = 4 // 订单取消
+	OrderStatusExpired        = 3 // 订单过期
+	OrderStatusSuccess        = 2 // 订单成功
+	OrderStatusWaiting        = 1 // 等待支付
 	OrderTradeTypeTronTrx     = "tron.trx"
 	OrderTradeTypeUsdtTrc20   = "usdt.trc20"
 	OrderTradeTypeUsdtPolygon = "usdt.polygon"
@@ -108,6 +103,38 @@ func (o *TradeOrders) GetStatusLabel() string {
 	}
 
 	return label
+}
+
+func (o *TradeOrders) GetStatusEmoji() string {
+	var label = "🟢"
+	if o.Status == OrderStatusExpired {
+
+		label = "🔴"
+	}
+	if o.Status == OrderStatusWaiting {
+
+		label = "🟡"
+	}
+	if o.Status == OrderStatusCanceled {
+
+		label = "⚪️"
+	}
+
+	return label
+}
+
+func (o *TradeOrders) GetTxDetailUrl() string {
+	if help.IsValidTronAddress(o.Address) {
+
+		return "https://tronscan.org/#/transaction/" + o.TradeHash
+	}
+
+	return "https://polygonscan.com/tx/" + o.TradeHash
+}
+
+func (o *TradeOrders) GetTradeChain() string {
+
+	return tradeChain[o.TradeType]
 }
 
 func GetTradeType(trade string) string {
