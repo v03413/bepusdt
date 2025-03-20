@@ -4,17 +4,12 @@ import (
 	"bytes"
 	"context"
 	"encoding/hex"
-	"fmt"
 	"github.com/btcsuite/btcd/btcutil/base58"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/shopspring/decimal"
-	"github.com/spf13/cast"
 	"github.com/v03413/bepusdt/app/config"
-	"github.com/v03413/bepusdt/app/help"
 	"github.com/v03413/bepusdt/app/log"
 	"github.com/v03413/bepusdt/app/model"
-	"github.com/v03413/bepusdt/app/telegram"
 	"github.com/v03413/tronprotocol/api"
 	"github.com/v03413/tronprotocol/core"
 	"google.golang.org/grpc"
@@ -33,16 +28,6 @@ const blockHeightNumConfirmedSub = 20
 var usdtTrc20ContractAddress = []byte{0x41, 0xa6, 0x14, 0xf8, 0x03, 0xb6, 0xfd, 0x78, 0x09, 0x86, 0xa4, 0x2c, 0x78, 0xec, 0x9c, 0x7f, 0x77, 0xe6, 0xde, 0xd1, 0x3c}
 
 var currentBlockHeight int64
-
-type resource struct {
-	ID           string
-	Type         core.Transaction_Contract_ContractType
-	Balance      int64
-	FromAddress  string
-	RecvAddress  string
-	Timestamp    time.Time
-	ResourceCode core.ResourceCode
-}
 
 type usdtTrc20TransferRaw struct {
 	RecvAddress string
@@ -242,7 +227,7 @@ func parseBlockTrans(block *api.BlockExtention, nowHeight int64) {
 	}
 
 	if len(resources) > 0 {
-		handleResourceNotify(resources)
+		resourceQueue.In <- resources
 	}
 
 	log.Info("区块扫描完成", nowHeight, "TRON")
@@ -283,70 +268,6 @@ func parseUsdtTrc20Contract(reader *bytes.Reader) usdtTrc20TransferRaw {
 	var amount, _ = strconv.ParseInt(hex.EncodeToString(value), 16, 64)
 
 	return usdtTrc20TransferRaw{RecvAddress: toAddress, Amount: float64(amount)}
-}
-
-// handleResourceNotify 处理资源通知
-func handleResourceNotify(items []resource) {
-	var ads []model.WalletAddress
-	var tx = model.DB.Where("status = ? and other_notify = ?", model.StatusEnable, model.OtherNotifyEnable).Find(&ads)
-	if tx.RowsAffected <= 0 {
-
-		return
-	}
-
-	for _, wa := range ads {
-		for _, trans := range items {
-			if trans.RecvAddress != wa.Address && trans.FromAddress != wa.Address {
-
-				continue
-			}
-
-			if trans.ResourceCode != core.ResourceCode_ENERGY {
-
-				continue
-			}
-
-			var detailUrl = "https://tronscan.org/#/transaction/" + trans.ID
-			if !model.IsNeedNotifyByTxid(trans.ID) {
-				// 不需要额外通知
-
-				continue
-			}
-
-			var title = "代理"
-			if trans.Type == core.Transaction_Contract_UnDelegateResourceContract {
-				title = "回收"
-			}
-
-			var text = fmt.Sprintf(
-				"#资源动态 #能量"+title+"\n---\n```\n🔋质押数量："+cast.ToString(trans.Balance/1000000)+"\n⏱️交易时间：%v\n✅操作地址：%v\n🅾️资源来源：%v```\n",
-				trans.Timestamp.Format(time.DateTime),
-				help.MaskAddress(trans.RecvAddress),
-				help.MaskAddress(trans.FromAddress),
-			)
-
-			var chatId, err = strconv.ParseInt(config.GetTgBotNotifyTarget(), 10, 64)
-			if err != nil {
-
-				continue
-			}
-
-			var msg = tgbotapi.NewMessage(chatId, text)
-			msg.ParseMode = tgbotapi.ModeMarkdown
-			msg.ReplyMarkup = tgbotapi.InlineKeyboardMarkup{
-				InlineKeyboard: [][]tgbotapi.InlineKeyboardButton{
-					{
-						tgbotapi.NewInlineKeyboardButtonURL("📝查看交易明细", detailUrl),
-					},
-				},
-			}
-
-			var _record = model.NotifyRecord{Txid: trans.ID}
-			model.DB.Create(&_record)
-
-			go telegram.SendMsg(msg)
-		}
-	}
 }
 
 func base58CheckEncode(input []byte) string {
