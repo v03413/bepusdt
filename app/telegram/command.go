@@ -32,12 +32,12 @@ func cmdStartHandle() {
 	var inlineBtn [][]tgbotapi.InlineKeyboardButton
 	if model.DB.Find(&was).Error == nil {
 		for _, wa := range was {
-			var _address = fmt.Sprintf("[✅已启用] %s", wa.Address)
+			var text = fmt.Sprintf("[✅已启用] %s", help.MaskAddress(wa.Address))
 			if wa.Status == model.StatusDisable {
-				_address = fmt.Sprintf("[❌已禁用] %s", wa.Address)
+				text = fmt.Sprintf("[❌已禁用] %s", help.MaskAddress(wa.Address))
 			}
 
-			inlineBtn = append(inlineBtn, tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData(_address, fmt.Sprintf("%s|%v", cbAddress, wa.ID))))
+			inlineBtn = append(inlineBtn, tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData(text, fmt.Sprintf("%s|%v", cbAddress, wa.ID))))
 		}
 	}
 

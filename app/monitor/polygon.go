@@ -11,27 +11,14 @@ import (
 	"github.com/v03413/bepusdt/app/help"
 	"github.com/v03413/bepusdt/app/log"
 	"github.com/v03413/bepusdt/app/model"
-	"github.com/v03413/bepusdt/app/notify"
-	"github.com/v03413/bepusdt/app/telegram"
 	"io"
 	"math/big"
 	"net/http"
 	"time"
 )
 
-type polygonUsdtTransfer struct {
-	From      string
-	To        string
-	Amount    float64
-	Hash      string
-	BlockNum  int64
-	Timestamp time.Time
-	TradeType string
-}
-
 var polygonLastBlockNumber int64
 var polygonBlockScanQueue = chanx.NewUnboundedChan[int64](context.Background(), 30)
-var polygonUsdtTransferQueue = chanx.NewUnboundedChan[[]polygonUsdtTransfer](context.Background(), 30)
 
 const usdtPolygonContractAddress = "0xc2132d05d31c914a87c6611c10748aeb04b58e8f"
 const usdtPolygonTransferMethodID = "0xa9059cbb" // Function: transfer(address recipient, uint256 amount)
@@ -40,48 +27,6 @@ const contentType = "application/json"
 func init() {
 	RegisterSchedule(time.Second*3, polygonBlockNumber)
 	RegisterSchedule(time.Second, polygonBlockScan)
-	RegisterSchedule(time.Second, polygonUsdtTransferHandle)
-}
-
-func polygonUsdtTransferHandle(time.Duration) {
-	for {
-		select {
-		case transfers := <-polygonUsdtTransferQueue.Out:
-			var orders = getAllWaitingOrders()
-			for _, t := range transfers {
-				// 计算交易金额
-				var amount, quant = parseTransAmount(t.Amount)
-
-				// 判断金额是否在允许范围内
-				if !inPaymentAmountRange(amount) {
-
-					continue
-				}
-
-				// 判断是否存在对应订单
-				order, is := orders[fmt.Sprintf("%s%v%s", t.To, quant, t.TradeType)]
-				if !is {
-
-					continue
-				}
-
-				// 有效期检测
-				if !order.CreatedAt.Before(t.Timestamp) || !order.ExpiredAt.After(t.Timestamp) {
-
-					continue
-				}
-
-				// 更新信息
-				order.OrderUpdateTxInfo(t.BlockNum, t.From, t.Hash, t.Timestamp)
-
-				// 标记成功
-				order.MarkSuccess()
-
-				go notify.Handle(order)             // 通知订单支付成功
-				go telegram.SendTradeSuccMsg(order) // TG发送订单信息
-			}
-		}
-	}
 }
 
 func polygonProcessBlock(n any) {
@@ -118,7 +63,7 @@ func polygonProcessBlock(n any) {
 
 	var result = data.Get("result")
 	var timestamp = help.HexStr2Int(result.Get("timestamp").String())
-	var transfers = make([]polygonUsdtTransfer, 0)
+	var transfers = make([]transfer, 0)
 	for _, v := range result.Get("transactions").Array() {
 		if v.Get("to").String() != usdtPolygonContractAddress {
 
@@ -139,14 +84,14 @@ func polygonProcessBlock(n any) {
 			continue
 		}
 
-		transfers = append(transfers, polygonUsdtTransfer{
-			From:      v.Get("from").String(),
-			To:        "0x" + input[34:74],
-			Amount:    float64(amount.Int64()),
-			Hash:      v.Get("hash").String(),
-			BlockNum:  num,
-			Timestamp: time.Unix(timestamp.Int64(), 0),
-			TradeType: model.OrderTradeTypeUsdtPolygon,
+		transfers = append(transfers, transfer{
+			FromAddress: v.Get("from").String(),
+			RecvAddress: "0x" + input[34:74],
+			Amount:      float64(amount.Int64()),
+			TxHash:      v.Get("hash").String(),
+			BlockNum:    num,
+			Timestamp:   time.Unix(timestamp.Int64(), 0),
+			TradeType:   model.OrderTradeTypeUsdtPolygon,
 		})
 	}
 
@@ -157,7 +102,7 @@ func polygonProcessBlock(n any) {
 		return
 	}
 
-	polygonUsdtTransferQueue.In <- transfers
+	transferQueue.In <- transfers
 }
 
 func polygonBlockScan(time.Duration) {

@@ -65,17 +65,12 @@ func (o *TradeOrders) OrderSetExpired() {
 	DB.Save(o)
 }
 
-func (o *TradeOrders) OrderUpdateTxInfo(refBlockNum int64, fromAddress, tradeHash string, confirmedAt time.Time) {
-	o.FromAddress = fromAddress
-	o.ConfirmedAt = confirmedAt
-	o.TradeHash = tradeHash
-	o.RefBlockNum = refBlockNum
-
-	DB.Save(o)
-}
-
-func (o *TradeOrders) MarkSuccess() {
-	o.Status = OrderStatusSuccess // 标记成功
+func (o *TradeOrders) MarkSuccess(blockNum int64, from, hash string, at time.Time) {
+	o.FromAddress = from
+	o.ConfirmedAt = at
+	o.TradeHash = hash
+	o.RefBlockNum = blockNum
+	o.Status = OrderStatusSuccess
 
 	DB.Save(o)
 }
