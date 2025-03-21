@@ -10,6 +10,7 @@ import (
 	"github.com/v03413/bepusdt/app/help"
 	"github.com/v03413/bepusdt/app/log"
 	"github.com/v03413/bepusdt/app/model"
+	"gorm.io/gorm"
 	"io"
 	"math/big"
 	"net/http"
@@ -27,6 +28,7 @@ const cbAddressDelete = "address_del"
 const cbAddressOtherNotify = "address_other_notify"
 const cbOrderDetail = "order_detail"
 const cbMarkNotifySucc = "mark_notify_succ"
+const dbOrderNotifyRetry = "order_notify_retry"
 
 func cbWalletAction(query *tgbotapi.CallbackQuery, address string) {
 	var info = "暂不支持..."
@@ -156,20 +158,37 @@ func cbOrderDetailAction(tradeId string) {
 		return
 	}
 
-	var notifyStateLabel = "✅ 回调成功"
+	var notifyStateLabel = "✅回调成功"
 	if o.NotifyState != model.OrderNotifyStateSucc {
-		notifyStateLabel = "❌ 回调失败"
+		notifyStateLabel = "❌回调失败"
 	}
 	if model.OrderStatusWaiting == o.Status {
 		notifyStateLabel = o.GetStatusLabel()
 	}
 	if model.OrderStatusExpired == o.Status {
-		notifyStateLabel = "🈚️ 没有回调"
+		notifyStateLabel = "🈚️没有回调"
 	}
 
 	var site = &url.URL{Scheme: urlInfo.Scheme, Host: urlInfo.Host}
+	var markup = tgbotapi.InlineKeyboardMarkup{
+		InlineKeyboard: [][]tgbotapi.InlineKeyboardButton{
+			{
+				tgbotapi.NewInlineKeyboardButtonURL("🌏商户网站", site.String()),
+				tgbotapi.NewInlineKeyboardButtonURL("📝交易明细", o.GetTxDetailUrl()),
+			},
+		},
+	}
+	if o.NotifyState == model.OrderNotifyStateFail {
+		markup.InlineKeyboard = append(markup.InlineKeyboard, []tgbotapi.InlineKeyboardButton{
+			tgbotapi.NewInlineKeyboardButtonData("✅标记回调成功", cbMarkNotifySucc+"|"+o.TradeId),
+		})
+		markup.InlineKeyboard = append(markup.InlineKeyboard, []tgbotapi.InlineKeyboardButton{
+			tgbotapi.NewInlineKeyboardButtonData("⚡️立刻回调重试", dbOrderNotifyRetry+"|"+o.TradeId),
+		})
+	}
 	var msg = tgbotapi.NewMessage(0, "```"+`
-📌订单ID：`+o.OrderId+`
+⛵️系统订单：`+o.TradeId+`
+📌商户订单：`+o.OrderId+`
 📊交易汇率：`+o.TradeRate+`(`+config.GetUsdtRate()+`)
 💲交易数额：`+o.Amount+`
 💰交易金额：`+fmt.Sprintf("%.2f", o.Money)+` CNY
@@ -183,14 +202,7 @@ func cbOrderDetailAction(tradeId string) {
 ⚖️️确认时间：`+o.ConfirmedAt.Format(time.DateTime)+`
 `+"\n```")
 	msg.ParseMode = tgbotapi.ModeMarkdown
-	msg.ReplyMarkup = tgbotapi.InlineKeyboardMarkup{
-		InlineKeyboard: [][]tgbotapi.InlineKeyboardButton{
-			{
-				tgbotapi.NewInlineKeyboardButtonURL("🌏商户网站", site.String()),
-				tgbotapi.NewInlineKeyboardButtonURL("📝交易明细", o.GetTxDetailUrl()),
-			},
-		},
-	}
+	msg.ReplyMarkup = markup
 
 	SendMsg(msg)
 }
@@ -206,10 +218,19 @@ func cbMarkNotifySuccAction(tradeId string) {
 	SendMsg(msg)
 }
 
+func dbOrderNotifyRetryAction(tradeId string) {
+	model.DB.Model(&model.TradeOrders{}).Where("trade_id = ?", tradeId).UpdateColumn("notify_num", gorm.Expr("notify_num - ?", 1))
+
+	var msg = tgbotapi.NewMessage(0, fmt.Sprintf("🪧订单（`%s`）即将开始回调重试，稍后可再次查询。", tradeId))
+
+	msg.ParseMode = tgbotapi.ModeMarkdownV2
+
+	SendMsg(msg)
+}
+
 func getTronWalletInfo(address string) string {
-	var url = "https://apilist.tronscanapi.com/api/accountv2?address=" + address
 	var client = http.Client{Timeout: time.Second * 5}
-	resp, err := client.Get(url)
+	resp, err := client.Get("https://apilist.tronscanapi.com/api/accountv2?address=" + address)
 	if err != nil {
 		log.Error("GetWalletInfoByAddress client.Get(url)", err)
 

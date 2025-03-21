@@ -8,6 +8,7 @@ import (
 	"github.com/v03413/bepusdt/app/help"
 	"github.com/v03413/bepusdt/app/model"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -75,10 +76,8 @@ func SendNotifyFailed(o model.TradeOrders, reason string) {
 	}
 
 	var tradeType = "USDT"
-	var tradeUnit = `USDT.TRC20`
 	if o.TradeType == model.OrderTradeTypeTronTrx {
 		tradeType = "TRX"
-		tradeUnit = "TRX"
 	}
 
 	var text = fmt.Sprintf(`
@@ -86,16 +85,18 @@ func SendNotifyFailed(o model.TradeOrders, reason string) {
 ---
 `+"```"+`
 🚦商户订单：%v
+💲支付数额：%v
 💰请求金额：%v CNY(%v)
-💲支付数额：%v %s
+💍交易类别：%s
 ⚖️️确认时间：%s
 ⏰下次回调：%s
 🗒️失败原因：%s
 `+"```"+`
 `,
 		help.Ec(o.OrderId),
+		o.Amount,
 		o.Money, o.TradeRate,
-		o.Amount, tradeUnit,
+		strings.ToUpper(o.TradeType),
 		o.ConfirmedAt.Format(time.DateTime),
 		help.CalcNextNotifyTime(o.ConfirmedAt, o.NotifyNum+1).Format(time.DateTime),
 		reason,

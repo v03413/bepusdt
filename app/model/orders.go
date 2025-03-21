@@ -44,7 +44,7 @@ type TradeOrders struct {
 	ApiType     string    `gorm:"type:varchar(20);not null;default:'epusdt';comment:API类型"`
 	ReturnUrl   string    `gorm:"type:varchar(255);not null;default:'';comment:同步地址"`
 	NotifyUrl   string    `gorm:"type:varchar(255);not null;default:'';comment:异步地址"`
-	NotifyNum   int       `gorm:"type:int(11);not null;default:0;comment:回调次数"`
+	NotifyNum   int       `gorm:"column:notify_num;type:int(11);not null;default:0;comment:回调次数"`
 	NotifyState int       `gorm:"column:notify_state;type:tinyint(1);not null;default:0;comment:回调状态 1：成功 0：失败"`
 	RefBlockNum int64     `gorm:"type:bigint(20);not null;default:0;comment:交易所在区块"`
 	ExpiredAt   time.Time `gorm:"type:timestamp;not null;comment:订单失效时间"`
@@ -83,18 +83,18 @@ func (o *TradeOrders) OrderSetNotifyState(state int) error {
 }
 
 func (o *TradeOrders) GetStatusLabel() string {
-	var label = "🟢 收款成功"
+	var label = "🟢收款成功"
 	if o.Status == OrderStatusExpired {
 
-		label = "🔴 交易过期"
+		label = "🔴交易过期"
 	}
 	if o.Status == OrderStatusWaiting {
 
-		label = "🟡 等待支付"
+		label = "🟡等待支付"
 	}
 	if o.Status == OrderStatusCanceled {
 
-		label = "⚪️ 订单取消"
+		label = "⚪️订单取消"
 	}
 
 	return label

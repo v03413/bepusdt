@@ -64,6 +64,8 @@ func HandleCallback(query *api.CallbackQuery) {
 		go cbOrderDetailAction(args[1])
 	case cbMarkNotifySucc:
 		go cbMarkNotifySuccAction(args[1])
+	case dbOrderNotifyRetry:
+		go dbOrderNotifyRetryAction(args[1])
 	}
 }
 

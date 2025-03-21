@@ -114,7 +114,7 @@ func epusdt(order model.TradeOrders) {
 	var client = http.Client{Timeout: time.Second * 5}
 	var postReq, err2 = http.NewRequest("POST", order.NotifyUrl, strings.NewReader(string(jsonBody)))
 	if err2 != nil {
-		log.Error("Notify NewRequest Error：", err)
+		markNotifyFail(order, err.Error())
 
 		return
 	}
@@ -123,7 +123,7 @@ func epusdt(order model.TradeOrders) {
 	postReq.Header.Set("Powered-By", "https://github.com/v03413/bepusdt")
 	resp, err := client.Do(postReq)
 	if err != nil {
-		log.Error("Notify Handle Error：", err)
+		markNotifyFail(order, err.Error())
 
 		return
 	}
