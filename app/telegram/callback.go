@@ -39,6 +39,12 @@ func cbWalletAction(query *tgbotapi.CallbackQuery, address string) {
 		info = getPolygonWalletInfo(address)
 	}
 
+	var uri = "https://tronscan.org/#/address/" + address
+	if help.IsValidPolygonAddress(address) {
+
+		uri = "https://polygonscan.com/address/" + address
+	}
+
 	var msg = tgbotapi.NewMessage(query.Message.Chat.ID, "❌查询失败")
 	if info != "" {
 		msg.Text = info
@@ -46,7 +52,7 @@ func cbWalletAction(query *tgbotapi.CallbackQuery, address string) {
 		msg.ReplyMarkup = tgbotapi.InlineKeyboardMarkup{
 			InlineKeyboard: [][]tgbotapi.InlineKeyboardButton{
 				{
-					tgbotapi.NewInlineKeyboardButtonURL("📝查看详细信息", "https://tronscan.org/#/address/"+address),
+					tgbotapi.NewInlineKeyboardButtonURL("📝查看详细信息", uri),
 				},
 			},
 		}
