@@ -15,6 +15,12 @@ func buildOrder(money float64, apiType, payAddress, orderId, tradeType, redirect
 	var lock sync.Mutex
 	var order model.TradeOrders
 
+	model.DB.Where("order_id = ?", orderId).Find(&order)
+	if order.Status == model.OrderStatusWaiting || order.Status == model.OrderStatusSuccess {
+
+		return order, nil
+	}
+
 	// 暂时先强制使用互斥锁，后续有需求的话再考虑优化
 	lock.Lock()
 	defer lock.Unlock()
@@ -62,11 +68,10 @@ func buildOrder(money float64, apiType, payAddress, orderId, tradeType, redirect
 		NotifyState: model.OrderNotifyStateFail,
 		ExpiredAt:   expiredAt,
 	}
-	var res = model.DB.Create(&tradeOrder)
-	if res.Error != nil {
-		log.Error("订单创建失败：", res.Error.Error())
+	if err = model.DB.Create(&tradeOrder).Error; err != nil {
+		log.Error("订单创建失败：", err.Error())
 
-		return order, res.Error
+		return order, err
 	}
 
 	return tradeOrder, nil

@@ -101,11 +101,12 @@ func createTransaction(ctx *gin.Context) {
 	// 返回响应数据
 	ctx.JSON(200, respSuccJson(gin.H{
 		"trade_id":        order.TradeId,
-		"order_id":        orderId,
-		"amount":          amount,
+		"order_id":        order.OrderId,
+		"status":          order.Status,
+		"amount":          order.Money,
 		"actual_amount":   order.Amount,
 		"token":           order.Address,
-		"expiration_time": int64(order.ExpiredAt.Sub(time.Now()).Seconds()),
+		"expiration_time": uint64(order.ExpiredAt.Sub(time.Now()).Seconds()),
 		"payment_url":     fmt.Sprintf("%s/pay/checkout-counter/%s", config.GetAppUri(host), order.TradeId),
 	}))
 	log.Info(fmt.Sprintf("订单创建成功，商户订单号：%s", orderId))

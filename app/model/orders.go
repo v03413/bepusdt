@@ -10,12 +10,14 @@ import (
 )
 
 const (
-	OrderNotifyStateSucc      = 1 // 回调成功
-	OrderNotifyStateFail      = 0 // 回调失败
-	OrderStatusCanceled       = 4 // 订单取消
-	OrderStatusExpired        = 3 // 订单过期
-	OrderStatusSuccess        = 2 // 订单成功
-	OrderStatusWaiting        = 1 // 等待支付
+	OrderNotifyStateSucc = 1 // 回调成功
+	OrderNotifyStateFail = 0 // 回调失败
+	OrderStatusCanceled  = 4 // 订单取消
+
+	OrderStatusExpired = 3 // 订单过期
+	OrderStatusSuccess = 2 // 订单成功
+	OrderStatusWaiting = 1 // 等待支付
+
 	OrderTradeTypeTronTrx     = "tron.trx"
 	OrderTradeTypeUsdtTrc20   = "usdt.trc20"
 	OrderTradeTypeUsdtPolygon = "usdt.polygon"
@@ -30,16 +32,16 @@ var calcMutex sync.Mutex
 
 type TradeOrders struct {
 	Id          int64     `gorm:"primary_key;AUTO_INCREMENT;comment:id"`
-	OrderId     string    `gorm:"type:varchar(128);not null;unique;color:blue;comment:商户ID"`
-	TradeId     string    `gorm:"type:varchar(128);not null;unique;color:blue;comment:本地ID"`
-	TradeType   string    `gorm:"type:varchar(20);not null;comment:交易类型"`
-	TradeHash   string    `gorm:"type:varchar(64);default:'';unique;comment:交易哈希"`
-	TradeRate   string    `gorm:"type:varchar(10);not null;comment:交易汇率"`
+	OrderId     string    `gorm:"column:order_id;type:varchar(128);not null;index;comment:商户ID"`
+	TradeId     string    `gorm:"column:trade_id;type:varchar(128);not null;uniqueIndex;comment:本地ID"`
+	TradeType   string    `gorm:"column:trade_type;type:varchar(20);not null;comment:交易类型"`
+	TradeHash   string    `gorm:"column:trade_hash;type:varchar(128);default:'';unique;comment:交易哈希"`
+	TradeRate   string    `gorm:"column:trade_rate;type:varchar(10);not null;comment:交易汇率"`
 	Amount      string    `gorm:"type:decimal(10,2);not null;default:0;comment:交易数额"`
 	Money       float64   `gorm:"type:decimal(10,2);not null;default:0;comment:订单交易金额"`
 	Address     string    `gorm:"column:address;type:varchar(64);not null;comment:收款地址"`
 	FromAddress string    `gorm:"type:varchar(34);not null;default:'';comment:支付地址"`
-	Status      int       `gorm:"type:tinyint(1);not null;default:0;comment:交易状态 1：等待支付 2：支付成功 3：订单过期"`
+	Status      int       `gorm:"type:tinyint(1);not null;default:1;comment:交易状态"`
 	Name        string    `gorm:"type:varchar(64);not null;default:'';comment:商品名称"`
 	ApiType     string    `gorm:"type:varchar(20);not null;default:'epusdt';comment:API类型"`
 	ReturnUrl   string    `gorm:"type:varchar(255);not null;default:'';comment:同步地址"`
@@ -47,7 +49,7 @@ type TradeOrders struct {
 	NotifyNum   int       `gorm:"column:notify_num;type:int(11);not null;default:0;comment:回调次数"`
 	NotifyState int       `gorm:"column:notify_state;type:tinyint(1);not null;default:0;comment:回调状态 1：成功 0：失败"`
 	RefBlockNum int64     `gorm:"type:bigint(20);not null;default:0;comment:交易所在区块"`
-	ExpiredAt   time.Time `gorm:"type:timestamp;not null;comment:订单失效时间"`
+	ExpiredAt   time.Time `gorm:"column:expired_at;type:timestamp;not null;comment:失效时间"`
 	CreatedAt   time.Time `gorm:"autoCreateTime;type:timestamp;not null;comment:创建时间"`
 	UpdatedAt   time.Time `gorm:"autoUpdateTime;type:timestamp;not null;comment:更新时间"`
 	ConfirmedAt time.Time `gorm:"type:timestamp;null;comment:交易确认时间"`
