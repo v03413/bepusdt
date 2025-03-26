@@ -1,23 +1,16 @@
-package telegram
+package bot
 
 import (
 	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"github.com/v03413/bepusdt/app/config"
-	"strconv"
+	"github.com/v03413/bepusdt/app/conf"
 )
 
 var botApi *tgbotapi.BotAPI
 var err error
 
-func init() {
-	var token = config.GetTGBotToken()
-	if token == "" {
-
-		return
-	}
-
-	botApi, err = tgbotapi.NewBotAPI(token)
+func Init() {
+	botApi, err = tgbotapi.NewBotAPI(conf.BotToken())
 	if err != nil {
 		panic("TG Bot NewBotAPI Error:" + err.Error())
 
@@ -53,23 +46,15 @@ func SendMsg(msg tgbotapi.MessageConfig) {
 		return
 	}
 
-	var chatId, err = strconv.ParseInt(config.GetTGBotAdminId(), 10, 64)
-	if err == nil {
-		msg.ChatID = chatId
-		_, _ = botApi.Send(msg)
-	}
+	msg.ChatID = conf.BotAdminID()
+
+	_, _ = botApi.Send(msg)
 }
 
 func DeleteMsg(msgId int) {
-	var chatId, err = strconv.ParseInt(config.GetTGBotAdminId(), 10, 64)
-	if err == nil {
-		_, _ = botApi.Send(tgbotapi.NewDeleteMessage(chatId, msgId))
-	}
+	_, _ = botApi.Send(tgbotapi.NewDeleteMessage(conf.BotAdminID(), msgId))
 }
 
 func EditAndSendMsg(msgId int, text string, replyMarkup tgbotapi.InlineKeyboardMarkup) {
-	var chatId, err = strconv.ParseInt(config.GetTGBotAdminId(), 10, 64)
-	if err == nil {
-		_, _ = botApi.Send(tgbotapi.NewEditMessageTextAndMarkup(chatId, msgId, text, replyMarkup))
-	}
+	_, _ = botApi.Send(tgbotapi.NewEditMessageTextAndMarkup(conf.BotAdminID(), msgId, text, replyMarkup))
 }

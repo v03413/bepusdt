@@ -3,8 +3,8 @@ package task
 import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/v03413/bepusdt/app"
+	"github.com/v03413/bepusdt/app/bot"
 	"github.com/v03413/bepusdt/app/log"
-	"github.com/v03413/bepusdt/app/telegram"
 	"time"
 )
 
@@ -16,7 +16,7 @@ func init() {
 
 func BotStart(time.Duration) {
 	var version = app.Version
-	var botApi = telegram.GetBotApi()
+	var botApi = bot.GetBotApi()
 	if botApi == nil {
 
 		return
@@ -37,7 +37,7 @@ func BotStart(time.Duration) {
 		return
 	}
 
-	telegram.SendWelcome(version)
+	bot.SendWelcome(version)
 
 	// 监听消息
 	for _u := range updates {
@@ -47,11 +47,11 @@ func BotStart(time.Duration) {
 				continue
 			}
 
-			telegram.HandleMessage(_u.Message)
+			bot.HandleMessage(_u.Message)
 		}
 		if _u.CallbackQuery != nil {
 
-			telegram.HandleCallback(_u.CallbackQuery)
+			bot.HandleCallback(_u.CallbackQuery)
 		}
 	}
 }

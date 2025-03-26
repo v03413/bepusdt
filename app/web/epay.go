@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/cast"
-	"github.com/v03413/bepusdt/app/config"
+	"github.com/v03413/bepusdt/app/conf"
 	"github.com/v03413/bepusdt/app/epay"
 	"github.com/v03413/bepusdt/app/model"
 	"net/http"
@@ -40,7 +40,7 @@ func epaySubmit(ctx *gin.Context) {
 		return
 	}
 
-	if epay.Sign(data, config.GetAuthToken()) != data["sign"] {
+	if epay.Sign(data, conf.GetAuthToken()) != data["sign"] {
 		ctx.String(200, "签名错误")
 
 		return
@@ -65,5 +65,5 @@ func epaySubmit(ctx *gin.Context) {
 		host = "https://" + ctx.Request.Host
 	}
 
-	ctx.Redirect(http.StatusFound, fmt.Sprintf("%s/pay/checkout-counter/%s", config.GetAppUri(host), order.TradeId))
+	ctx.Redirect(http.StatusFound, fmt.Sprintf("%s/pay/checkout-counter/%s", conf.GetAppUri(host), order.TradeId))
 }

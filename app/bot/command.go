@@ -1,10 +1,10 @@
-package telegram
+package bot
 
 import (
 	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/spf13/cast"
-	"github.com/v03413/bepusdt/app/config"
+	"github.com/v03413/bepusdt/app/conf"
 	"github.com/v03413/bepusdt/app/help"
 	"github.com/v03413/bepusdt/app/model"
 	"github.com/v03413/bepusdt/app/rate"
@@ -79,11 +79,11 @@ func cmdStateHandle() {
 		succ,
 		len(rows),
 		money,
-		config.GetBlockScanSuccRate(),
+		conf.GetBlockScanSuccRate(),
 		cast.ToString(rate.GetOkxTrxRawRate()),
 		cast.ToString(rate.GetOkxUsdtRawRate()),
-		cast.ToString(rate.GetTrxCalcRate(config.DefaultTrxCnyRate)),
-		cast.ToString(rate.GetUsdtCalcRate(config.DefaultUsdtCnyRate)),
+		cast.ToString(rate.GetTrxCalcRate(conf.DefaultTrxCnyRate)),
+		cast.ToString(rate.GetUsdtCalcRate(conf.DefaultUsdtCnyRate)),
 	))
 	msg.ParseMode = tgbotapi.ModeMarkdownV2
 

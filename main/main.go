@@ -3,6 +3,10 @@ package main
 import (
 	"fmt"
 	"github.com/v03413/bepusdt/app"
+	"github.com/v03413/bepusdt/app/bot"
+	"github.com/v03413/bepusdt/app/conf"
+	"github.com/v03413/bepusdt/app/log"
+	"github.com/v03413/bepusdt/app/model"
 	"github.com/v03413/bepusdt/app/task"
 	"github.com/v03413/bepusdt/app/web"
 	"os"
@@ -10,12 +14,19 @@ import (
 	"runtime"
 )
 
-func main() {
-	if err := Init(); err != nil {
+func init() {
+	conf.Init()
+	log.Init()
+	bot.Init()
+	model.Init()
 
-		panic(err)
+	if conf.BotToken() == "" || conf.BotAdminID() == 0 {
+
+		panic("请配置参数 BOT_TOKEN 和 BOT_ADMIN_ID")
 	}
+}
 
+func main() {
 	task.Start()
 
 	web.Start()

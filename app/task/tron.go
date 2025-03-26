@@ -7,7 +7,7 @@ import (
 	"github.com/btcsuite/btcd/btcutil/base58"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/shopspring/decimal"
-	"github.com/v03413/bepusdt/app/config"
+	"github.com/v03413/bepusdt/app/conf"
 	"github.com/v03413/bepusdt/app/log"
 	"github.com/v03413/bepusdt/app/model"
 	"github.com/v03413/tronprotocol/api"
@@ -40,7 +40,7 @@ func init() {
 
 // tronBlockScan 区块扫描
 func tronBlockScan(duration time.Duration) {
-	var node = config.GetTronGrpcNode()
+	var node = conf.GetTronGrpcNode()
 	log.Info("区块扫描启动：", node)
 
 	reParams := grpc.ConnectParams{
@@ -59,7 +59,7 @@ func tronBlockScan(duration time.Duration) {
 	var client = api.NewWalletClient(conn)
 
 	for range time.Tick(duration) { // 3秒产生一个区块
-		atomic.AddUint64(&config.BlockScanTotal, 1)
+		atomic.AddUint64(&conf.BlockScanTotal, 1)
 
 		var ctx, cancel = context.WithTimeout(context.Background(), time.Second*3)
 		nowBlock, err1 := client.GetNowBlock2(ctx, nil)
@@ -70,10 +70,10 @@ func tronBlockScan(duration time.Duration) {
 			continue
 		}
 
-		atomic.AddUint64(&config.BlockScanSucc, 1)
+		atomic.AddUint64(&conf.BlockScanSucc, 1)
 
 		var nowBlockHeight = nowBlock.BlockHeader.RawData.Number
-		if config.GetTradeConfirmed() {
+		if conf.GetTradeIsConfirmed() {
 			nowBlockHeight = nowBlockHeight - blockHeightNumConfirmedSub
 		}
 

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/cast"
-	"github.com/v03413/bepusdt/app/config"
+	"github.com/v03413/bepusdt/app/conf"
 	"github.com/v03413/bepusdt/app/epay"
 	"github.com/v03413/bepusdt/app/help"
 	"github.com/v03413/bepusdt/app/log"
@@ -42,7 +42,7 @@ func signVerify(ctx *gin.Context) {
 		return
 	}
 
-	if help.EpusdtSign(m, config.GetAuthToken()) != sign {
+	if help.EpusdtSign(m, conf.GetAuthToken()) != sign {
 		log.Warn("签名错误", m)
 		ctx.JSON(400, gin.H{"error": "签名错误"})
 		ctx.Abort()
@@ -107,7 +107,7 @@ func createTransaction(ctx *gin.Context) {
 		"actual_amount":   order.Amount,
 		"token":           order.Address,
 		"expiration_time": uint64(order.ExpiredAt.Sub(time.Now()).Seconds()),
-		"payment_url":     fmt.Sprintf("%s/pay/checkout-counter/%s", config.GetAppUri(host), order.TradeId),
+		"payment_url":     fmt.Sprintf("%s/pay/checkout-counter/%s", conf.GetAppUri(host), order.TradeId),
 	}))
 	log.Info(fmt.Sprintf("订单创建成功，商户订单号：%s", orderId))
 }

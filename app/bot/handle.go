@@ -1,9 +1,8 @@
-package telegram
+package bot
 
 import (
-	"fmt"
 	api "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"github.com/v03413/bepusdt/app/config"
+	"github.com/v03413/bepusdt/app/conf"
 	"github.com/v03413/bepusdt/app/help"
 	"github.com/v03413/bepusdt/app/model"
 	"strings"
@@ -33,7 +32,7 @@ func HandleMessage(msg *api.Message) {
 }
 
 func HandleCallback(query *api.CallbackQuery) {
-	if fmt.Sprintf("%v", query.From.ID) != config.GetTGBotAdminId() {
+	if query.From.ID != conf.BotAdminID() {
 
 		return
 	}
@@ -108,7 +107,7 @@ func botCommandHandle(msg *api.Message) {
 		go cmdGetIdHandle(msg)
 	}
 
-	if fmt.Sprintf("%v", msg.Chat.ID) != config.GetTGBotAdminId() {
+	if msg.Chat.ID != conf.BotAdminID() {
 
 		return
 	}

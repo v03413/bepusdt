@@ -2,7 +2,7 @@ package model
 
 import (
 	"github.com/shopspring/decimal"
-	"github.com/v03413/bepusdt/app/config"
+	"github.com/v03413/bepusdt/app/conf"
 	"github.com/v03413/bepusdt/app/help"
 	"strconv"
 	"sync"
@@ -149,7 +149,7 @@ func GetTradeType(trade string) string {
 
 func GetTradeOrder(tradeId string) (TradeOrders, bool) {
 	var order TradeOrders
-	var res = DB.Where("trade_id = ?", tradeId).First(&order)
+	var res = DB.Where("trade_id = ?", tradeId).Take(&order)
 
 	return order, res.Error == nil
 }
@@ -183,10 +183,10 @@ func CalcTradeAmount(wa []WalletAddress, rate, money float64, tradeType string) 
 		lock[order.Address+order.Amount] = true
 	}
 
-	var atom, prec = config.GetUsdtAtomicity()
+	var atom, prec = conf.GetUsdtAtomicity()
 	if tradeType == OrderTradeTypeTronTrx {
 
-		atom, prec = config.GetTrxAtomicity()
+		atom, prec = conf.GetTrxAtomicity()
 	}
 
 	var payAmount, _ = decimal.NewFromString(strconv.FormatFloat(money/rate, 'f', prec, 64))

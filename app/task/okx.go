@@ -4,7 +4,7 @@ import (
 	"errors"
 	"github.com/spf13/cast"
 	"github.com/tidwall/gjson"
-	"github.com/v03413/bepusdt/app/config"
+	"github.com/v03413/bepusdt/app/conf"
 	"github.com/v03413/bepusdt/app/log"
 	"github.com/v03413/bepusdt/app/rate"
 	"io"
@@ -25,10 +25,10 @@ func OkxUsdtRateStart(time.Duration) {
 		if err != nil {
 			log.Error("Okx USDT_CNY 汇率获取失败", err)
 		} else {
-			rate.SetOkxUsdtCnyRate(config.GetUsdtRate(), rawRate)
+			rate.SetOkxUsdtCnyRate(conf.GetUsdtRate(), rawRate)
 		}
 
-		log.Info("当前 USDT_CNY 计算汇率：", rate.GetUsdtCalcRate(config.DefaultUsdtCnyRate))
+		log.Info("当前 USDT_CNY 计算汇率：", rate.GetUsdtCalcRate(cast.ToFloat64(conf.DefaultUsdtCnyRate)))
 		time.Sleep(time.Minute)
 	}
 }
@@ -40,10 +40,10 @@ func OkxTrxUsdtRateStart(time.Duration) {
 		if err != nil {
 			log.Error("Okx TRX_USDT 汇率获取失败", err)
 		} else {
-			rate.SetOkxTrxCnyRate(config.GetTrxRate(), price)
+			rate.SetOkxTrxCnyRate(conf.GetTrxRate(), price)
 		}
 
-		log.Info("当前 TRX_CNY 计算汇率：", rate.GetTrxCalcRate(config.DefaultTrxCnyRate))
+		log.Info("当前 TRX_CNY 计算汇率：", rate.GetTrxCalcRate(cast.ToFloat64(conf.DefaultTrxCnyRate)))
 		time.Sleep(time.Minute)
 	}
 }

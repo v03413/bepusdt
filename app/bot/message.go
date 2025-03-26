@@ -1,10 +1,10 @@
-package telegram
+package bot
 
 import (
 	"fmt"
 	api "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/spf13/cast"
-	"github.com/v03413/bepusdt/app/config"
+	"github.com/v03413/bepusdt/app/conf"
 	"github.com/v03413/bepusdt/app/help"
 	"github.com/v03413/bepusdt/app/model"
 	"strconv"
@@ -13,7 +13,7 @@ import (
 )
 
 func SendTradeSuccMsg(order model.TradeOrders) {
-	var chatId, err = strconv.ParseInt(config.GetTgBotNotifyTarget(), 10, 64)
+	var chatId, err = strconv.ParseInt(conf.BotNotifyTarget(), 10, 64)
 	if err != nil {
 
 		return
@@ -69,7 +69,7 @@ func SendTradeSuccMsg(order model.TradeOrders) {
 }
 
 func SendNotifyFailed(o model.TradeOrders, reason string) {
-	var chatId = cast.ToInt64(config.GetTgBotNotifyTarget())
+	var chatId = cast.ToInt64(conf.BotNotifyTarget())
 	if err != nil {
 
 		return
@@ -119,7 +119,7 @@ func SendNotifyFailed(o model.TradeOrders, reason string) {
 }
 
 func SendOtherNotify(text string) {
-	var chatId, err = strconv.ParseInt(config.GetTgBotNotifyTarget(), 10, 64)
+	var chatId, err = strconv.ParseInt(conf.BotNotifyTarget(), 10, 64)
 	if err != nil {
 
 		return

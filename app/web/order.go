@@ -2,7 +2,7 @@ package web
 
 import (
 	"fmt"
-	"github.com/v03413/bepusdt/app/config"
+	"github.com/v03413/bepusdt/app/conf"
 	"github.com/v03413/bepusdt/app/help"
 	"github.com/v03413/bepusdt/app/log"
 	"github.com/v03413/bepusdt/app/model"
@@ -26,10 +26,10 @@ func buildOrder(money float64, apiType, payAddress, orderId, tradeType, redirect
 	defer lock.Unlock()
 
 	// 获取兑换汇率
-	var calcRate = rate.GetUsdtCalcRate(config.DefaultUsdtCnyRate)
+	var calcRate = rate.GetUsdtCalcRate(conf.DefaultUsdtCnyRate)
 	if tradeType == model.OrderTradeTypeTronTrx {
 
-		calcRate = rate.GetTrxCalcRate(config.DefaultTrxCnyRate)
+		calcRate = rate.GetTrxCalcRate(conf.DefaultTrxCnyRate)
 	}
 
 	// 获取钱包地址
@@ -49,7 +49,7 @@ func buildOrder(money float64, apiType, payAddress, orderId, tradeType, redirect
 	}
 
 	// 创建交易订单
-	var expiredAt = time.Now().Add(config.GetExpireTime() * time.Second)
+	var expiredAt = time.Now().Add(conf.GetExpireTime() * time.Second)
 	var tradeOrder = model.TradeOrders{
 		OrderId:     orderId,
 		TradeId:     tradeId,

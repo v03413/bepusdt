@@ -1,0 +1,41 @@
+# 应用访问地址，留空则系统自动获取，前端收银台会用到，建议设置，例如：https://token-pay.example.com
+app_uri = ""
+# 认证Token，对接会用到这个参数
+auth_token = "123234"
+# 服务器HTTP监听地址
+listen = ":8080"
+# 静态资源路径，例如：/root/bepusdt/static；通过此参数可自定义模板，参考static目录，如非必要不建议修改。
+static_path = ""
+# SQLite数据库路径，如非必要不建议修改。
+sqlite_path = ""
+# Tron区块网络的GRPC节点，可选列表：https://developers.tron.network/docs/networks#public-node
+tron_grpc_node = "18.141.79.38:50051"
+# Polygon区块网络的RPC节点
+polygon_rpc_endpoint = "https://polygon-rpc.com/"
+
+[pay]
+# usdt 支付原子颗粒度，0.01表示支付数额保留两位小数，相同金额时递增颗粒度为0.01，依次类推，如无特殊需求不建议修改。
+usdt_atom = 0.01
+# USDT汇率，默认留空则获取Okx交易所的汇率(每分钟同步一次)，支持多种写法，如：7.4 表示固定7.4、～1.02表示最新汇率上浮2%、～0.97表示最新汇率下浮3%、+0.3表示最新加0.3、-0.2表示最新减0.2，以此类推；如参数错误则使用固定值6.4
+usdt_rate = "~0.98"
+# 同上，TRX支付原子颗粒度
+trx_atom = 0.01
+# 同上，TRX汇率
+trx_rate = "~0.95"
+# 交易过期时间，单位秒，如无特殊需求不建议修改。
+expire_time = 1200
+# 启动时需要添加的钱包地址，多个请用半角符逗号,分开；当然，同样也支持通过机器人添加。
+wallet_address = []
+# 是否需要网络确认，禁用可以提高回调速度，启用则可以防止交易失败
+trade_is_confirmed = false
+# 支付监控的允许数额范围(闭区间)，设置合理数值可避免一些诱导式诈骗交易提醒
+payment_amount_min = 0.01
+payment_amount_max = 99999
+
+[bot]
+# Telegram Bot 管理员ID，必须设置，否则无法使用
+admin_id = 123456
+# Telegram 群组ID，设置之后机器人会将交易消息会推送到此群
+group_id = ""
+# Telegram Bot Token，必须设置，否则无法使用
+token = ""

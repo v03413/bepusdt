@@ -1,4 +1,4 @@
-package telegram
+package bot
 
 import (
 	"bytes"
@@ -6,7 +6,7 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/shopspring/decimal"
 	"github.com/tidwall/gjson"
-	"github.com/v03413/bepusdt/app/config"
+	"github.com/v03413/bepusdt/app/conf"
 	"github.com/v03413/bepusdt/app/help"
 	"github.com/v03413/bepusdt/app/log"
 	"github.com/v03413/bepusdt/app/model"
@@ -195,7 +195,7 @@ func cbOrderDetailAction(tradeId string) {
 	var msg = tgbotapi.NewMessage(0, "```"+`
 ⛵️系统订单：`+o.TradeId+`
 📌商户订单：`+o.OrderId+`
-📊交易汇率：`+o.TradeRate+`(`+config.GetUsdtRate()+`)
+📊交易汇率：`+o.TradeRate+`(`+conf.GetUsdtRate()+`)
 💲交易数额：`+o.Amount+`
 💰交易金额：`+fmt.Sprintf("%.2f", o.Money)+` CNY
 💍交易类别：`+strings.ToUpper(o.TradeType)+fmt.Sprintf("(%s)", o.GetTradeChain())+` 
@@ -300,11 +300,10 @@ func getPolygonWalletInfo(address string) string {
 }
 
 func polygonBalanceOf(contract, address string) *big.Int {
-	var url = config.GetPolygonRpcEndpoint()
 	var jsonData = []byte(fmt.Sprintf(`{"jsonrpc":"2.0","id":%d,"method":"eth_call","params":[{"from":"0x0000000000000000000000000000000000000000","data":"0x70a08231000000000000000000000000%s","to":"%s"},"latest"]}`,
 		time.Now().Unix(), strings.ToLower(strings.Trim(address, "0x")), strings.ToLower(contract)))
 	var client = &http.Client{Timeout: time.Second * 5}
-	resp, err := client.Post(url, "application/json", bytes.NewBuffer(jsonData))
+	resp, err := client.Post(conf.GetPolygonRpcEndpoint(), "application/json", bytes.NewBuffer(jsonData))
 	if err != nil {
 		log.Warn("Error Post response:", err)
 

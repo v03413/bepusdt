@@ -2,7 +2,7 @@ package web
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/v03413/bepusdt/app/config"
+	"github.com/v03413/bepusdt/app/conf"
 	"github.com/v03413/bepusdt/app/log"
 	"github.com/v03413/bepusdt/static"
 	"html/template"
@@ -13,7 +13,7 @@ import (
 func Start() {
 	gin.SetMode(gin.ReleaseMode)
 
-	var listen = config.GetListen()
+	var listen = conf.GetListen()
 	var engine = loadStatic(gin.New())
 
 	{
@@ -57,12 +57,12 @@ func Start() {
 
 // 加载静态资源
 func loadStatic(engine *gin.Engine) *gin.Engine {
-	var staticPath = config.GetStaticPath()
+	var staticPath = conf.GetStaticPath()
 	if staticPath != "" {
-		engine.Static("/img", config.GetStaticPath()+"/img")
-		engine.Static("/css", config.GetStaticPath()+"/css")
-		engine.Static("/js", config.GetStaticPath()+"/js")
-		engine.LoadHTMLGlob(config.GetStaticPath() + "/views/*")
+		engine.Static("/img", conf.GetStaticPath()+"/img")
+		engine.Static("/css", conf.GetStaticPath()+"/css")
+		engine.Static("/js", conf.GetStaticPath()+"/js")
+		engine.LoadHTMLGlob(conf.GetStaticPath() + "/views/*")
 
 		return engine
 	}

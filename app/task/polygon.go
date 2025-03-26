@@ -7,7 +7,7 @@ import (
 	"github.com/panjf2000/ants/v2"
 	"github.com/smallnest/chanx"
 	"github.com/tidwall/gjson"
-	"github.com/v03413/bepusdt/app/config"
+	"github.com/v03413/bepusdt/app/conf"
 	"github.com/v03413/bepusdt/app/help"
 	"github.com/v03413/bepusdt/app/log"
 	"github.com/v03413/bepusdt/app/model"
@@ -31,7 +31,7 @@ func init() {
 
 func polygonProcessBlock(n any) {
 	var num = n.(int64)
-	var url = config.GetPolygonRpcEndpoint()
+	var url = conf.GetPolygonRpcEndpoint()
 	var client = &http.Client{Timeout: time.Second * 5}
 	var post = []byte(fmt.Sprintf(`{"jsonrpc":"2.0","method":"eth_getBlockByNumber","params":["0x%x",true],"id":1}`, num))
 
@@ -125,7 +125,7 @@ func polygonBlockScan(time.Duration) {
 }
 
 func polygonBlockNumber(d time.Duration) {
-	var url = config.GetPolygonRpcEndpoint()
+	var url = conf.GetPolygonRpcEndpoint()
 	var jsonData = []byte(`{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}`)
 	var client = &http.Client{Timeout: time.Second * 5}
 
@@ -153,7 +153,7 @@ func polygonBlockNumber(d time.Duration) {
 			continue
 		}
 
-		if config.GetTradeConfirmed() { // 暂且认为30个区块之前的交易已经被全网确认
+		if conf.GetTradeIsConfirmed() { // 暂且认为30个区块之前的交易已经被全网确认
 
 			number = number - 30
 		}

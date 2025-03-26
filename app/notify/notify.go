@@ -3,12 +3,12 @@ package notify
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/v03413/bepusdt/app/config"
+	"github.com/v03413/bepusdt/app/bot"
+	"github.com/v03413/bepusdt/app/conf"
 	e "github.com/v03413/bepusdt/app/epay"
 	"github.com/v03413/bepusdt/app/help"
 	"github.com/v03413/bepusdt/app/log"
 	"github.com/v03413/bepusdt/app/model"
-	"github.com/v03413/bepusdt/app/telegram"
 	"io"
 	"net/http"
 	"strings"
@@ -107,7 +107,7 @@ func epusdt(order model.TradeOrders) {
 	}
 
 	// 签名
-	body.Signature = help.EpusdtSign(data, config.GetAuthToken())
+	body.Signature = help.EpusdtSign(data, conf.GetAuthToken())
 
 	// 再次序列化
 	jsonBody, err = json.Marshal(body)
@@ -159,6 +159,6 @@ func epusdt(order model.TradeOrders) {
 func markNotifyFail(order model.TradeOrders, reason string) {
 	log.Warn(fmt.Sprintf("订单回调失败(%v)：%s %v", order.TradeId, reason, order.OrderSetNotifyState(model.OrderNotifyStateFail)))
 	go func() {
-		telegram.SendNotifyFailed(order, reason)
+		bot.SendNotifyFailed(order, reason)
 	}()
 }

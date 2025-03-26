@@ -2,15 +2,14 @@ package log
 
 import (
 	"github.com/sirupsen/logrus"
-	"github.com/v03413/bepusdt/app/config"
+	"github.com/v03413/bepusdt/app/conf"
 	"io"
 	"os"
 )
 
 var logger *logrus.Logger
 
-func init() {
-	var level, logFile = logrus.InfoLevel, config.GetOutputLog()
+func Init() {
 	logger = logrus.New()
 	logger.SetFormatter(&logrus.TextFormatter{
 		ForceColors:     true,
@@ -19,9 +18,9 @@ func init() {
 		FullTimestamp:   true,
 	})
 
-	logger.SetLevel(level)
+	logger.SetLevel(logrus.InfoLevel)
 
-	output, err := os.OpenFile(logFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	output, err := os.OpenFile(conf.GetOutputLog(), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	if err != nil {
 
 		panic(err)

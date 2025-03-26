@@ -7,9 +7,8 @@
 ```bash
 docker run -d --restart=always \
 -p 8080:8080 \
--e TG_BOT_TOKEN=6361745888:AAFaX_T9XLe4hvF7vRLf1dvolQcuAkw6888 \
--e TG_BOT_ADMIN_ID=1641035888 \
--e USDT_RATE=~0.98 \
+-e BOT_TOKEN=6361745888:AAFaX_T9XLe4hvF7vRLf1dvolQcuAkw6888 \
+-e BOT_ADMIN_ID=1641035888 \
 v03413/bepusdt:latest
 ```
 

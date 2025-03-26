@@ -6,11 +6,11 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/smallnest/chanx"
 	"github.com/spf13/cast"
-	"github.com/v03413/bepusdt/app/config"
+	"github.com/v03413/bepusdt/app/bot"
+	"github.com/v03413/bepusdt/app/conf"
 	"github.com/v03413/bepusdt/app/help"
 	"github.com/v03413/bepusdt/app/model"
 	"github.com/v03413/bepusdt/app/notify"
-	"github.com/v03413/bepusdt/app/telegram"
 	"github.com/v03413/tronprotocol/core"
 	"strconv"
 	"strings"
@@ -78,8 +78,8 @@ func orderTransferHandle(time.Duration) {
 			// 标记成功
 			o.MarkSuccess(t.BlockNum, t.FromAddress, t.TxHash, t.Timestamp)
 
-			go notify.Handle(o)             // 通知订单支付成功
-			go telegram.SendTradeSuccMsg(o) // TG发送订单信息
+			go notify.Handle(o)        // 通知订单支付成功
+			go bot.SendTradeSuccMsg(o) // TG发送订单信息
 		}
 
 		if len(other) > 0 {
@@ -135,7 +135,7 @@ func notOrderTransferHandle(time.Duration) {
 					help.MaskAddress(t.FromAddress),
 				)
 
-				var chatId, err = strconv.ParseInt(config.GetTgBotNotifyTarget(), 10, 64)
+				var chatId, err = strconv.ParseInt(conf.BotNotifyTarget(), 10, 64)
 				if err != nil {
 
 					continue
@@ -154,7 +154,7 @@ func notOrderTransferHandle(time.Duration) {
 				var record = model.NotifyRecord{Txid: t.TxHash}
 				model.DB.Create(&record)
 
-				go telegram.SendMsg(msg)
+				go bot.SendMsg(msg)
 			}
 		}
 	}
@@ -196,7 +196,7 @@ func tronResourceHandle(time.Duration) {
 					help.MaskAddress(t.FromAddress),
 				)
 
-				var msg = tgbotapi.NewMessage(cast.ToInt64(config.GetTgBotNotifyTarget()), text)
+				var msg = tgbotapi.NewMessage(cast.ToInt64(conf.BotNotifyTarget()), text)
 				msg.ParseMode = tgbotapi.ModeMarkdown
 				msg.ReplyMarkup = tgbotapi.InlineKeyboardMarkup{
 					InlineKeyboard: [][]tgbotapi.InlineKeyboardButton{
@@ -209,7 +209,7 @@ func tronResourceHandle(time.Duration) {
 				var record = model.NotifyRecord{Txid: t.ID}
 				model.DB.Create(&record)
 
-				go telegram.SendMsg(msg)
+				go bot.SendMsg(msg)
 			}
 		}
 	}

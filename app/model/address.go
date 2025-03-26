@@ -2,7 +2,7 @@ package model
 
 import (
 	"fmt"
-	"github.com/v03413/bepusdt/app/config"
+	"github.com/v03413/bepusdt/app/conf"
 	"github.com/v03413/bepusdt/app/help"
 	"time"
 )
@@ -34,7 +34,7 @@ type WalletAddress struct {
 
 // 启动时添加初始钱包地址
 func addStartWalletAddress() {
-	for _, address := range config.GetInitWalletAddress() {
+	for _, address := range conf.GetWalletAddress() {
 		if !help.IsValidTronAddress(address) && !help.IsValidPolygonAddress(address) {
 			fmt.Println("❌钱包地址不合法：", address)
 
