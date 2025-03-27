@@ -1,17 +1,19 @@
 # 应用访问地址，留空则系统自动获取，前端收银台会用到，建议设置，例如：https://token-pay.example.com
 app_uri = ""
-# 认证Token，对接会用到这个参数
+# 认证Token，对接会用到这个参数【很重要建议修改】
 auth_token = "123234"
 # 服务器HTTP监听地址
 listen = ":8080"
 # 静态资源路径，例如：/root/bepusdt/static；通过此参数可自定义模板，参考static目录，如非必要不建议修改。
 static_path = ""
-# SQLite数据库路径，如非必要不建议修改。
-sqlite_path = ""
+# SQLite数据库路径
+sqlite_path = "/var/lib/bepusdt/sqlite.db"
 # Tron区块网络的GRPC节点，可选列表：https://developers.tron.network/docs/networks#public-node
 tron_grpc_node = "18.141.79.38:50051"
 # Polygon区块网络的RPC节点
 polygon_rpc_endpoint = "https://polygon-rpc.com/"
+# 日志输出路径
+output_log = "/var/log/bepusdt.log"
 
 [pay]
 # usdt 支付原子颗粒度，0.01表示支付数额保留两位小数，相同金额时递增颗粒度为0.01，依次类推，如无特殊需求不建议修改。
