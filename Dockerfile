@@ -13,10 +13,11 @@ ENV TZ=Asia/Shanghai
 # 安装所需的依赖
 RUN apk add --no-cache tzdata ca-certificates
 
-COPY --from=builder /go/release/bepusdt /runtime/bepusdt
+COPY --from=builder /go/release/bepusdt /usr/local/bin/bepusdt
 
 # 设置时区
 RUN ln -fs /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
 
 EXPOSE 8080
-CMD ["/runtime/bepusdt"]
+ENTRYPOINT ["bepusdt"]
+CMD ["-conf", "/usr/local/bepusdt/conf.toml"]
