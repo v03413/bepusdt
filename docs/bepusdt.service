@@ -5,8 +5,7 @@ After=network.target nss-lookup.target
 
 [Service]
 Type = simple
-EnvironmentFile=/usr/local/bepusdt/Environment.conf
-ExecStart=/usr/local/bepusdt/bepusdt
+ExecStart=/usr/local/bin/bepusdt -conf /usr/local/bepusdt/conf.toml
 Restart=on-failure
 
 [Install]

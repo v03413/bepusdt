@@ -6,28 +6,25 @@ on:
       - main
     tags:
       - v*
-
 env:
   APP_NAME: bepusdt
   BUILD_DIR: build_assets
-
 jobs:
   build-release:
     strategy:
       matrix:
         goos: [ linux ]
-        goarch: [ amd64 ]
+        goarch: [ amd64,arm64 ]
       fail-fast: false
     runs-on: ubuntu-latest
     env:
       GOOS: ${{ matrix.goos }}
       GOARCH: ${{ matrix.goarch }}
-
     steps:
-      - name: Checkout codebase
+      - name: Checkout
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0
+          fetch-depth: 1
       - name: Show workflow information
         id: get_filename
         run: |
@@ -37,10 +34,10 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version: ^1.22
+          go-version: ^1.23.0
       - name: Get project dependencies
         run: go mod download
-      - name: Build Bepusdt
+      - name: Build
         run: |
           export CGO_ENABLED=0
           mkdir -p ${{ env.BUILD_DIR }}
@@ -48,9 +45,9 @@ jobs:
       - name: Prepare package
         run: |
           cp -v ./docs/${{ env.APP_NAME }}.service ./${{ env.BUILD_DIR }}
-          cp -v ./docs/Environment.conf ./${{ env.BUILD_DIR }}
+          cp -v ./conf.example.toml ./${{ env.BUILD_DIR }}
           mv -v ./${{ env.BUILD_DIR }} ./${{ env.APP_NAME }}
-      - name: Create ZIP archive
+      - name: Archive
         run: zip -9vr ./${{ env.APP_NAME }}-${{ env.OS_ARCH }}.zip ./${{ env.APP_NAME }}
       - name: Upload files to GitHub release
         uses: svenstaro/upload-release-action@v2
