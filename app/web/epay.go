@@ -45,11 +45,11 @@ func epaySubmit(ctx *gin.Context) {
 
 		return
 	}
-
+	
 	var tradeType = model.OrderTradeTypeUsdtTrc20
-	if data["type"] != tradeType {
+	if v, ok := data["type"]; ok {
 
-		tradeType = model.OrderTradeTypeTronTrx
+		tradeType = model.GetTradeType(cast.ToString(v))
 	}
 
 	var order, err = buildOrder(cast.ToFloat64(data["money"]), model.OrderApiTypeEpay, "", data["out_trade_no"], tradeType, data["return_url"], data["notify_url"], data["name"])
