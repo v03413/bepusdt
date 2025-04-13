@@ -41,7 +41,7 @@ type TradeOrders struct {
 	Money       float64   `gorm:"type:decimal(10,2);not null;default:0;comment:订单交易金额"`
 	Address     string    `gorm:"column:address;type:varchar(64);not null;comment:收款地址"`
 	FromAddress string    `gorm:"type:varchar(34);not null;default:'';comment:支付地址"`
-	Status      int       `gorm:"type:tinyint(1);not null;default:1;comment:交易状态"`
+	Status      int       `gorm:"type:tinyint(1);not null;default:1;index;comment:交易状态"`
 	Name        string    `gorm:"type:varchar(64);not null;default:'';comment:商品名称"`
 	ApiType     string    `gorm:"type:varchar(20);not null;default:'epusdt';comment:API类型"`
 	ReturnUrl   string    `gorm:"type:varchar(255);not null;default:'';comment:同步地址"`

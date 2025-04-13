@@ -63,7 +63,9 @@ func cmdStateHandle() {
 🎁今日成功数量：%d
 💎今日订单总数：%d
 💰今日成功收款：%.2f
-🌟扫块成功数据：%s
+🌟扫块成功数据
+    - Tron %s
+    - Polygon %s
 -----------------------
 🪧基准汇率(TRX)：%v
 🪧基准汇率(USDT)：%v
@@ -79,7 +81,8 @@ func cmdStateHandle() {
 		succ,
 		len(rows),
 		money,
-		conf.GetBlockScanSuccRate(),
+		conf.GetTronScanSuccRate(),
+		conf.GetPolygonScanSuccRate(),
 		cast.ToString(rate.GetOkxTrxRawRate()),
 		cast.ToString(rate.GetOkxUsdtRawRate()),
 		cast.ToString(rate.GetTrxCalcRate(conf.DefaultTrxCnyRate)),

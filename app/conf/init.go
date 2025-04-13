@@ -28,10 +28,12 @@ const defaultOutputLog = "/var/log/bepusdt.log"              // 默认日志输�
 const defaultSqlitePath = "/var/lib/bepusdt/sqlite.db"       // 默认数据库文件
 
 var (
-	cfg            Conf
-	path           string
-	BlockScanSucc  uint64
-	BlockScanTotal uint64
+	cfg                   Conf
+	path                  string
+	TronBlockScanTotal    uint64
+	TronBlockScanSucc     uint64
+	PolygonBlockScanTotal uint64
+	PolygonBlockScanSucc  uint64
 )
 
 func Init() {
@@ -68,13 +70,22 @@ func GetTrxRate() string {
 	return cast.ToString(DefaultTrxCnyRate)
 }
 
-func GetBlockScanSuccRate() string {
-	if BlockScanTotal == 0 {
+func GetTronScanSuccRate() string {
+	if TronBlockScanTotal == 0 {
 
 		return "100.00%"
 	}
 
-	return fmt.Sprintf("%.2f%%", cast.ToFloat64(BlockScanSucc/BlockScanTotal)*100)
+	return fmt.Sprintf("%.2f%%", float64(TronBlockScanSucc)/float64(TronBlockScanTotal)*100)
+}
+
+func GetPolygonScanSuccRate() string {
+	if TronBlockScanTotal == 0 {
+
+		return "100.00%"
+	}
+
+	return fmt.Sprintf("%.2f%%", float64(PolygonBlockScanSucc)/float64(PolygonBlockScanTotal)*100)
 }
 
 func GetUsdtAtomicity() (decimal.Decimal, int) {

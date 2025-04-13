@@ -14,6 +14,7 @@ import (
 	"io"
 	"math/big"
 	"net/http"
+	"sync/atomic"
 	"time"
 )
 
@@ -34,6 +35,8 @@ func polygonProcessBlock(n any) {
 	var url = conf.GetPolygonRpcEndpoint()
 	var client = &http.Client{Timeout: time.Second * 5}
 	var post = []byte(fmt.Sprintf(`{"jsonrpc":"2.0","method":"eth_getBlockByNumber","params":["0x%x",true],"id":1}`, num))
+
+	atomic.AddUint64(&conf.PolygonBlockScanTotal, 1)
 
 	resp, err := client.Post(url, contentType, bytes.NewBuffer(post))
 	if err != nil {
@@ -71,6 +74,12 @@ func polygonProcessBlock(n any) {
 		}
 
 		var input = v.Get("input").String()
+		if len(input) < 10 {
+			// 我也不明白为什么这里会出现 len < 10 情况，只是有人反馈，暂时屏蔽避免panic https://github.com/v03413/bepusdt/issues/66
+
+			continue
+		}
+
 		var methodID = input[:10]
 		if methodID != usdtPolygonTransferMethodID {
 
@@ -95,7 +104,9 @@ func polygonProcessBlock(n any) {
 		})
 	}
 
-	log.Info("区块扫描完成", num, "POLYGON")
+	atomic.AddUint64(&conf.PolygonBlockScanSucc, 1)
+
+	log.Info("区块扫描完成", num, conf.GetPolygonScanSuccRate(), "POLYGON")
 
 	if len(transfers) == 0 {
 
@@ -147,34 +158,34 @@ func polygonBlockNumber(d time.Duration) {
 		_ = resp.Body.Close()
 
 		var res = gjson.ParseBytes(body)
-		var number = help.HexStr2Int(res.Get("result").String()).Int64()
-		if number == 0 {
+		var now = help.HexStr2Int(res.Get("result").String()).Int64()
+		if now == 0 {
 
 			continue
 		}
 
-		if conf.GetTradeIsConfirmed() { // 暂且认为30个区块之前的交易已经被全网确认
+		if conf.GetTradeIsConfirmed() {
 
-			number = number - 30
+			now = now - numConfirmedSub
 		}
 
 		// 首次启动
 		if polygonLastBlockNumber == 0 {
 
-			polygonLastBlockNumber = number - 1
+			polygonLastBlockNumber = now - 1
 		}
 
 		// 区块高度没有变化
-		if number <= polygonLastBlockNumber {
+		if now <= polygonLastBlockNumber {
 
 			continue
 		}
 
-		for n := polygonLastBlockNumber + 1; n <= number; n++ {
+		for n := polygonLastBlockNumber + 1; n <= now; n++ {
 
 			polygonBlockScanQueue.In <- n
 		}
 
-		polygonLastBlockNumber = number
+		polygonLastBlockNumber = now
 	}
 }

@@ -21,13 +21,13 @@ import (
 	"time"
 )
 
-// 暂且认为交易所在区块高度和当前区块高度差值超过20，说明此交易已经被网络确认
-const blockHeightNumConfirmedSub = 20
+// 暂且认为交易所在区块高度和当前区块高度差值超过30，说明此交易已经被网络确认
+const numConfirmedSub = 30
 
 // usdt trc20 contract address 41a614f803b6fd780986a42c78ec9c7f77e6ded13c TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t
 var usdtTrc20ContractAddress = []byte{0x41, 0xa6, 0x14, 0xf8, 0x03, 0xb6, 0xfd, 0x78, 0x09, 0x86, 0xa4, 0x2c, 0x78, 0xec, 0x9c, 0x7f, 0x77, 0xe6, 0xde, 0xd1, 0x3c}
 
-var currentBlockHeight int64
+var tronLastBlackNumber int64
 
 type usdtTrc20TransferRaw struct {
 	RecvAddress string
@@ -38,7 +38,6 @@ func init() {
 	RegisterSchedule(time.Second*3, tronBlockScan)
 }
 
-// tronBlockScan 区块扫描
 func tronBlockScan(duration time.Duration) {
 	var node = conf.GetTronGrpcNode()
 	log.Info("区块扫描启动：", node)
@@ -59,10 +58,10 @@ func tronBlockScan(duration time.Duration) {
 	var client = api.NewWalletClient(conn)
 
 	for range time.Tick(duration) { // 3秒产生一个区块
-		atomic.AddUint64(&conf.BlockScanTotal, 1)
+		atomic.AddUint64(&conf.TronBlockScanTotal, 1)
 
 		var ctx, cancel = context.WithTimeout(context.Background(), time.Second*3)
-		nowBlock, err1 := client.GetNowBlock2(ctx, nil)
+		now, err1 := client.GetNowBlock2(ctx, nil)
 		cancel()
 		if err1 != nil {
 			log.Warn("GetNowBlock 超时：", err1)
@@ -70,29 +69,30 @@ func tronBlockScan(duration time.Duration) {
 			continue
 		}
 
-		atomic.AddUint64(&conf.BlockScanSucc, 1)
+		atomic.AddUint64(&conf.TronBlockScanSucc, 1)
 
-		var nowBlockHeight = nowBlock.BlockHeader.RawData.Number
+		var nowBlockHeight = now.BlockHeader.RawData.Number
 		if conf.GetTradeIsConfirmed() {
-			nowBlockHeight = nowBlockHeight - blockHeightNumConfirmedSub
+
+			nowBlockHeight = nowBlockHeight - numConfirmedSub
 		}
 
-		if currentBlockHeight == 0 { // 初始化当前区块高度
+		if tronLastBlackNumber == 0 { // 初始化当前区块高度
 
-			currentBlockHeight = nowBlockHeight - 1
+			tronLastBlackNumber = nowBlockHeight - 1
 		}
 
 		// 连续区块
-		var sub = nowBlockHeight - currentBlockHeight
+		var sub = nowBlockHeight - tronLastBlackNumber
 		if sub == 1 {
-			parseBlockTrans(nowBlock, nowBlockHeight)
+			parseBlockTrans(now, nowBlockHeight)
 
 			continue
 		}
 
 		// 如果当前区块高度和上次扫描的区块高度差值超过1，说明存在区块丢失
 		var endBlockHeight = nowBlockHeight
-		var startBlockHeight = currentBlockHeight + 1
+		var startBlockHeight = tronLastBlackNumber + 1
 
 		// 扫描丢失的区块
 		var ctx2, cancel2 = context.WithTimeout(context.Background(), time.Second*3)
@@ -106,14 +106,14 @@ func tronBlockScan(duration time.Duration) {
 
 		// 扫描丢失区块
 		for _, block := range blocks.GetBlock() {
+
 			parseBlockTrans(block, block.BlockHeader.RawData.Number)
 		}
 	}
 }
 
-// parseBlockTrans 解析区块交易
 func parseBlockTrans(block *api.BlockExtention, nowHeight int64) {
-	currentBlockHeight = nowHeight
+	tronLastBlackNumber = nowHeight
 
 	var resources = make([]resource, 0)
 	var transfers = make([]transfer, 0)
@@ -230,10 +230,9 @@ func parseBlockTrans(block *api.BlockExtention, nowHeight int64) {
 		resourceQueue.In <- resources
 	}
 
-	log.Info("区块扫描完成", nowHeight, "TRON")
+	log.Info("区块扫描完成", nowHeight, conf.GetTronScanSuccRate(), "TRON")
 }
 
-// parseUsdtTrc20Contract 解析usdt trc20合约
 func parseUsdtTrc20Contract(reader *bytes.Reader) usdtTrc20TransferRaw {
 	var funcName = make([]byte, 4)
 	_, err = reader.Read(funcName)
@@ -279,7 +278,6 @@ func base58CheckEncode(input []byte) string {
 	return base58.Encode(input)
 }
 
-// 列出所有待支付交易订单
 func getAllWaitingOrders() map[string]model.TradeOrders {
 	var tradeOrders = model.GetTradeOrderByStatus(model.OrderStatusWaiting)
 	var data = make(map[string]model.TradeOrders) // 当前所有正在等待支付的订单 Lock Key
@@ -301,7 +299,6 @@ func getAllWaitingOrders() map[string]model.TradeOrders {
 	return data
 }
 
-// 解析交易金额
 func parseTransAmount(amount float64) decimal.Decimal {
 	var result = decimal.NewFromFloat(amount).Div(decimal.NewFromFloat(1000000))
 
