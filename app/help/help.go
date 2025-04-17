@@ -123,6 +123,15 @@ func MaskAddress(address string) string {
 	return address[:8] + " ***** " + address[len(address)-10:]
 }
 
+func MaskHash(hash string) string {
+	if len(hash) <= 20 {
+
+		return hash
+	}
+
+	return hash[:8] + " ***** " + hash[len(hash)-10:]
+}
+
 func CalcNextNotifyTime(base time.Time, num int) time.Time {
 
 	return base.Add(time.Minute * time.Duration(math.Pow(2, float64(num))))

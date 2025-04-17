@@ -40,6 +40,7 @@ func SendTradeSuccMsg(order model.TradeOrders) {
 🚦商户订单：%v
 💰请求金额：%v CNY(%v)
 💲支付数额：%v ` + tradeUnit + `
+✳️交易哈希：%s
 ✅收款地址：%s
 ⏱️创建时间：%s
 ️🎯️支付时间：%s
@@ -50,6 +51,7 @@ func SendTradeSuccMsg(order model.TradeOrders) {
 		order.Money,
 		order.TradeRate,
 		order.Amount,
+		help.MaskHash(order.TradeHash),
 		help.MaskAddress(order.Address),
 		order.CreatedAt.Format(time.DateTime),
 		order.UpdatedAt.Format(time.DateTime),
