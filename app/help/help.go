@@ -129,7 +129,7 @@ func MaskHash(hash string) string {
 		return hash
 	}
 
-	return hash[:8] + " ***** " + hash[len(hash)-10:]
+	return hash[:6] + " ***** " + hash[len(hash)-8:]
 }
 
 func CalcNextNotifyTime(base time.Time, num int) time.Time {
