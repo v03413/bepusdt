@@ -67,7 +67,7 @@ func SendTradeSuccMsg(order model.TradeOrders) {
 		},
 	}
 
-	_, _ = botApi.Send(msg)
+	SendMsg(msg)
 }
 
 func SendNotifyFailed(o model.TradeOrders, reason string) {
@@ -117,7 +117,7 @@ func SendNotifyFailed(o model.TradeOrders, reason string) {
 		},
 	}
 
-	_, _ = botApi.Send(msg)
+	SendMsg(msg)
 }
 
 func SendOtherNotify(text string) {
@@ -130,7 +130,7 @@ func SendOtherNotify(text string) {
 	var msg = api.NewMessage(chatId, text)
 	msg.ParseMode = api.ModeMarkdown
 
-	_, _ = botApi.Send(msg)
+	SendMsg(msg)
 }
 
 func SendWelcome(version string) {

@@ -59,14 +59,14 @@ func cbWalletAction(query *tgbotapi.CallbackQuery, address string) {
 	}
 
 	DeleteMsg(query.Message.MessageID)
-	_, _ = botApi.Send(msg)
+	SendMsg(msg)
 }
 
 func cbAddressAddHandle(query *tgbotapi.CallbackQuery) {
 	var msg = tgbotapi.NewMessage(query.Message.Chat.ID, replayAddressText)
 	msg.ReplyMarkup = tgbotapi.ForceReply{ForceReply: true, Selective: true, InputFieldPlaceholder: "输入钱包地址"}
 
-	_, _ = botApi.Send(msg)
+	SendMsg(msg)
 }
 
 func cbAddressAction(query *tgbotapi.CallbackQuery, id string) {

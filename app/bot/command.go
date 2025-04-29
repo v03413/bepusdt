@@ -23,7 +23,7 @@ func cmdGetIdHandle(m *tgbotapi.Message) {
 	msg := tgbotapi.NewMessage(m.Chat.ID, "您的ID: "+fmt.Sprintf("`%v`(点击复制)", m.Chat.ID))
 	msg.ParseMode = tgbotapi.ModeMarkdownV2
 	msg.ReplyToMessageID = m.MessageID
-	_, _ = botApi.Send(msg)
+	SendMsg(msg)
 }
 
 func cmdStartHandle() {

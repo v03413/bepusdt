@@ -140,7 +140,7 @@ func queryTronAddressInfo(msg *api.Message, address string) {
 		}
 	}
 
-	_, _ = botApi.Send(reply)
+	SendMsg(reply)
 }
 
 func queryPolygonAddressInfo(msg *api.Message, address string) {
@@ -156,5 +156,5 @@ func queryPolygonAddressInfo(msg *api.Message, address string) {
 		},
 	}
 
-	_, _ = botApi.Send(reply)
+	SendMsg(reply)
 }
