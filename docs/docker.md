@@ -45,3 +45,19 @@ sqlite_path = "你的数据库文件路径"
 ```
 
 这样即使容器重新启动或删除，数据也不会丢失。
+
+## Docker Compose 方式部署
+
+```yml
+services: 
+  bepusdt: 
+    image: v03413/bepusdt:latest
+    container_name: bepusdt 
+    restart: unless-stopped 
+    ports: 
+      - "8080:8080" 
+    volumes: 
+      - ./conf.toml:/usr/local/bepusdt/conf.toml
+      - ./data:/var/lib/bepusdt
+```
+
