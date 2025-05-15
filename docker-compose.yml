@@ -1,0 +1,10 @@
+services: 
+  bepusdt: 
+    image: v03413/bepusdt:latest # 如果想使用最新的开发版本，可以将镜像名 latest 替换为 beta
+    container_name: bepusdt 
+    restart: unless-stopped 
+    ports: 
+      - "8080:8080" 
+    volumes: 
+      - ./conf.toml:/usr/local/bepusdt/conf.toml
+      - ./data:/var/lib/bepusdt
