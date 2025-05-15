@@ -6,7 +6,9 @@ import (
 	"encoding/hex"
 	"github.com/btcsuite/btcd/btcutil/base58"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
+	"github.com/panjf2000/ants/v2"
 	"github.com/shopspring/decimal"
+	"github.com/smallnest/chanx"
 	"github.com/v03413/bepusdt/app/conf"
 	"github.com/v03413/bepusdt/app/log"
 	"github.com/v03413/bepusdt/app/model"
@@ -26,8 +28,12 @@ const numConfirmedSub = 30
 
 // usdt trc20 contract address 41a614f803b6fd780986a42c78ec9c7f77e6ded13c TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t
 var usdtTrc20ContractAddress = []byte{0x41, 0xa6, 0x14, 0xf8, 0x03, 0xb6, 0xfd, 0x78, 0x09, 0x86, 0xa4, 0x2c, 0x78, 0xec, 0x9c, 0x7f, 0x77, 0xe6, 0xde, 0xd1, 0x3c}
-
-var tronLastBlackNumber int64
+var tronLastBlockNum int64
+var tronBlockScanQueue = chanx.NewUnboundedChan[int64](context.Background(), 30)
+var params = grpc.ConnectParams{
+	Backoff:           backoff.Config{BaseDelay: 1 * time.Second, MaxDelay: 30 * time.Second, Multiplier: 1.5},
+	MinConnectTimeout: 1 * time.Minute,
+}
 
 type usdtTrc20TransferRaw struct {
 	RecvAddress string
@@ -35,19 +41,34 @@ type usdtTrc20TransferRaw struct {
 }
 
 func init() {
-	RegisterSchedule(time.Second*3, tronBlockScan)
+	RegisterSchedule(time.Second*3, tronBlockNumber)
+	RegisterSchedule(time.Second, tronBlockScan)
 }
 
-func tronBlockScan(duration time.Duration) {
+func tronBlockScan(time.Duration) {
+	p, err := ants.NewPoolWithFunc(8, tronProcessBlock)
+	if err != nil {
+		panic(err)
+
+		return
+	}
+
+	defer p.Release()
+
+	for n := range tronBlockScanQueue.Out {
+		if err := p.Invoke(n); err != nil {
+			tronBlockScanQueue.In <- n
+
+			log.Warn("Tron Error invoking process block:", err)
+		}
+	}
+}
+
+func tronBlockNumber(duration time.Duration) {
 	var node = conf.GetTronGrpcNode()
 	log.Info("区块扫描启动：", node)
 
-	reParams := grpc.ConnectParams{
-		Backoff:           backoff.Config{BaseDelay: 1 * time.Second, MaxDelay: 30 * time.Second, Multiplier: 1.5},
-		MinConnectTimeout: 1 * time.Minute,
-	}
-
-	conn, err := grpc.NewClient(node, grpc.WithConnectParams(reParams), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(node, grpc.WithConnectParams(params), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 
 		log.Error("grpc.NewClient", err)
@@ -57,63 +78,69 @@ func tronBlockScan(duration time.Duration) {
 
 	var client = api.NewWalletClient(conn)
 
-	for range time.Tick(duration) { // 3秒产生一个区块
-		atomic.AddUint64(&conf.TronBlockScanTotal, 1)
-
+	for range time.Tick(duration) { // 大概3秒产生一个区块
 		var ctx, cancel = context.WithTimeout(context.Background(), time.Second*3)
-		now, err1 := client.GetNowBlock2(ctx, nil)
+		block, err1 := client.GetNowBlock2(ctx, nil)
 		cancel()
 		if err1 != nil {
-			log.Warn("GetNowBlock 超时：", err1)
+			log.Warn("GetNowBlock2 超时：", err1)
 
 			continue
 		}
 
-		atomic.AddUint64(&conf.TronBlockScanSucc, 1)
-
-		var nowBlockHeight = now.BlockHeader.RawData.Number
+		var now = block.BlockHeader.RawData.Number
 		if conf.GetTradeIsConfirmed() {
 
-			nowBlockHeight = nowBlockHeight - numConfirmedSub
+			now = now - numConfirmedSub
 		}
 
-		if tronLastBlackNumber == 0 { // 初始化当前区块高度
+		// 首次启动
+		if tronLastBlockNum == 0 {
 
-			tronLastBlackNumber = nowBlockHeight - 1
+			tronLastBlockNum = now - 1
 		}
 
-		// 连续区块
-		var sub = nowBlockHeight - tronLastBlackNumber
-		if sub == 1 {
-			parseBlockTrans(now, nowBlockHeight)
+		// 区块高度没有变化
+		if now <= tronLastBlockNum {
 
 			continue
 		}
 
-		// 如果当前区块高度和上次扫描的区块高度差值超过1，说明存在区块丢失
-		var endBlockHeight = nowBlockHeight
-		var startBlockHeight = tronLastBlackNumber + 1
+		// 待扫描区块入列
+		for n := tronLastBlockNum + 1; n <= now; n++ {
 
-		// 扫描丢失的区块
-		var ctx2, cancel2 = context.WithTimeout(context.Background(), time.Second*3)
-		blocks, err2 := client.GetBlockByLimitNext2(ctx2, &api.BlockLimit{StartNum: startBlockHeight, EndNum: endBlockHeight})
-		cancel2()
-		if err2 != nil {
-			log.Warn("GetBlockByLimitNext2 超时：", err2)
-
-			continue
+			tronBlockScanQueue.In <- n
 		}
 
-		// 扫描丢失区块
-		for _, block := range blocks.GetBlock() {
-
-			parseBlockTrans(block, block.BlockHeader.RawData.Number)
-		}
+		tronLastBlockNum = now
 	}
 }
 
-func parseBlockTrans(block *api.BlockExtention, nowHeight int64) {
-	tronLastBlackNumber = nowHeight
+func tronProcessBlock(n any) {
+	var num = n.(int64)
+	var node = conf.GetTronGrpcNode()
+	var conn *grpc.ClientConn
+	var err error
+	if conn, err = grpc.NewClient(node, grpc.WithConnectParams(params), grpc.WithTransportCredentials(insecure.NewCredentials())); err != nil {
+
+		log.Error("grpc.NewClient", err)
+	}
+
+	defer conn.Close()
+	var client = api.NewWalletClient(conn)
+
+	atomic.AddUint64(&conf.TronBlockScanTotal, 1)
+
+	var ctx, cancel = context.WithTimeout(context.Background(), time.Second*3)
+	block, err1 := client.GetBlockByNum2(ctx, &api.NumberMessage{Num: num})
+	cancel()
+	if err1 != nil {
+		log.Warn("GetBlockByNum Error", err1)
+
+		tronBlockScanQueue.In <- num
+
+		return
+	}
 
 	var resources = make([]resource, 0)
 	var transfers = make([]transfer, 0)
@@ -183,7 +210,7 @@ func parseBlockTrans(block *api.BlockExtention, nowHeight int64) {
 					RecvAddress: base58CheckEncode(foo.ToAddress),
 					Timestamp:   timestamp,
 					TradeType:   model.OrderTradeTypeTronTrx,
-					BlockNum:    nowHeight,
+					BlockNum:    num,
 				})
 
 				continue
@@ -215,7 +242,7 @@ func parseBlockTrans(block *api.BlockExtention, nowHeight int64) {
 				transItem.TradeType = model.OrderTradeTypeUsdtTrc20
 				transItem.Amount = trc20Contract.Amount
 				transItem.RecvAddress = trc20Contract.RecvAddress
-				transItem.BlockNum = nowHeight
+				transItem.BlockNum = num
 
 				transfers = append(transfers, transItem)
 			}
@@ -230,7 +257,9 @@ func parseBlockTrans(block *api.BlockExtention, nowHeight int64) {
 		resourceQueue.In <- resources
 	}
 
-	log.Info("区块扫描完成", nowHeight, conf.GetTronScanSuccRate(), "TRON")
+	atomic.AddUint64(&conf.TronBlockScanSucc, 1)
+
+	log.Info("区块扫描完成", num, conf.GetTronScanSuccRate(), "TRON")
 }
 
 func parseUsdtTrc20Contract(reader *bytes.Reader) usdtTrc20TransferRaw {

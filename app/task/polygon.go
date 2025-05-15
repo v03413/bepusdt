@@ -130,7 +130,7 @@ func polygonBlockScan(time.Duration) {
 		if err := p.Invoke(n); err != nil {
 			polygonBlockScanQueue.In <- n
 
-			log.Warn("Error invoking process block:", err)
+			log.Warn("polygon Error invoking process block:", err)
 		}
 	}
 }

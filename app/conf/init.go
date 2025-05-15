@@ -80,7 +80,7 @@ func GetTronScanSuccRate() string {
 }
 
 func GetPolygonScanSuccRate() string {
-	if TronBlockScanTotal == 0 {
+	if PolygonBlockScanTotal == 0 {
 
 		return "100.00%"
 	}
