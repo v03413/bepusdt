@@ -225,7 +225,7 @@ func cbOrderDetailAction(ctx context.Context, b *bot.Bot, u *models.Update) {
 		},
 	}
 
-	if o.NotifyState == model.OrderNotifyStateFail {
+	if o.Status == model.OrderStatusSuccess && o.NotifyState == model.OrderNotifyStateFail {
 		markup.InlineKeyboard = append(markup.InlineKeyboard, []models.InlineKeyboardButton{
 			{Text: "✅标记回调成功", CallbackData: cbMarkNotifySucc + "|" + o.TradeId},
 			{Text: "⚡️立刻回调重试", CallbackData: dbOrderNotifyRetry + "|" + o.TradeId},
