@@ -2,8 +2,10 @@ package bot
 
 import (
 	"bytes"
+	"context"
 	"fmt"
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/go-telegram/bot"
+	"github.com/go-telegram/bot/models"
 	"github.com/shopspring/decimal"
 	"github.com/tidwall/gjson"
 	"github.com/v03413/bepusdt/app/conf"
@@ -20,7 +22,7 @@ import (
 )
 
 const cbWallet = "wallet"
-const cbAddress = "address"
+const cbAddress = "address_act"
 const cbAddressAdd = "address_add"
 const cbAddressEnable = "address_enable"
 const cbAddressDisable = "address_disable"
@@ -30,13 +32,15 @@ const cbOrderDetail = "order_detail"
 const cbMarkNotifySucc = "mark_notify_succ"
 const dbOrderNotifyRetry = "order_notify_retry"
 
-func cbWalletAction(query *tgbotapi.CallbackQuery, address string) {
-	var info = "暂不支持..."
+func cbWalletAction(ctx context.Context, b *bot.Bot, u *models.Update) {
+	var address = ctx.Value("args").([]string)[1]
+
+	var text = "暂不支持..."
 	if strings.HasPrefix(address, "T") {
-		info = getTronWalletInfo(address)
+		text = getTronWalletInfo(address)
 	}
 	if help.IsValidPolygonAddress(address) {
-		info = getPolygonWalletInfo(address)
+		text = getPolygonWalletInfo(address)
 	}
 
 	var uri = "https://tronscan.org/#/address/" + address
@@ -45,31 +49,60 @@ func cbWalletAction(query *tgbotapi.CallbackQuery, address string) {
 		uri = "https://polygonscan.com/address/" + address
 	}
 
-	var msg = tgbotapi.NewMessage(query.Message.Chat.ID, "❌查询失败")
-	if info != "" {
-		msg.Text = info
-		msg.ParseMode = tgbotapi.ModeMarkdownV2
-		msg.ReplyMarkup = tgbotapi.InlineKeyboardMarkup{
-			InlineKeyboard: [][]tgbotapi.InlineKeyboardButton{
+	var params = bot.SendMessageParams{ChatID: u.CallbackQuery.Message.Message.Chat.ID, ParseMode: models.ParseModeMarkdown}
+	if text != "" {
+		params.Text = text
+		params.ReplyMarkup = models.InlineKeyboardMarkup{
+			InlineKeyboard: [][]models.InlineKeyboardButton{
 				{
-					tgbotapi.NewInlineKeyboardButtonURL("📝查看详细信息", uri),
+					models.InlineKeyboardButton{Text: "📝查看详细信息", URL: uri},
 				},
 			},
 		}
 	}
 
-	DeleteMsg(query.Message.MessageID)
-	SendMsg(msg)
+	DeleteMessage(ctx, b, &bot.DeleteMessageParams{
+		ChatID:    u.CallbackQuery.Message.Message.Chat.ID,
+		MessageID: u.CallbackQuery.Message.Message.ID,
+	})
+	SendMessage(&params)
 }
 
-func cbAddressAddHandle(query *tgbotapi.CallbackQuery) {
-	var msg = tgbotapi.NewMessage(query.Message.Chat.ID, replayAddressText)
-	msg.ReplyMarkup = tgbotapi.ForceReply{ForceReply: true, Selective: true, InputFieldPlaceholder: "输入钱包地址"}
+func cbAddressAddAction(ctx context.Context, b *bot.Bot, u *models.Update) {
+	var params = &bot.SendMessageParams{
+		Text:   replayAddressText,
+		ChatID: u.CallbackQuery.Message.Message.Chat.ID,
+		ReplyMarkup: &models.ForceReply{
+			ForceReply:            true,
+			Selective:             true,
+			InputFieldPlaceholder: "输入钱包地址",
+		},
+	}
 
-	SendMsg(msg)
+	SendMessage(params)
 }
 
-func cbAddressAction(query *tgbotapi.CallbackQuery, id string) {
+func cbAddressDelAction(ctx context.Context, b *bot.Bot, u *models.Update) {
+	var id = ctx.Value("args").([]string)[1]
+	var wa model.WalletAddress
+	if model.DB.Where("id = ?", id).First(&wa).Error == nil {
+		// 删除钱包地址
+		wa.Delete()
+
+		// 删除历史消息
+		DeleteMessage(ctx, b, &bot.DeleteMessageParams{
+			ChatID:    u.CallbackQuery.Message.Message.Chat.ID,
+			MessageID: u.CallbackQuery.Message.Message.ID,
+		})
+
+		// 推送最新状态
+		cmdStartHandle(ctx, b, u)
+	}
+}
+
+func cbAddressAction(ctx context.Context, b *bot.Bot, u *models.Update) {
+	var id = ctx.Value("args").([]string)[1]
+
 	var wa model.WalletAddress
 	if model.DB.Where("id = ?", id).First(&wa).Error == nil {
 		var otherTextLabel = "✅已启用 非订单交易监控通知"
@@ -77,64 +110,66 @@ func cbAddressAction(query *tgbotapi.CallbackQuery, id string) {
 			otherTextLabel = "❌已禁用 非订单交易监控通知"
 		}
 
-		EditAndSendMsg(query.Message.MessageID, wa.Address, tgbotapi.InlineKeyboardMarkup{
-			InlineKeyboard: [][]tgbotapi.InlineKeyboardButton{
-				{
-					tgbotapi.NewInlineKeyboardButtonData("✅启用", cbAddressEnable+"|"+id),
-					tgbotapi.NewInlineKeyboardButtonData("❌禁用", cbAddressDisable+"|"+id),
-					tgbotapi.NewInlineKeyboardButtonData("⛔️删除", cbAddressDelete+"|"+id),
-				},
-				{
-					tgbotapi.NewInlineKeyboardButtonData(otherTextLabel, cbAddressOtherNotify+"|"+id),
+		var params = &bot.EditMessageTextParams{
+			ChatID:    u.CallbackQuery.Message.Message.Chat.ID,
+			MessageID: u.CallbackQuery.Message.Message.ID,
+			Text:      wa.Address,
+			ReplyMarkup: models.InlineKeyboardMarkup{
+				InlineKeyboard: [][]models.InlineKeyboardButton{
+					{
+						models.InlineKeyboardButton{Text: "✅启用", CallbackData: cbAddressEnable + "|" + id},
+						models.InlineKeyboardButton{Text: "❌禁用", CallbackData: cbAddressDisable + "|" + id},
+						models.InlineKeyboardButton{Text: "⛔️删除", CallbackData: cbAddressDelete + "|" + id},
+					},
+					{
+						models.InlineKeyboardButton{Text: otherTextLabel, CallbackData: cbAddressOtherNotify + "|" + id},
+					},
 				},
 			},
-		})
+		}
+
+		EditMessageText(ctx, b, params)
 	}
 }
 
-func cbAddressEnableAction(query *tgbotapi.CallbackQuery, id string) {
+func cbAddressEnableAction(ctx context.Context, b *bot.Bot, u *models.Update) {
+	var id = ctx.Value("args").([]string)[1]
 	var wa model.WalletAddress
 	if model.DB.Where("id = ?", id).First(&wa).Error == nil {
 		// 修改地址状态
 		wa.SetStatus(model.StatusEnable)
 
 		// 删除历史消息
-		DeleteMsg(query.Message.MessageID)
+		DeleteMessage(ctx, b, &bot.DeleteMessageParams{
+			ChatID:    u.CallbackQuery.Message.Message.Chat.ID,
+			MessageID: u.CallbackQuery.Message.Message.ID,
+		})
 
 		// 推送最新状态
-		cmdStartHandle()
+		cmdStartHandle(ctx, b, u)
 	}
 }
 
-func cbAddressDisableAction(query *tgbotapi.CallbackQuery, id string) {
+func cbAddressDisableAction(ctx context.Context, b *bot.Bot, u *models.Update) {
+	var id = ctx.Value("args").([]string)[1]
 	var wa model.WalletAddress
 	if model.DB.Where("id = ?", id).First(&wa).Error == nil {
 		// 修改地址状态
 		wa.SetStatus(model.StatusDisable)
 
 		// 删除历史消息
-		DeleteMsg(query.Message.MessageID)
+		DeleteMessage(ctx, b, &bot.DeleteMessageParams{
+			ChatID:    u.CallbackQuery.Message.Message.Chat.ID,
+			MessageID: u.CallbackQuery.Message.Message.ID,
+		})
 
 		// 推送最新状态
-		cmdStartHandle()
+		cmdStartHandle(ctx, b, u)
 	}
 }
 
-func cbAddressDeleteAction(query *tgbotapi.CallbackQuery, id string) {
-	var wa model.WalletAddress
-	if model.DB.Where("id = ?", id).First(&wa).Error == nil {
-		// 删除钱包地址
-		wa.Delete()
-
-		// 删除历史消息
-		DeleteMsg(query.Message.MessageID)
-
-		// 推送最新状态
-		cmdStartHandle()
-	}
-}
-
-func cbAddressOtherNotifyAction(query *tgbotapi.CallbackQuery, id string) {
+func cbAddressOtherNotifyAction(ctx context.Context, b *bot.Bot, u *models.Update) {
+	var id = ctx.Value("args").([]string)[1]
 	var wa model.WalletAddress
 	if model.DB.Where("id = ?", id).First(&wa).Error == nil {
 		if wa.OtherNotify == 1 {
@@ -143,16 +178,21 @@ func cbAddressOtherNotifyAction(query *tgbotapi.CallbackQuery, id string) {
 			wa.SetOtherNotify(model.OtherNotifyEnable)
 		}
 
-		DeleteMsg(query.Message.MessageID)
+		DeleteMessage(ctx, b, &bot.DeleteMessageParams{
+			ChatID:    u.CallbackQuery.Message.Message.Chat.ID,
+			MessageID: u.CallbackQuery.Message.Message.ID,
+		})
 
-		cmdStartHandle()
+		cmdStartHandle(ctx, b, u)
 	}
 }
 
-func cbOrderDetailAction(tradeId string) {
+func cbOrderDetailAction(ctx context.Context, b *bot.Bot, u *models.Update) {
+	var args = ctx.Value("args").([]string)
+
 	var o model.TradeOrders
 
-	if model.DB.Where("trade_id = ?", tradeId).First(&o).Error != nil {
+	if model.DB.Where("trade_id = ?", args[1]).First(&o).Error != nil {
 
 		return
 	}
@@ -176,62 +216,66 @@ func cbOrderDetailAction(tradeId string) {
 	}
 
 	var site = &url.URL{Scheme: urlInfo.Scheme, Host: urlInfo.Host}
-	var markup = tgbotapi.InlineKeyboardMarkup{
-		InlineKeyboard: [][]tgbotapi.InlineKeyboardButton{
+	var markup = models.InlineKeyboardMarkup{
+		InlineKeyboard: [][]models.InlineKeyboardButton{
 			{
-				tgbotapi.NewInlineKeyboardButtonURL("🌏商户网站", site.String()),
-				tgbotapi.NewInlineKeyboardButtonURL("📝交易明细", o.GetTxDetailUrl()),
+				models.InlineKeyboardButton{Text: "🌏商户网站", URL: site.String()},
+				models.InlineKeyboardButton{Text: "📝交易明细", URL: o.GetTxDetailUrl()},
 			},
 		},
 	}
+
 	if o.NotifyState == model.OrderNotifyStateFail {
-		markup.InlineKeyboard = append(markup.InlineKeyboard, []tgbotapi.InlineKeyboardButton{
-			tgbotapi.NewInlineKeyboardButtonData("✅标记回调成功", cbMarkNotifySucc+"|"+o.TradeId),
-		})
-		markup.InlineKeyboard = append(markup.InlineKeyboard, []tgbotapi.InlineKeyboardButton{
-			tgbotapi.NewInlineKeyboardButtonData("⚡️立刻回调重试", dbOrderNotifyRetry+"|"+o.TradeId),
+		markup.InlineKeyboard = append(markup.InlineKeyboard, []models.InlineKeyboardButton{
+			{Text: "✅标记回调成功", CallbackData: cbMarkNotifySucc + "|" + o.TradeId},
+			{Text: "⚡️立刻回调重试", CallbackData: dbOrderNotifyRetry + "|" + o.TradeId},
 		})
 	}
-	var msg = tgbotapi.NewMessage(0, "```"+`
-⛵️系统订单：`+o.TradeId+`
-📌商户订单：`+o.OrderId+`
-📊交易汇率：`+o.TradeRate+`(`+conf.GetUsdtRate()+`)
-💲交易数额：`+o.Amount+`
-💰交易金额：`+fmt.Sprintf("%.2f", o.Money)+` CNY
-💍交易类别：`+strings.ToUpper(o.TradeType)+fmt.Sprintf("(%s)", o.GetTradeChain())+` 
-🌏商户网站：`+site.String()+`
-🔋收款状态：`+o.GetStatusLabel()+`
-🍀回调状态：`+notifyStateLabel+`
-💎️收款地址：`+help.MaskAddress(o.Address)+`
-🕒创建时间：`+o.CreatedAt.Format(time.DateTime)+`
-🕒失效时间：`+o.ExpiredAt.Format(time.DateTime)+`
-⚖️️确认时间：`+o.ConfirmedAt.Format(time.DateTime)+`
-`+"\n```")
-	msg.ParseMode = tgbotapi.ModeMarkdown
-	msg.ReplyMarkup = markup
 
-	SendMsg(msg)
+	var text = "```" + `
+	⛵️系统订单：` + o.TradeId + `
+	📌商户订单：` + o.OrderId + `
+	📊交易汇率：` + o.TradeRate + `(` + conf.GetUsdtRate() + `)
+	💲交易数额：` + o.Amount + `
+	💰交易金额：` + fmt.Sprintf("%.2f", o.Money) + ` CNY
+	💍交易类别：` + strings.ToUpper(o.TradeType) + fmt.Sprintf("(%s)", o.GetTradeChain()) + `
+	🌏商户网站：` + site.String() + `
+	🔋收款状态：` + o.GetStatusLabel() + `
+	🍀回调状态：` + notifyStateLabel + `
+	💎️收款地址：` + help.MaskAddress(o.Address) + `
+	🕒创建时间：` + o.CreatedAt.Format(time.DateTime) + `
+	🕒失效时间：` + o.ExpiredAt.Format(time.DateTime) + `
+	⚖️️确认时间：` + o.ConfirmedAt.Format(time.DateTime) + `
+	` + "\n```"
+
+	SendMessage(&bot.SendMessageParams{
+		ChatID:      conf.BotAdminID(),
+		Text:        text,
+		ParseMode:   models.ParseModeMarkdown,
+		ReplyMarkup: markup,
+	})
 }
 
-func cbMarkNotifySuccAction(tradeId string) {
+func cbMarkNotifySuccAction(ctx context.Context, b *bot.Bot, u *models.Update) {
+	var tradeId = ctx.Value("args").([]string)[1]
 
 	model.DB.Model(&model.TradeOrders{}).Where("trade_id = ?", tradeId).Update("notify_state", model.OrderNotifyStateSucc)
 
-	var msg = tgbotapi.NewMessage(0, fmt.Sprintf("✅订单（`%s`）回调状态手动标记成功，后续将不会再次回调。", tradeId))
-
-	msg.ParseMode = tgbotapi.ModeMarkdownV2
-
-	SendMsg(msg)
+	SendMessage(&bot.SendMessageParams{
+		Text:      fmt.Sprintf("✅订单（`%s`）回调手动标记成功，后续将不会再次回调。", tradeId),
+		ParseMode: models.ParseModeMarkdown,
+	})
 }
 
-func dbOrderNotifyRetryAction(tradeId string) {
+func dbOrderNotifyRetryAction(ctx context.Context, b *bot.Bot, u *models.Update) {
+	var tradeId = ctx.Value("args").([]string)[1]
+
 	model.DB.Model(&model.TradeOrders{}).Where("trade_id = ?", tradeId).UpdateColumn("notify_num", gorm.Expr("notify_num - ?", 1))
 
-	var msg = tgbotapi.NewMessage(0, fmt.Sprintf("🪧订单（`%s`）即将开始回调重试，稍后可再次查询。", tradeId))
-
-	msg.ParseMode = tgbotapi.ModeMarkdownV2
-
-	SendMsg(msg)
+	SendMessage(&bot.SendMessageParams{
+		Text:      fmt.Sprintf("🪧订单（`%s`）即将开始回调重试，稍后可再次查询。", tradeId),
+		ParseMode: models.ParseModeMarkdown,
+	})
 }
 
 func getTronWalletInfo(address string) string {

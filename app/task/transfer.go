@@ -3,16 +3,16 @@ package task
 import (
 	"context"
 	"fmt"
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/go-telegram/bot"
+	"github.com/go-telegram/bot/models"
 	"github.com/smallnest/chanx"
 	"github.com/spf13/cast"
-	"github.com/v03413/bepusdt/app/bot"
+	bot2 "github.com/v03413/bepusdt/app/bot"
 	"github.com/v03413/bepusdt/app/conf"
 	"github.com/v03413/bepusdt/app/help"
 	"github.com/v03413/bepusdt/app/model"
 	"github.com/v03413/bepusdt/app/notify"
 	"github.com/v03413/tronprotocol/core"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -78,8 +78,8 @@ func orderTransferHandle(time.Duration) {
 			// 标记成功
 			o.MarkSuccess(t.BlockNum, t.FromAddress, t.TxHash, t.Timestamp)
 
-			go notify.Handle(o)        // 通知订单支付成功
-			go bot.SendTradeSuccMsg(o) // TG发送订单信息
+			go notify.Handle(o)         // 通知订单支付成功
+			go bot2.SendTradeSuccMsg(o) // TG发送订单信息
 		}
 
 		if len(other) > 0 {
@@ -127,7 +127,7 @@ func notOrderTransferHandle(time.Duration) {
 				}
 
 				var text = fmt.Sprintf(
-					"#账户%s #非订单交易\n---\n```\n💲交易数额：%v \n💍交易类别："+strings.ToUpper(t.TradeType)+"\n⏱️交易时间：%v\n✅接收地址：%v\n🅾️发送地址：%v```\n",
+					"\\#账户%s \\#非订单交易\n\\-\\-\\-\n```\n💲交易数额：%v \n💍交易类别："+strings.ToUpper(t.TradeType)+"\n⏱️交易时间：%v\n✅接收地址：%v\n🅾️发送地址：%v```\n",
 					title,
 					amount.String(),
 					t.Timestamp.Format(time.DateTime),
@@ -135,26 +135,21 @@ func notOrderTransferHandle(time.Duration) {
 					help.MaskAddress(t.FromAddress),
 				)
 
-				var chatId, err = strconv.ParseInt(conf.BotNotifyTarget(), 10, 64)
-				if err != nil {
-
-					continue
-				}
-
-				var msg = tgbotapi.NewMessage(chatId, text)
-				msg.ParseMode = tgbotapi.ModeMarkdown
-				msg.ReplyMarkup = tgbotapi.InlineKeyboardMarkup{
-					InlineKeyboard: [][]tgbotapi.InlineKeyboardButton{
-						{
-							tgbotapi.NewInlineKeyboardButtonURL("📝查看交易明细", url),
-						},
-					},
-				}
-
 				var record = model.NotifyRecord{Txid: t.TxHash}
 				model.DB.Create(&record)
 
-				go bot.SendMsg(msg)
+				go bot2.SendMessage(&bot.SendMessageParams{
+					ChatID:    conf.BotNotifyTarget(),
+					Text:      text,
+					ParseMode: models.ParseModeMarkdown,
+					ReplyMarkup: models.InlineKeyboardMarkup{
+						InlineKeyboard: [][]models.InlineKeyboardButton{
+							{
+								models.InlineKeyboardButton{Text: "📝查看交易明细", URL: url},
+							},
+						},
+					},
+				})
 			}
 		}
 	}
@@ -190,26 +185,27 @@ func tronResourceHandle(time.Duration) {
 				}
 
 				var text = fmt.Sprintf(
-					"#资源动态 #能量"+title+"\n---\n```\n🔋质押数量："+cast.ToString(t.Balance/1000000)+"\n⏱️交易时间：%v\n✅操作地址：%v\n🅾️资源来源：%v```\n",
+					"\\#资源动态 \\#能量"+title+"\n\\-\\-\\-\n```\n🔋质押数量："+cast.ToString(t.Balance/1000000)+"\n⏱️交易时间：%v\n✅操作地址：%v\n🅾️资源来源：%v```\n",
 					t.Timestamp.Format(time.DateTime),
 					help.MaskAddress(t.RecvAddress),
 					help.MaskAddress(t.FromAddress),
 				)
 
-				var msg = tgbotapi.NewMessage(cast.ToInt64(conf.BotNotifyTarget()), text)
-				msg.ParseMode = tgbotapi.ModeMarkdown
-				msg.ReplyMarkup = tgbotapi.InlineKeyboardMarkup{
-					InlineKeyboard: [][]tgbotapi.InlineKeyboardButton{
-						{
-							tgbotapi.NewInlineKeyboardButtonURL("📝查看交易明细", url),
-						},
-					},
-				}
-
 				var record = model.NotifyRecord{Txid: t.ID}
 				model.DB.Create(&record)
 
-				go bot.SendMsg(msg)
+				go bot2.SendMessage(&bot.SendMessageParams{
+					ChatID:    conf.BotNotifyTarget(),
+					Text:      text,
+					ParseMode: models.ParseModeMarkdown,
+					ReplyMarkup: models.InlineKeyboardMarkup{
+						InlineKeyboard: [][]models.InlineKeyboardButton{
+							{
+								models.InlineKeyboardButton{Text: "📝查看交易明细", URL: url},
+							},
+						},
+					},
+				})
 			}
 		}
 	}

@@ -1,8 +1,10 @@
 package bot
 
 import (
+	"context"
 	"fmt"
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/go-telegram/bot"
+	"github.com/go-telegram/bot/models"
 	"github.com/spf13/cast"
 	"github.com/v03413/bepusdt/app/conf"
 	"github.com/v03413/bepusdt/app/help"
@@ -19,17 +21,21 @@ const cmdOrder = "order"
 
 const replayAddressText = "🚚 请发送一个合法的钱包地址"
 
-func cmdGetIdHandle(m *tgbotapi.Message) {
-	msg := tgbotapi.NewMessage(m.Chat.ID, "您的ID: "+fmt.Sprintf("`%v`(点击复制)", m.Chat.ID))
-	msg.ParseMode = tgbotapi.ModeMarkdownV2
-	msg.ReplyToMessageID = m.MessageID
-	SendMsg(msg)
+func cmdGetIdHandle(ctx context.Context, b *bot.Bot, u *models.Update) {
+
+	SendMessage(&bot.SendMessageParams{
+		ChatID:    u.Message.Chat.ID,
+		Text:      "您的ID: " + fmt.Sprintf("`%v`（点击复制）", u.Message.Chat.ID),
+		ParseMode: models.ParseModeMarkdown,
+		ReplyParameters: &models.ReplyParameters{
+			MessageID: u.Message.ID,
+		},
+	})
 }
 
-func cmdStartHandle() {
-	var msg = tgbotapi.NewMessage(0, "请点击钱包地址按照提示进行操作")
+func cmdStartHandle(ctx context.Context, b *bot.Bot, u *models.Update) {
 	var was []model.WalletAddress
-	var inlineBtn [][]tgbotapi.InlineKeyboardButton
+	var btn [][]models.InlineKeyboardButton
 	if model.DB.Find(&was).Error == nil {
 		for _, wa := range was {
 			var text = fmt.Sprintf("[✅已启用] %s", help.MaskAddress(wa.Address))
@@ -37,17 +43,31 @@ func cmdStartHandle() {
 				text = fmt.Sprintf("[❌已禁用] %s", help.MaskAddress(wa.Address))
 			}
 
-			inlineBtn = append(inlineBtn, tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData(text, fmt.Sprintf("%s|%v", cbAddress, wa.ID))))
+			btn = append(btn, []models.InlineKeyboardButton{
+				{Text: text, CallbackData: fmt.Sprintf("%s|%v", cbAddress, wa.ID)},
+			})
+
 		}
 	}
 
-	inlineBtn = append(inlineBtn, tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData("👛 添加新的钱包地址", cbAddressAdd)))
-	msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(inlineBtn...)
+	var chatID any
+	if u.Message != nil {
+		chatID = u.Message.Chat.ID
+	}
+	if u.CallbackQuery != nil {
+		chatID = u.CallbackQuery.Message.Message.Chat.ID
+	}
 
-	SendMsg(msg)
+	btn = append(btn, []models.InlineKeyboardButton{{Text: "👛 添加新的钱包地址", CallbackData: cbAddressAdd}})
+
+	SendMessage(&bot.SendMessageParams{
+		ChatID:      chatID,
+		Text:        "🌟点击钱包 按提示进行操作",
+		ReplyMarkup: &models.InlineKeyboardMarkup{InlineKeyboard: btn},
+	})
 }
 
-func cmdStateHandle() {
+func cmdStateHandle(ctx context.Context, b *bot.Bot, u *models.Update) {
 	var rows []model.TradeOrders
 	model.DB.Where("created_at > ?", time.Now().Format(time.DateOnly)).Find(&rows)
 	var succ uint64
@@ -59,7 +79,7 @@ func cmdStateHandle() {
 		}
 	}
 
-	var text = "```" + `
+	var base = "```" + `
 🎁今日成功数量：%d
 💎今日订单总数：%d
 💰今日成功收款：%.2f
@@ -77,7 +97,8 @@ func cmdStateHandle() {
 >订单汇率：订单创建过程中实际使用的汇率。
 >扫块成功数据：如果该值过低，说明您的服务器与区块链网络连接不稳定，请尝试更换区块节点。
 `
-	var msg = tgbotapi.NewMessage(0, fmt.Sprintf(text,
+
+	var text = fmt.Sprintf(base,
 		succ,
 		len(rows),
 		money,
@@ -87,16 +108,18 @@ func cmdStateHandle() {
 		cast.ToString(rate.GetOkxUsdtRawRate()),
 		cast.ToString(rate.GetTrxCalcRate(conf.DefaultTrxCnyRate)),
 		cast.ToString(rate.GetUsdtCalcRate(conf.DefaultUsdtCnyRate)),
-	))
-	msg.ParseMode = tgbotapi.ModeMarkdownV2
+	)
 
-	SendMsg(msg)
+	SendMessage(&bot.SendMessageParams{
+		ChatID:    u.Message.Chat.ID,
+		Text:      text,
+		ParseMode: models.ParseModeMarkdown,
+	})
 }
 
-func cmdWalletHandle() {
-	var msg = tgbotapi.NewMessage(0, "请选择需要查询的钱包地址")
+func cmdWalletHandle(ctx context.Context, b *bot.Bot, u *models.Update) {
 	var was []model.WalletAddress
-	var inlineBtn [][]tgbotapi.InlineKeyboardButton
+	var btn [][]models.InlineKeyboardButton
 	if model.DB.Find(&was).Error == nil {
 		for _, wa := range was {
 			var text = fmt.Sprintf("[✅已启用] %s", help.MaskAddress(wa.Address))
@@ -104,31 +127,41 @@ func cmdWalletHandle() {
 				text = fmt.Sprintf("[❌已禁用] %s", help.MaskAddress(wa.Address))
 			}
 
-			inlineBtn = append(inlineBtn, tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData(text, fmt.Sprintf("%s|%v", cbWallet, wa.Address))))
+			btn = append(btn, []models.InlineKeyboardButton{
+				{
+					Text:         text,
+					CallbackData: fmt.Sprintf("%s|%v", cbWallet, wa.Address),
+				},
+			})
 		}
 	}
 
-	msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(inlineBtn...)
-
-	SendMsg(msg)
+	SendMessage(&bot.SendMessageParams{
+		ChatID:      u.Message.Chat.ID,
+		Text:        "*\\>\\>请选择需要查询的钱包地址*",
+		ParseMode:   models.ParseModeMarkdown,
+		ReplyMarkup: &models.InlineKeyboardMarkup{InlineKeyboard: btn},
+	})
 }
 
-func cmdOrderHandle() {
-	var msg = tgbotapi.NewMessage(0, "*下面是最近的8个订单，点击可查看详细信息*\n```\n🟢 收款成功 🔴 交易过期 \n🟡 等待支付 ⚪️ 订单取消\n```")
-	msg.ParseMode = tgbotapi.ModeMarkdown
-
+func cmdOrderHandle(ctx context.Context, b *bot.Bot, u *models.Update) {
 	var orders []model.TradeOrders
-	var inlineBtn [][]tgbotapi.InlineKeyboardButton
+	var btn [][]models.InlineKeyboardButton
 	if model.DB.Order("id desc").Limit(8).Find(&orders).Error == nil {
 		for _, o := range orders {
-			inlineBtn = append(inlineBtn, tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData(
-				fmt.Sprintf("%s %s 💰%.2f", o.GetStatusEmoji(), o.OrderId, o.Money),
-				fmt.Sprintf("%s|%v", cbOrderDetail, o.TradeId),
-			)))
+			btn = append(btn, []models.InlineKeyboardButton{
+				{
+					Text:         fmt.Sprintf("%s %s 💰%.2f", o.GetStatusEmoji(), o.OrderId, o.Money),
+					CallbackData: fmt.Sprintf("%s|%v", cbOrderDetail, o.TradeId),
+				},
+			})
 		}
 	}
 
-	msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(inlineBtn...)
-
-	SendMsg(msg)
+	SendMessage(&bot.SendMessageParams{
+		ChatID:      u.Message.Chat.ID,
+		Text:        "*下面是最近的8个订单，点击可查看详细信息*\n```\n🟢 收款成功 🔴 交易过期 \n🟡 等待支付 ⚪️ 订单取消\n```",
+		ParseMode:   models.ParseModeMarkdown,
+		ReplyMarkup: &models.InlineKeyboardMarkup{InlineKeyboard: btn},
+	})
 }

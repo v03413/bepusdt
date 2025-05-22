@@ -7,7 +7,7 @@ require (
 	github.com/btcsuite/btcd/chaincfg/chainhash v1.1.0
 	github.com/gin-gonic/gin v1.9.1
 	github.com/glebarez/sqlite v1.11.0
-	github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.5.1
+	github.com/go-telegram/bot v1.15.0
 	github.com/matoous/go-nanoid/v2 v2.1.0
 	github.com/panjf2000/ants/v2 v2.11.2
 	github.com/pelletier/go-toml/v2 v2.2.3

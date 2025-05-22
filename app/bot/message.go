@@ -2,8 +2,10 @@ package bot
 
 import (
 	"fmt"
-	api "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/go-telegram/bot"
+	"github.com/go-telegram/bot/models"
 	"github.com/spf13/cast"
+	"github.com/v03413/bepusdt/app"
 	"github.com/v03413/bepusdt/app/conf"
 	"github.com/v03413/bepusdt/app/help"
 	"github.com/v03413/bepusdt/app/model"
@@ -34,8 +36,8 @@ func SendTradeSuccMsg(order model.TradeOrders) {
 	}
 
 	var text = `
-#收款成功 #订单交易 #` + tradeType + `
----
+\#收款成功 \#订单交易 \#` + tradeType + `
+\-\-\-
 ` + "```" + `
 🚦商户订单：%v
 💰请求金额：%v CNY(%v)
@@ -57,17 +59,18 @@ func SendTradeSuccMsg(order model.TradeOrders) {
 		order.UpdatedAt.Format(time.DateTime),
 	)
 
-	var msg = api.NewMessage(chatId, text)
-	msg.ParseMode = api.ModeMarkdown
-	msg.ReplyMarkup = api.InlineKeyboardMarkup{
-		InlineKeyboard: [][]api.InlineKeyboardButton{
-			{
-				api.NewInlineKeyboardButtonURL("📝查看交易明细", url),
+	SendMessage(&bot.SendMessageParams{
+		Text:      text,
+		ChatID:    chatId,
+		ParseMode: models.ParseModeMarkdown,
+		ReplyMarkup: &models.InlineKeyboardMarkup{
+			InlineKeyboard: [][]models.InlineKeyboardButton{
+				{
+					models.InlineKeyboardButton{Text: "📝查看交易明细", URL: url},
+				},
 			},
 		},
-	}
-
-	SendMsg(msg)
+	})
 }
 
 func SendNotifyFailed(o model.TradeOrders, reason string) {
@@ -83,8 +86,8 @@ func SendNotifyFailed(o model.TradeOrders, reason string) {
 	}
 
 	var text = fmt.Sprintf(`
-#回调失败 #订单交易 #`+tradeType+`
----
+\#回调失败 \#订单交易 \#`+tradeType+`
+\-\-\-
 `+"```"+`
 🚦商户订单：%v
 💲支付数额：%v
@@ -104,44 +107,28 @@ func SendNotifyFailed(o model.TradeOrders, reason string) {
 		reason,
 	)
 
-	var msg = api.NewMessage(chatId, text)
-	msg.ParseMode = api.ModeMarkdown
-	msg.ReplyMarkup = api.InlineKeyboardMarkup{
-		InlineKeyboard: [][]api.InlineKeyboardButton{
-			{
-				api.NewInlineKeyboardButtonData("📝查看收款详情", fmt.Sprintf("%s|%v", cbOrderDetail, o.TradeId)),
-			},
-			{
-				api.NewInlineKeyboardButtonData("✅标记回调成功", fmt.Sprintf("%s|%v", cbMarkNotifySucc, o.TradeId)),
+	SendMessage(&bot.SendMessageParams{
+		Text:      text,
+		ChatID:    chatId,
+		ParseMode: models.ParseModeMarkdown,
+		ReplyMarkup: &models.InlineKeyboardMarkup{
+			InlineKeyboard: [][]models.InlineKeyboardButton{
+				{
+					models.InlineKeyboardButton{Text: "📝查看收款详情", CallbackData: fmt.Sprintf("%s|%v", cbOrderDetail, o.TradeId)},
+					models.InlineKeyboardButton{Text: "✅标记回调成功", CallbackData: fmt.Sprintf("%s|%v", cbMarkNotifySucc, o.TradeId)},
+				},
 			},
 		},
-	}
-
-	SendMsg(msg)
+	})
 }
 
-func SendOtherNotify(text string) {
-	var chatId, err = strconv.ParseInt(conf.BotNotifyTarget(), 10, 64)
-	if err != nil {
-
-		return
-	}
-
-	var msg = api.NewMessage(chatId, text)
-	msg.ParseMode = api.ModeMarkdown
-
-	SendMsg(msg)
-}
-
-func SendWelcome(version string) {
-	var text = `
+func Welcome() string {
+	return `
 👋 欢迎使用 Bepusdt，一款更好用的个人USDT收款网关，如果您看到此消息，说明机器人已经启动成功！
 
-📌当前版本：` + version + `
+📌当前版本：` + app.Version + `
 📝发送命令 /start 可以开始使用
 🎉开源地址 https://github.com/v03413/bepusdt
 ---
 `
-
-	SendMsg(api.NewMessage(0, text))
 }
