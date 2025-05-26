@@ -10,10 +10,10 @@
 </p>
 <p align="center">
 <a href="https://www.gnu.org/licenses/gpl-3.0.html"><img src="https://img.shields.io/badge/license-GPLV3-blue" alt="license GPLV3"></a>
-<a href="https://golang.org"><img src="https://img.shields.io/badge/Golang-1.22-red" alt="Go version 1.21"></a>
+<a href="https://golang.org"><img src="https://img.shields.io/badge/Golang-1.23-red" alt="Go version 1.23"></a>
 <a href="https://github.com/gin-gonic/gin"><img src="https://img.shields.io/badge/Gin-v1.9-blue" alt="Gin Web Framework v1.9"></a>
-<a href="https://github.com/go-telegram-bot-api/telegram-bot-api"><img src="https://img.shields.io/badge/Telegram Bot-v5-lightgrey" alt="Golang Telegram Bot Api-v5"></a>
-<a href="https://github.com/v03413/bepusdt"><img src="https://img.shields.io/badge/Release-v1.9.21-green" alt="Release v1.9.21"></a>
+<a href="https://github.com/go-telegram/bot"><img src="https://img.shields.io/badge/Go_Telegram_Bot-v1.15-blue" alt="Golang Telegram Bot"></a>
+<a href="https://github.com/v03413/bepusdt"><img src="https://img.shields.io/github/v/release/v03413/bepusdt" alt="Release v1.19.1"></a>
 </p>
 
 ## 🪧 介绍
@@ -36,7 +36,7 @@
 - ✅ 支持钱包地址 <u>能量代理</u>和<u>能量回收</u> 监控通知
 - ✅️ <u>原生支持易支付对接</u>，无需第三方插件依赖
 - ✅ 支持创建订单时动态钱包地址，不再强制固定
-- ⭕️ 待实现：支持<u>等待支付</u>和<u>支付超时</u> 订单状态回调
+- ✅ 订单支持 <u>等待支付</u> <u>支付超时</u> 订单状态回调
 
 ## 🚀 安装部署
 
@@ -49,13 +49,13 @@
 - [Linux 时钟同步配置](./docs/systemd-timesyncd.md)
 - [彩虹易支付对接教程](./docs/epay.md)
 - [API 对接开发签名算法](./docs/sign.md)
-- [对接回调事件详细说明](./docs/notify-epusdt.md)
+- [对接 回调通知说明](./docs/notify-epusdt.md)
 
 ## 🤔 常见问题
 
 ### 如何获取参数 TG_BOT_ADMIN_ID
 
-Telegram 搜索`@userinfobot`机器人并启用，返回的ID就是`TG_BOT_ADMIN_ID`
+Telegram 加入群`@bepusdt_group`，随后发送命令`/id`，其用户信息即包含`TG_BOT_ADMIN_ID`
 
 ## ⚠️ 特别注意
 
