@@ -4,27 +4,18 @@ import (
 	"fmt"
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
-	"github.com/spf13/cast"
 	"github.com/v03413/bepusdt/app"
 	"github.com/v03413/bepusdt/app/conf"
 	"github.com/v03413/bepusdt/app/help"
 	"github.com/v03413/bepusdt/app/model"
-	"strconv"
 	"strings"
 	"time"
 )
 
 func SendTradeSuccMsg(order model.TradeOrders) {
-	var chatId, err = strconv.ParseInt(conf.BotNotifyTarget(), 10, 64)
-	if err != nil {
-
-		return
-	}
-
-	var url = fmt.Sprintf("https://tronscan.org/#/transaction/%s", order.TradeHash)
-
 	var tradeType = "USDT"
 	var tradeUnit = `USDT.TRC20`
+	var url = fmt.Sprintf("https://tronscan.org/#/transaction/%s", order.TradeHash)
 	if order.TradeType == model.OrderTradeTypeTronTrx {
 		tradeType = "TRX"
 		tradeUnit = "TRX"
@@ -61,7 +52,7 @@ func SendTradeSuccMsg(order model.TradeOrders) {
 
 	SendMessage(&bot.SendMessageParams{
 		Text:      text,
-		ChatID:    chatId,
+		ChatID:    conf.BotNotifyTarget(),
 		ParseMode: models.ParseModeMarkdown,
 		ReplyMarkup: &models.InlineKeyboardMarkup{
 			InlineKeyboard: [][]models.InlineKeyboardButton{
@@ -74,12 +65,6 @@ func SendTradeSuccMsg(order model.TradeOrders) {
 }
 
 func SendNotifyFailed(o model.TradeOrders, reason string) {
-	var chatId = cast.ToInt64(conf.BotNotifyTarget())
-	if err != nil {
-
-		return
-	}
-
 	var tradeType = "USDT"
 	if o.TradeType == model.OrderTradeTypeTronTrx {
 		tradeType = "TRX"
@@ -109,7 +94,7 @@ func SendNotifyFailed(o model.TradeOrders, reason string) {
 
 	SendMessage(&bot.SendMessageParams{
 		Text:      text,
-		ChatID:    chatId,
+		ChatID:    conf.BotNotifyTarget(),
 		ParseMode: models.ParseModeMarkdown,
 		ReplyMarkup: &models.InlineKeyboardMarkup{
 			InlineKeyboard: [][]models.InlineKeyboardButton{

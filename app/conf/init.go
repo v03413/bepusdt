@@ -1,7 +1,6 @@
 package conf
 
 import (
-	"errors"
 	"flag"
 	"fmt"
 	"github.com/pelletier/go-toml/v2"
@@ -246,20 +245,4 @@ func GetPaymentAmountMax() decimal.Decimal {
 	}
 
 	return decimal.NewFromFloat(val)
-}
-
-func parseAtomicity(data string) (decimal.Decimal, int, error) {
-	var atom, err = decimal.NewFromString(data)
-	if err != nil {
-
-		return decimal.Zero, 0, err
-	}
-
-	// 如果大于0，且小数点后位数大于0
-	if atom.GreaterThan(decimal.Zero) && atom.Exponent() < 0 {
-
-		return atom, cast.ToInt(math.Abs(float64(atom.Exponent()))), nil
-	}
-
-	return decimal.Zero, 0, errors.New("原子精度参数不合法")
 }
