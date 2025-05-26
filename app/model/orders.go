@@ -154,7 +154,7 @@ func GetTradeOrder(tradeId string) (TradeOrders, bool) {
 	return order, res.Error == nil
 }
 
-func GetTradeOrderByStatus(Status int) []TradeOrders {
+func GetOrderByStatus(Status int) []TradeOrders {
 	var orders = make([]TradeOrders, 0)
 
 	DB.Where("status = ?", Status).Find(&orders)

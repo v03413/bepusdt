@@ -9,11 +9,23 @@ import (
 	"github.com/v03413/bepusdt/app/help"
 	"github.com/v03413/bepusdt/app/log"
 	"github.com/v03413/bepusdt/app/model"
+	"github.com/v03413/go-cache"
 	"io"
 	"net/http"
 	"strings"
 	"time"
 )
+
+type EpNotify struct {
+	TradeId            string  `json:"trade_id"`             //  本地订单号
+	OrderId            string  `json:"order_id"`             //  客户交易id
+	Amount             float64 `json:"amount"`               //  订单金额 CNY
+	ActualAmount       string  `json:"actual_amount"`        //  USDT 交易数额
+	Token              string  `json:"token"`                //  收款钱包地址
+	BlockTransactionId string  `json:"block_transaction_id"` // 区块id
+	Signature          string  `json:"signature"`            // 签名
+	Status             int     `json:"status"`               //  1：等待支付，2：支付成功，3：订单超时
+}
 
 func Handle(order model.TradeOrders) {
 	if order.ApiType == model.OrderApiTypeEpay {
@@ -75,16 +87,7 @@ func epay(order model.TradeOrders) {
 
 func epusdt(order model.TradeOrders) {
 	var data = make(map[string]interface{})
-	var body = struct {
-		TradeId            string  `json:"trade_id"`             //  本地订单号
-		OrderId            string  `json:"order_id"`             //  客户交易id
-		Amount             float64 `json:"amount"`               //  订单金额 CNY
-		ActualAmount       string  `json:"actual_amount"`        //  USDT 交易数额
-		Token              string  `json:"token"`                //  收款钱包地址
-		BlockTransactionId string  `json:"block_transaction_id"` // 区块id
-		Signature          string  `json:"signature"`            // 签名
-		Status             int     `json:"status"`               //  1：等待支付，2：支付成功，3：订单超时
-	}{
+	var body = EpNotify{
 		TradeId:            order.TradeId,
 		OrderId:            order.OrderId,
 		Amount:             order.Money,
@@ -154,6 +157,97 @@ func epusdt(order model.TradeOrders) {
 	} else {
 		log.Info("订单通知成功：", order.OrderId)
 	}
+}
+
+func Bepusdt(order model.TradeOrders) {
+	if order.ApiType != model.OrderApiTypeEpusdt {
+
+		return
+	}
+
+	var todo = func() error {
+		var o model.TradeOrders
+		var db = model.DB.Begin()
+		if err := db.Where("trade_id = ? and status = ?", order.TradeId, order.Status).First(&o).Error; err != nil {
+			db.Rollback()
+
+			return err
+		}
+
+		var key = fmt.Sprintf("bepusdt_notify_%d_%s", o.Status, o.TradeId)
+		if _, ok := cache.Get(key); ok {
+			db.Rollback()
+
+			return nil
+		}
+
+		cache.Set(key, true, time.Minute)
+
+		var data = make(map[string]interface{})
+		var body = EpNotify{
+			TradeId:            o.TradeId,
+			OrderId:            o.OrderId,
+			Amount:             o.Money,
+			ActualAmount:       o.Amount,
+			Token:              o.Address,
+			BlockTransactionId: o.TradeHash,
+			Status:             o.Status,
+		}
+		var jsonBody, err = json.Marshal(body)
+		if err != nil {
+			db.Rollback()
+
+			return err
+		}
+
+		if err = json.Unmarshal(jsonBody, &data); err != nil {
+			db.Rollback()
+
+			return err
+		}
+
+		// 签名
+		body.Signature = help.EpusdtSign(data, conf.GetAuthToken())
+
+		// 再次序列化
+		jsonBody, err = json.Marshal(body)
+		var client = http.Client{Timeout: time.Second * 5}
+		var postReq, err2 = http.NewRequest("POST", o.NotifyUrl, strings.NewReader(string(jsonBody)))
+		if err2 != nil {
+			db.Rollback()
+
+			return err
+		}
+
+		postReq.Header.Set("Content-Type", "application/json")
+		postReq.Header.Set("Powered-By", "https://github.com/v03413/bepusdt")
+		resp, err := client.Do(postReq)
+		if err != nil {
+			db.Rollback()
+
+			return err
+		}
+
+		defer resp.Body.Close()
+		if resp.StatusCode != 200 {
+			db.Rollback()
+
+			return fmt.Errorf("resp.StatusCode != 200")
+		}
+
+		all, _ := io.ReadAll(resp.Body)
+
+		log.Info(fmt.Sprintf("订单回调成功[%d]：%s %s", order.Status, o.TradeId, string(all)))
+
+		db.Commit()
+
+		return nil
+	}
+	go func() {
+		if err := todo(); err != nil {
+			log.Warn("notify Bepusdt Error:", err.Error())
+		}
+	}()
 }
 
 func markNotifyFail(order model.TradeOrders, reason string) {

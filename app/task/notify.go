@@ -9,12 +9,13 @@ import (
 )
 
 func init() {
-	RegisterSchedule(time.Second*3, NotifyStart)
+	RegisterSchedule(time.Second*3, notifyRetry)
+	RegisterSchedule(time.Second*30, notifyRoll)
 }
 
-func NotifyStart(duration time.Duration) {
-	log.Info("回调监控启动.")
-	for range time.Tick(duration) {
+// notifyRetry 回调失败重试
+func notifyRetry(d time.Duration) {
+	for range time.Tick(d) {
 		tradeOrders, err := model.GetNotifyFailedTradeOrders()
 		if err != nil {
 			log.Error("待回调订单获取失败", err)
@@ -28,6 +29,14 @@ func NotifyStart(duration time.Duration) {
 
 				go notify.Handle(order)
 			}
+		}
+	}
+}
+
+func notifyRoll(d time.Duration) {
+	for range time.Tick(d) {
+		for _, o := range model.GetOrderByStatus(model.OrderStatusWaiting) {
+			notify.Bepusdt(o)
 		}
 	}
 }

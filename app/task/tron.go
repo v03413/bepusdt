@@ -12,6 +12,7 @@ import (
 	"github.com/v03413/bepusdt/app/conf"
 	"github.com/v03413/bepusdt/app/log"
 	"github.com/v03413/bepusdt/app/model"
+	"github.com/v03413/bepusdt/app/notify"
 	"github.com/v03413/tronprotocol/api"
 	"github.com/v03413/tronprotocol/core"
 	"google.golang.org/grpc"
@@ -308,11 +309,12 @@ func base58CheckEncode(input []byte) string {
 }
 
 func getAllWaitingOrders() map[string]model.TradeOrders {
-	var tradeOrders = model.GetTradeOrderByStatus(model.OrderStatusWaiting)
+	var tradeOrders = model.GetOrderByStatus(model.OrderStatusWaiting)
 	var data = make(map[string]model.TradeOrders) // 当前所有正在等待支付的订单 Lock Key
 	for _, order := range tradeOrders {
 		if time.Now().Unix() >= order.ExpiredAt.Unix() { // 订单过期
 			order.OrderSetExpired()
+			notify.Bepusdt(order)
 
 			continue
 		}
