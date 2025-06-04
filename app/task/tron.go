@@ -136,9 +136,9 @@ func tronProcessBlock(n any) {
 	block, err1 := client.GetBlockByNum2(ctx, &api.NumberMessage{Num: num})
 	cancel()
 	if err1 != nil {
-		log.Warn("GetBlockByNum Error", err1)
-
+		atomic.AddUint64(&conf.TronBlockScanFail, 1)
 		tronBlockScanQueue.In <- num
+		log.Warn("GetBlockByNum Error", err1)
 
 		return
 	}
@@ -257,8 +257,6 @@ func tronProcessBlock(n any) {
 	if len(resources) > 0 {
 		resourceQueue.In <- resources
 	}
-
-	atomic.AddUint64(&conf.TronBlockScanSucc, 1)
 
 	log.Info("区块扫描完成", num, conf.GetTronScanSuccRate(), "TRON")
 }

@@ -71,21 +71,39 @@ func cmdStateHandle(ctx context.Context, b *bot.Bot, u *models.Update) {
 	var rows []model.TradeOrders
 	model.DB.Where("created_at > ?", time.Now().Format(time.DateOnly)).Find(&rows)
 	var succ uint64
-	var money float64
+	var money, trx, uTrc20, uPol float64
 	for _, o := range rows {
-		if o.Status == model.OrderStatusSuccess {
-			succ++
-			money += o.Money
+		if o.Status != model.OrderStatusSuccess {
+
+			continue
+		}
+
+		succ++
+		money += o.Money
+
+		var amount = cast.ToFloat64(o.Amount)
+		if o.TradeType == model.OrderTradeTypeTronTrx {
+			trx += amount
+		}
+		if o.TradeType == model.OrderTradeTypeUsdtTrc20 {
+			uTrc20 += amount
+		}
+		if o.TradeType == model.OrderTradeTypeUsdtPolygon {
+			uPol += amount
 		}
 	}
 
 	var base = "```" + `
-🎁今日成功数量：%d
-💎今日订单总数：%d
-💰今日成功收款：%.2f
+🎁今日成功订单：%d
+💎今日总数订单：%d
+💰今日收款汇总
+	- %.2f CNY
+	- %.2f TRX
+	- %.2f USDT.Trc20
+	- %.2f USDT.Polygon
 🌟扫块成功数据
-    - Tron %s
-    - Polygon %s
+	- Tron %s
+	- Polygon %s
 -----------------------
 🪧基准汇率(TRX)：%v
 🪧基准汇率(USDT)：%v
@@ -102,6 +120,9 @@ func cmdStateHandle(ctx context.Context, b *bot.Bot, u *models.Update) {
 		succ,
 		len(rows),
 		money,
+		trx,
+		uTrc20,
+		uPol,
 		conf.GetTronScanSuccRate(),
 		conf.GetPolygonScanSuccRate(),
 		cast.ToString(rate.GetOkxTrxRawRate()),

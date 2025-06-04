@@ -40,6 +40,7 @@ func polygonProcessBlock(n any) {
 
 	resp, err := client.Post(url, contentType, bytes.NewBuffer(post))
 	if err != nil {
+		atomic.AddUint64(&conf.PolygonBlockScanFail, 1)
 		polygonBlockScanQueue.In <- num
 		log.Warn("Error sending request:", err)
 
@@ -48,6 +49,7 @@ func polygonProcessBlock(n any) {
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
+		atomic.AddUint64(&conf.PolygonBlockScanFail, 1)
 		polygonBlockScanQueue.In <- num
 		log.Warn("Error reading response body:", err)
 
@@ -58,6 +60,7 @@ func polygonProcessBlock(n any) {
 
 	var data = gjson.ParseBytes(body)
 	if data.Get("error").Exists() {
+		atomic.AddUint64(&conf.PolygonBlockScanFail, 1)
 		polygonBlockScanQueue.In <- num
 		log.Warn("Polygon getBlockByNumber response error ", data.Get("error").String())
 
@@ -103,8 +106,6 @@ func polygonProcessBlock(n any) {
 			TradeType:   model.OrderTradeTypeUsdtPolygon,
 		})
 	}
-
-	atomic.AddUint64(&conf.PolygonBlockScanSucc, 1)
 
 	log.Info("区块扫描完成", num, conf.GetPolygonScanSuccRate(), "POLYGON")
 

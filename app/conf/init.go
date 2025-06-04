@@ -30,9 +30,9 @@ var (
 	cfg                   Conf
 	path                  string
 	TronBlockScanTotal    uint64
-	TronBlockScanSucc     uint64
+	TronBlockScanFail     uint64
 	PolygonBlockScanTotal uint64
-	PolygonBlockScanSucc  uint64
+	PolygonBlockScanFail  uint64
 )
 
 func Init() {
@@ -70,21 +70,13 @@ func GetTrxRate() string {
 }
 
 func GetTronScanSuccRate() string {
-	if TronBlockScanTotal == 0 {
 
-		return "100.00%"
-	}
-
-	return fmt.Sprintf("%.2f%%", float64(TronBlockScanSucc)/float64(TronBlockScanTotal)*100)
+	return calcScanSuccRate(TronBlockScanTotal, TronBlockScanFail)
 }
 
 func GetPolygonScanSuccRate() string {
-	if PolygonBlockScanTotal == 0 {
 
-		return "100.00%"
-	}
-
-	return fmt.Sprintf("%.2f%%", float64(PolygonBlockScanSucc)/float64(PolygonBlockScanTotal)*100)
+	return calcScanSuccRate(PolygonBlockScanTotal, PolygonBlockScanFail)
 }
 
 func GetUsdtAtomicity() (decimal.Decimal, int) {
@@ -245,4 +237,11 @@ func GetPaymentAmountMax() decimal.Decimal {
 	}
 
 	return decimal.NewFromFloat(val)
+}
+
+func calcScanSuccRate(total, fail uint64) string {
+	if total == 0 {
+		return "100.00%"
+	}
+	return fmt.Sprintf("%.2f%%", float64(total-fail)/float64(total)*100)
 }
