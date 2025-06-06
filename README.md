@@ -83,7 +83,8 @@ POST /api/v1/order/create-transaction
   "amount": 28.88,   // 请求支付金额，CNY
   "signature":"123456abcd", // 签名
   "notify_url": "https://example.com/callback",   // 回调地址
-  "redirect_url": "https://example.com/callback" // 支付成功跳转地址
+  "redirect_url": "https://example.com/callback", // 支付成功跳转地址
+  "timeout": 1200 // 超时时间(秒) 最低60；留空则取配置文件 expire_time，还是没有取默认600
 }
 ```
 

@@ -57,6 +57,7 @@ func createTransaction(ctx *gin.Context) {
 	var data = ctx.GetStringMap("data")
 	var tradeType = model.OrderTradeTypeUsdtTrc20
 	var address = ""
+	var timeout uint64 = 0
 	for _, key := range []string{"order_id", "amount", "notify_url", "redirect_url"} {
 		if _, ok := data[key]; !ok {
 			log.Warn(fmt.Sprintf("参数 %s 不存在", key), data)
@@ -69,6 +70,10 @@ func createTransaction(ctx *gin.Context) {
 	if v, ok := data["trade_type"]; ok {
 
 		tradeType = model.GetTradeType(cast.ToString(v))
+	}
+	if v, ok := data["timeout"]; ok {
+
+		timeout = cast.ToUint64(v)
 	}
 	if v, ok := data["address"]; ok && cast.ToString(v) != "" {
 		address = cast.ToString(v)
@@ -86,12 +91,20 @@ func createTransaction(ctx *gin.Context) {
 		host = "https://" + ctx.Request.Host
 	}
 
-	var amount = cast.ToFloat64(data["amount"])
 	var orderId = cast.ToString(data["order_id"])
-	var notifyUrl = cast.ToString(data["notify_url"])
-	var redirectUrl = cast.ToString(data["redirect_url"])
+	var params = orderParams{
+		Money:       cast.ToFloat64(data["amount"]),
+		ApiType:     model.OrderApiTypeEpusdt,
+		PayAddress:  address,
+		OrderId:     orderId,
+		TradeType:   tradeType,
+		RedirectUrl: cast.ToString(data["redirect_url"]),
+		NotifyUrl:   cast.ToString(data["notify_url"]),
+		Name:        orderId,
+		Timeout:     timeout,
+	}
 
-	var order, err = buildOrder(amount, model.OrderApiTypeEpusdt, address, orderId, tradeType, redirectUrl, notifyUrl, orderId)
+	var order, err = buildOrder(params)
 	if err != nil {
 		ctx.JSON(200, respFailJson(fmt.Sprintf("订单创建失败：%s", err.Error())))
 

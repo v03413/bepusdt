@@ -45,14 +45,25 @@ func epaySubmit(ctx *gin.Context) {
 
 		return
 	}
-	
+
 	var tradeType = model.OrderTradeTypeUsdtTrc20
 	if v, ok := data["type"]; ok {
 
 		tradeType = model.GetTradeType(cast.ToString(v))
 	}
 
-	var order, err = buildOrder(cast.ToFloat64(data["money"]), model.OrderApiTypeEpay, "", data["out_trade_no"], tradeType, data["return_url"], data["notify_url"], data["name"])
+	var params = orderParams{
+		Money:       cast.ToFloat64(data["money"]),
+		ApiType:     model.OrderApiTypeEpay,
+		PayAddress:  "",
+		OrderId:     data["out_trade_no"],
+		TradeType:   tradeType,
+		RedirectUrl: data["return_url"],
+		NotifyUrl:   data["notify_url"],
+		Name:        data["name"],
+	}
+
+	var order, err = buildOrder(params)
 	if err != nil {
 		ctx.String(200, fmt.Sprintf("订单创建失败：%v", err))
 
