@@ -165,8 +165,10 @@ POST /api/v1/order/cancel-transaction
 
 ## 🏝️ 交流反馈
 
-- Telegram 频道：[https://t.me/bepusdt](https://t.me/bepusdt)
-- Telegram 群组：[https://t.me/bepusdt_group](https://t.me/bepusdt_group)
+**最近我的 Telegram 账号被冻结，导致关联频道和群组均无法访问，我正在尝试申诉，如果一直无法恢复，可能我会重新创建新的频道和群组。**
+
+- ~~Telegram 频道：[https://t.me/bepusdt](https://t.me/bepusdt)~~
+- ~~Telegram 群组：[https://t.me/bepusdt_group](https://t.me/bepusdt_group)~~
 
 ## 🙏 感谢
 
