@@ -1,17 +1,17 @@
 package task
 
 import (
+	"context"
 	"github.com/v03413/bepusdt/app/bot"
-	"time"
 )
 
 var err error
 
 func init() {
-	RegisterSchedule(0, BotStart)
+	register(task{callback: BotStart})
 }
 
-func BotStart(time.Duration) {
+func BotStart(context.Context) {
 
 	bot.Start()
 }

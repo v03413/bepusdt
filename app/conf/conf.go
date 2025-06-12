@@ -1,15 +1,16 @@
 package conf
 
 type Conf struct {
-	AppUri             string `toml:"app_uri"`
-	AuthToken          string `toml:"auth_token"`
-	Listen             string `toml:"listen"`
-	OutputLog          string `toml:"output_log"`
-	StaticPath         string `toml:"static_path"`
-	SqlitePath         string `toml:"sqlite_path"`
-	TronGrpcNode       string `toml:"tron_grpc_node"`
-	PolygonRpcEndpoint string `toml:"polygon_rpc_endpoint"`
-	Pay                struct {
+	AppUri              string `toml:"app_uri"`
+	AuthToken           string `toml:"auth_token"`
+	Listen              string `toml:"listen"`
+	OutputLog           string `toml:"output_log"`
+	StaticPath          string `toml:"static_path"`
+	SqlitePath          string `toml:"sqlite_path"`
+	TronGrpcNode        string `toml:"tron_grpc_node"`
+	PolygonRpcEndpoint  string `toml:"polygon_rpc_endpoint"`
+	EthereumRpcEndpoint string `toml:"ethereum_rpc_endpoint"`
+	Pay                 struct {
 		TrxAtom          float64  `toml:"trx_atom"`
 		TrxRate          string   `toml:"trx_rate"`
 		UsdtAtom         float64  `toml:"usdt_atom"`

@@ -9,10 +9,10 @@ import (
 func init() {
 	register(task{
 		ctx: context.WithValue(context.Background(), "cfg", evmCfg{
-			Endpoint: conf.GetPolygonRpcEndpoint(),
-			Type:     conf.Polygon,
+			Endpoint: conf.GetEthereumRpcEndpoint(),
+			Type:     conf.Ethereum,
 		}),
-		duration: time.Second * 3,
+		duration: time.Second * 12,
 		callback: evmBlockRoll,
 	})
 }

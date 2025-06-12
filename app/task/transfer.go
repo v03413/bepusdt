@@ -18,13 +18,14 @@ import (
 )
 
 type transfer struct {
+	Network     string
 	TxHash      string
 	Amount      float64
 	FromAddress string
 	RecvAddress string
 	Timestamp   time.Time
 	TradeType   string
-	BlockNum    int64
+	BlockNum    uint64
 }
 
 type resource struct {
@@ -42,12 +43,12 @@ var notOrderQueue = chanx.NewUnboundedChan[[]transfer](context.Background(), 30)
 var transferQueue = chanx.NewUnboundedChan[[]transfer](context.Background(), 30) // 交易转账队列
 
 func init() {
-	RegisterSchedule(time.Second, orderTransferHandle)
-	RegisterSchedule(time.Second, notOrderTransferHandle)
-	RegisterSchedule(time.Second, tronResourceHandle)
+	register(task{callback: orderTransferHandle})
+	register(task{callback: notOrderTransferHandle})
+	register(task{callback: tronResourceHandle})
 }
 
-func orderTransferHandle(time.Duration) {
+func orderTransferHandle(context.Context) {
 	for transfers := range transferQueue.Out {
 		var other = make([]transfer, 0)
 		var orders = getAllWaitingOrders()
@@ -88,7 +89,7 @@ func orderTransferHandle(time.Duration) {
 	}
 }
 
-func notOrderTransferHandle(time.Duration) {
+func notOrderTransferHandle(context.Context) {
 	for transfers := range notOrderQueue.Out {
 		var was []model.WalletAddress
 
@@ -155,7 +156,7 @@ func notOrderTransferHandle(time.Duration) {
 	}
 }
 
-func tronResourceHandle(time.Duration) {
+func tronResourceHandle(context.Context) {
 	for resources := range resourceQueue.Out {
 		var was []model.WalletAddress
 

@@ -1,6 +1,7 @@
 package task
 
 import (
+	"context"
 	"errors"
 	"github.com/spf13/cast"
 	"github.com/tidwall/gjson"
@@ -14,38 +15,32 @@ import (
 )
 
 func init() {
-	RegisterSchedule(0, OkxUsdtRateStart)
-	RegisterSchedule(0, OkxTrxUsdtRateStart)
+	register(task{duration: time.Minute, callback: OkxUsdtRateStart})
+	register(task{duration: time.Minute, callback: OkxTrxUsdtRateStart})
 }
 
 // OkxUsdtRateStart Okx USDT_CNY 汇率监控
-func OkxUsdtRateStart(time.Duration) {
-	for {
-		var rawRate, err = getOkxUsdtCnySellPrice()
-		if err != nil {
-			log.Error("Okx USDT_CNY 汇率获取失败", err)
-		} else {
-			rate.SetOkxUsdtCnyRate(conf.GetUsdtRate(), rawRate)
-		}
-
-		log.Info("当前 USDT_CNY 计算汇率：", rate.GetUsdtCalcRate(cast.ToFloat64(conf.DefaultUsdtCnyRate)))
-		time.Sleep(time.Minute)
+func OkxUsdtRateStart(context.Context) {
+	var rawRate, err = getOkxUsdtCnySellPrice()
+	if err != nil {
+		log.Error("Okx USDT_CNY 汇率获取失败", err)
+	} else {
+		rate.SetOkxUsdtCnyRate(conf.GetUsdtRate(), rawRate)
 	}
+
+	log.Info("当前 USDT_CNY 计算汇率：", rate.GetUsdtCalcRate(cast.ToFloat64(conf.DefaultUsdtCnyRate)))
 }
 
 // OkxTrxUsdtRateStart  Okx TRX_CNY 汇率监控
-func OkxTrxUsdtRateStart(time.Duration) {
-	for {
-		var price, err = getOkxTrxCnyMarketPrice()
-		if err != nil {
-			log.Error("Okx TRX_USDT 汇率获取失败", err)
-		} else {
-			rate.SetOkxTrxCnyRate(conf.GetTrxRate(), price)
-		}
-
-		log.Info("当前 TRX_CNY 计算汇率：", rate.GetTrxCalcRate(cast.ToFloat64(conf.DefaultTrxCnyRate)))
-		time.Sleep(time.Minute)
+func OkxTrxUsdtRateStart(context.Context) {
+	var price, err = getOkxTrxCnyMarketPrice()
+	if err != nil {
+		log.Error("Okx TRX_USDT 汇率获取失败", err)
+	} else {
+		rate.SetOkxTrxCnyRate(conf.GetTrxRate(), price)
 	}
+
+	log.Info("当前 TRX_CNY 计算汇率：", rate.GetTrxCalcRate(cast.ToFloat64(conf.DefaultTrxCnyRate)))
 }
 
 // getOkxUsdtCnySellPrice  Okx  C2C快捷交易 USDT出售 实时汇率

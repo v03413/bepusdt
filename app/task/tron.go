@@ -9,6 +9,7 @@ import (
 	"github.com/panjf2000/ants/v2"
 	"github.com/shopspring/decimal"
 	"github.com/smallnest/chanx"
+	"github.com/spf13/cast"
 	"github.com/v03413/bepusdt/app/conf"
 	"github.com/v03413/bepusdt/app/log"
 	"github.com/v03413/bepusdt/app/model"
@@ -20,7 +21,6 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"strconv"
 	"strings"
-	"sync/atomic"
 	"time"
 )
 
@@ -42,11 +42,11 @@ type usdtTrc20TransferRaw struct {
 }
 
 func init() {
-	RegisterSchedule(time.Second*3, tronBlockNumber)
-	RegisterSchedule(time.Second, tronBlockScan)
+	register(task{duration: time.Second * 3, callback: tronBlockNumber}) // 大概3秒产生一个区块
+	register(task{duration: time.Second, callback: tronBlockScan})
 }
 
-func tronBlockScan(time.Duration) {
+func tronBlockScan(context.Context) {
 	p, err := ants.NewPoolWithFunc(8, tronProcessBlock)
 	if err != nil {
 		panic(err)
@@ -65,9 +65,8 @@ func tronBlockScan(time.Duration) {
 	}
 }
 
-func tronBlockNumber(duration time.Duration) {
+func tronBlockNumber(context.Context) {
 	var node = conf.GetTronGrpcNode()
-	log.Info("区块扫描启动：", node)
 
 	conn, err := grpc.NewClient(node, grpc.WithConnectParams(params), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
@@ -79,42 +78,41 @@ func tronBlockNumber(duration time.Duration) {
 
 	var client = api.NewWalletClient(conn)
 
-	for range time.Tick(duration) { // 大概3秒产生一个区块
-		var ctx, cancel = context.WithTimeout(context.Background(), time.Second*3)
-		block, err1 := client.GetNowBlock2(ctx, nil)
-		cancel()
-		if err1 != nil {
-			log.Warn("GetNowBlock2 超时：", err1)
+	var ctx, cancel = context.WithTimeout(context.Background(), time.Second*3)
+	block, err1 := client.GetNowBlock2(ctx, nil)
+	defer cancel()
 
-			continue
-		}
+	if err1 != nil {
+		log.Warn("GetNowBlock2 超时：", err1)
 
-		var now = block.BlockHeader.RawData.Number
-		if conf.GetTradeIsConfirmed() {
-
-			now = now - numConfirmedSub
-		}
-
-		// 首次启动
-		if tronLastBlockNum == 0 {
-
-			tronLastBlockNum = now - 1
-		}
-
-		// 区块高度没有变化
-		if now <= tronLastBlockNum {
-
-			continue
-		}
-
-		// 待扫描区块入列
-		for n := tronLastBlockNum + 1; n <= now; n++ {
-
-			tronBlockScanQueue.In <- n
-		}
-
-		tronLastBlockNum = now
+		return
 	}
+
+	var now = block.BlockHeader.RawData.Number
+	if conf.GetTradeIsConfirmed() {
+
+		now = now - numConfirmedSub
+	}
+
+	// 首次启动
+	if tronLastBlockNum == 0 {
+
+		tronLastBlockNum = now - 1
+	}
+
+	// 区块高度没有变化
+	if now <= tronLastBlockNum {
+
+		return
+	}
+
+	// 待扫描区块入列
+	for n := tronLastBlockNum + 1; n <= now; n++ {
+
+		tronBlockScanQueue.In <- n
+	}
+
+	tronLastBlockNum = now
 }
 
 func tronProcessBlock(n any) {
@@ -130,13 +128,13 @@ func tronProcessBlock(n any) {
 	defer conn.Close()
 	var client = api.NewWalletClient(conn)
 
-	atomic.AddUint64(&conf.TronBlockScanTotal, 1)
+	conf.SetBlockTotal(conf.Tron)
 
 	var ctx, cancel = context.WithTimeout(context.Background(), time.Second*3)
 	block, err1 := client.GetBlockByNum2(ctx, &api.NumberMessage{Num: num})
 	cancel()
 	if err1 != nil {
-		atomic.AddUint64(&conf.TronBlockScanFail, 1)
+		conf.SetBlockFail(conf.Tron)
 		tronBlockScanQueue.In <- num
 		log.Warn("GetBlockByNum Error", err1)
 
@@ -211,7 +209,7 @@ func tronProcessBlock(n any) {
 					RecvAddress: base58CheckEncode(foo.ToAddress),
 					Timestamp:   timestamp,
 					TradeType:   model.OrderTradeTypeTronTrx,
-					BlockNum:    num,
+					BlockNum:    cast.ToUint64(num),
 				})
 
 				continue
@@ -240,10 +238,11 @@ func tronProcessBlock(n any) {
 					continue
 				}
 
+				transItem.Network = conf.Tron
 				transItem.TradeType = model.OrderTradeTypeUsdtTrc20
 				transItem.Amount = trc20Contract.Amount
 				transItem.RecvAddress = trc20Contract.RecvAddress
-				transItem.BlockNum = num
+				transItem.BlockNum = cast.ToUint64(num)
 
 				transfers = append(transfers, transItem)
 			}
@@ -258,7 +257,7 @@ func tronProcessBlock(n any) {
 		resourceQueue.In <- resources
 	}
 
-	log.Info("区块扫描完成", num, conf.GetTronScanSuccRate(), "TRON")
+	log.Info("区块扫描完成", num, conf.GetBlockSuccRate(conf.Tron), conf.Tron)
 }
 
 func parseUsdtTrc20Contract(reader *bytes.Reader) usdtTrc20TransferRaw {

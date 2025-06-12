@@ -14,6 +14,7 @@ const (
 	OtherNotifyDisable uint8 = 0
 	WaChainTron              = "tron"
 	WaChainPolygon           = "polygon"
+	WaChainEthereum          = "ethereum"
 )
 
 var tradeChain = map[string]string{
@@ -103,15 +104,4 @@ func GetAvailableAddress(address, tradeType string) []WalletAddress {
 	}
 
 	return rows
-}
-
-func GetOtherNotify(address string) bool {
-	var row WalletAddress
-	var res = DB.Where("status = ? and address = ?", StatusEnable, address).First(&row)
-	if res.Error != nil {
-
-		return false
-	}
-
-	return row.OtherNotify == 1
 }
