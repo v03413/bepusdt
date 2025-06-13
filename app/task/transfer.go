@@ -14,7 +14,6 @@ import (
 	"github.com/v03413/bepusdt/app/model"
 	"github.com/v03413/bepusdt/app/notify"
 	"github.com/v03413/tronprotocol/core"
-	"math/big"
 	"strings"
 	"time"
 )
@@ -22,7 +21,7 @@ import (
 type transfer struct {
 	Network     string
 	TxHash      string
-	Amount      big.Int
+	Amount      decimal.Decimal
 	FromAddress string
 	RecvAddress string
 	Timestamp   time.Time
@@ -55,20 +54,19 @@ func orderTransferHandle(context.Context) {
 		var other = make([]transfer, 0)
 		var orders = getAllWaitingOrders()
 		for _, t := range transfers {
-			// 计算交易金额
-			var amount = parseTransAmount(t)
-
 			// debug
-			// fmt.Println(t.Network, t.TradeType, t.TxHash, amount.String())
+			//if t.Network == conf.Xlayer {
+			//	fmt.Println(t.Network, t.TradeType, t.TxHash, t.Amount.String())
+			//}
 
 			// 判断金额是否在允许范围内
-			if !inPaymentAmountRange(amount) {
+			if !inPaymentAmountRange(t.Amount) {
 
 				continue
 			}
 
 			// 判断是否存在对应订单
-			o, ok := orders[fmt.Sprintf("%s%v%s", t.RecvAddress, amount.String(), t.TradeType)]
+			o, ok := orders[fmt.Sprintf("%s%v%s", t.RecvAddress, t.Amount.String(), t.TradeType)]
 			if !ok {
 				other = append(other, t)
 
@@ -111,8 +109,7 @@ func notOrderTransferHandle(context.Context) {
 					continue
 				}
 
-				var amount = parseTransAmount(t)
-				if !inPaymentAmountRange(amount) {
+				if !inPaymentAmountRange(t.Amount) {
 
 					continue
 				}
@@ -135,7 +132,7 @@ func notOrderTransferHandle(context.Context) {
 				var text = fmt.Sprintf(
 					"\\#账户%s \\#非订单交易\n\\-\\-\\-\n```\n💲交易数额：%v \n💍交易类别："+strings.ToUpper(t.TradeType)+"\n⏱️交易时间：%v\n✅接收地址：%v\n🅾️发送地址：%v```\n",
 					title,
-					amount.String(),
+					t.Amount.String(),
 					t.Timestamp.Format(time.DateTime),
 					help.MaskAddress(t.RecvAddress),
 					help.MaskAddress(t.FromAddress),
@@ -215,18 +212,6 @@ func tronResourceHandle(context.Context) {
 			}
 		}
 	}
-}
-
-func parseTransAmount(t transfer) decimal.Decimal {
-	var div int32 = -6
-	if tradeType, ok := nativeToken[t.Network]; ok && tradeType != model.OrderTradeTypeTronTrx && tradeType == t.TradeType {
-
-		div = -18 // wei
-	}
-
-	var amount = decimal.NewFromBigInt(&t.Amount, div)
-
-	return amount
 }
 
 func getAllWaitingOrders() map[string]model.TradeOrders {

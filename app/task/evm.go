@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/panjf2000/ants/v2"
+	"github.com/shopspring/decimal"
 	"github.com/smallnest/chanx"
 	"github.com/tidwall/gjson"
 	"github.com/v03413/bepusdt/app/conf"
@@ -45,9 +46,15 @@ var contractMap = map[string]string{
 var client = &http.Client{Timeout: time.Second * 5}
 var chainScanQueue = chanx.NewUnboundedChan[evmBlock](context.Background(), 30)
 
+type decimals struct {
+	Usdt   int32 // USDT小数位数
+	Native int32 // 原生代币小数位数
+}
+
 type evmCfg struct {
 	Type     string
 	Endpoint string
+	Decimals decimals
 }
 
 type evmBlock struct {
@@ -197,28 +204,30 @@ func evmBlockParse(b any) {
 	for _, v := range result.Get("transactions").Array() {
 		var recv = v.Get("to").String()
 		var input = v.Get("input").String()
-		var value = v.Get("value").String()
-		var amount, ok = new(big.Int).SetString(value, 0)
+		var rawValue = v.Get("value").String()
+		var rawAmount, ok = new(big.Int).SetString(rawValue, 0)
 		if !ok {
-			log.Warn("Error converting value to integer:" + " " + value)
+			log.Warn("Error converting value to integer:" + " " + rawValue)
 
 			return
 		}
 
-		var tradeType = getTradeType(n.Network.Type, recv, input, amount)
+		var amount = decimal.NewFromBigInt(rawAmount, n.Network.Decimals.Native)
+		var tradeType = getTradeType(n.Network.Type, recv, input, rawAmount)
 		if tradeType == nil {
 
 			continue
 		}
 
 		if !tradeType.Native && len(input) == inputAddressTotal { // usdt transfer
-			amount, ok = new(big.Int).SetString(input[inputAddressEnd:], 16)
+			rawAmount, ok = new(big.Int).SetString(input[inputAddressEnd:], 16)
 			if !ok {
 				log.Warn("Error converting amount(value)：" + input[inputAddressEnd:])
 
 				continue
 			}
 
+			amount = decimal.NewFromBigInt(rawAmount, n.Network.Decimals.Usdt)
 			recv = "0x" + input[inputAddressStart:inputAddressEnd] // USDT转账接收地址
 		}
 
@@ -226,7 +235,7 @@ func evmBlockParse(b any) {
 			Network:     n.Network.Type,
 			FromAddress: v.Get("from").String(),
 			RecvAddress: recv,
-			Amount:      *amount,
+			Amount:      amount,
 			TxHash:      v.Get("hash").String(),
 			BlockNum:    n.Num,
 			Timestamp:   time.Unix(timestamp.Int64(), 0),

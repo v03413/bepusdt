@@ -7,6 +7,7 @@ import (
 	"github.com/btcsuite/btcd/btcutil/base58"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/panjf2000/ants/v2"
+	"github.com/shopspring/decimal"
 	"github.com/smallnest/chanx"
 	"github.com/spf13/cast"
 	"github.com/v03413/bepusdt/app/conf"
@@ -203,7 +204,7 @@ func tronBlockParse(n any) {
 				transfers = append(transfers, transfer{
 					Network:     conf.Tron,
 					TxHash:      id,
-					Amount:      *new(big.Int).SetInt64(foo.Amount),
+					Amount:      decimal.NewFromBigInt(new(big.Int).SetInt64(foo.Amount), -6),
 					FromAddress: base58CheckEncode(foo.OwnerAddress),
 					RecvAddress: base58CheckEncode(foo.ToAddress),
 					Timestamp:   timestamp,
@@ -239,7 +240,7 @@ func tronBlockParse(n any) {
 
 				transItem.Network = conf.Tron
 				transItem.TradeType = model.OrderTradeTypeUsdtTrc20
-				transItem.Amount = *new(big.Int).SetInt64(trc20Contract.Amount)
+				transItem.Amount = decimal.NewFromBigInt(new(big.Int).SetInt64(trc20Contract.Amount), -6)
 				transItem.RecvAddress = trc20Contract.RecvAddress
 				transItem.BlockNum = cast.ToUint64(num)
 
