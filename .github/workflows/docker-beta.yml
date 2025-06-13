@@ -3,6 +3,8 @@ on:
   push:
     branches:
       - 'main'
+    paths:
+      - 'app/version.go'
 env:
   APP_NAME: bepusdt
   DOCKER_HUB_USER: v03413
