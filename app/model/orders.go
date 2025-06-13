@@ -18,7 +18,10 @@ const (
 	OrderStatusSuccess = 2 // 订单成功
 	OrderStatusWaiting = 1 // 等待支付
 
-	OrderTradeTypeTronTrx     = "tron.trx"
+	OrderTradeTypeTronTrx    = "tron.trx"
+	OrderTradeTypeEthEth     = "ethereum.eth"
+	OrderTradeTypePolygonPol = "polygon.pol" // (Matic)
+
 	OrderTradeTypeUsdtTrc20   = "usdt.trc20"
 	OrderTradeTypeUsdtPolygon = "usdt.polygon"
 	OrderTradeTypeUsdtErc20   = "usdt.erc20"
@@ -31,12 +34,17 @@ const (
 
 var calcMutex sync.Mutex
 
+type TradeType struct {
+	Type   string `json:"type"`   // 交易类型
+	Native bool   `json:"native"` // 是否是原生代币
+}
+
 type TradeOrders struct {
 	Id          int64     `gorm:"primary_key;AUTO_INCREMENT;comment:id"`
 	OrderId     string    `gorm:"column:order_id;type:varchar(128);not null;index;comment:商户ID"`
 	TradeId     string    `gorm:"column:trade_id;type:varchar(128);not null;uniqueIndex;comment:本地ID"`
 	TradeType   string    `gorm:"column:trade_type;type:varchar(20);not null;comment:交易类型"`
-	TradeHash   string    `gorm:"column:trade_hash;type:varchar(128);default:'';unique;comment:交易哈希"`
+	TradeHash   string    `gorm:"column:trade_hash;type:varchar(130);default:'';unique;comment:交易哈希"`
 	TradeRate   string    `gorm:"column:trade_rate;type:varchar(10);not null;comment:交易汇率"`
 	Amount      string    `gorm:"type:decimal(10,2);not null;default:0;comment:交易数额"`
 	Money       float64   `gorm:"type:decimal(10,2);not null;default:0;comment:订单交易金额"`

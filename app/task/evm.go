@@ -14,6 +14,7 @@ import (
 	"io"
 	"math/big"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 )
@@ -24,13 +25,13 @@ const (
 )
 
 var chainBlockNum sync.Map
-var tradeTypes = map[string]string{
-	conf.Polygon:  model.OrderTradeTypeUsdtPolygon,
-	conf.Ethereum: model.OrderTradeTypeUsdtErc20,
+var nativeToken = map[string]string{
+	conf.Polygon:  model.OrderTradeTypePolygonPol,
+	conf.Ethereum: model.OrderTradeTypeEthEth,
 }
-var usdtContract = map[string]string{
-	conf.Polygon:  "0xc2132d05d31c914a87c6611c10748aeb04b58e8f",
-	conf.Ethereum: "0xdac17f958d2ee523a2206206994597c13d831ec7",
+var contractMap = map[string]string{
+	"0xc2132d05d31c914a87c6611c10748aeb04b58e8f": model.OrderTradeTypeUsdtPolygon,
+	"0xdac17f958d2ee523a2206206994597c13d831ec7": model.OrderTradeTypeUsdtErc20,
 }
 var chainScanQueue = chanx.NewUnboundedChan[evmBlock](context.Background(), 30)
 
@@ -186,49 +187,67 @@ func evmBlockParse(b any) {
 	var timestamp = help.HexStr2Int(result.Get("timestamp").String())
 	var transfers = make([]transfer, 0)
 	for _, v := range result.Get("transactions").Array() {
-		if v.Get("to").String() != usdtContract[n.Network.Type] {
-
-			continue
-		}
-
+		var recv = v.Get("to").String()
 		var input = v.Get("input").String()
-		if len(input) < 10 {
-			// 我也不明白为什么这里会出现 len < 10 情况，只是有人反馈，暂时屏蔽避免panic https://github.com/v03413/bepusdt/issues/66
-
-			continue
-		}
-
-		var funcName = input[:10]
-		if funcName != usdtTransfer {
-
-			continue
-		}
-
-		amount, ok := new(big.Int).SetString(input[74:], 16)
+		var value = v.Get("value").String()
+		var amount, ok = new(big.Int).SetString(value, 0)
 		if !ok {
-			log.Warn("Error converting amount" + input[74:])
+			log.Warn("Error converting value to integer:" + " " + value)
+
+			return
+		}
+
+		var tradeType = getTradeType(n.Network.Type, recv, input, amount)
+		if tradeType == nil {
 
 			continue
+		}
+
+		if !tradeType.Native && len(input) == 138 { // usdt transfer
+			amount, ok = new(big.Int).SetString(input[74:], 16)
+			if !ok {
+				log.Warn("Error converting amount(value)：" + input[74:])
+
+				continue
+			}
+
+			recv = "0x" + input[34:74] // USDT转账接收地址
 		}
 
 		transfers = append(transfers, transfer{
 			Network:     n.Network.Type,
 			FromAddress: v.Get("from").String(),
-			RecvAddress: "0x" + input[34:74],
-			Amount:      float64(amount.Int64()),
+			RecvAddress: recv,
+			Amount:      *amount,
 			TxHash:      v.Get("hash").String(),
 			BlockNum:    n.Num,
 			Timestamp:   time.Unix(timestamp.Int64(), 0),
-			TradeType:   tradeTypes[n.Network.Type],
+			TradeType:   tradeType.Type,
 		})
 	}
 
 	log.Info("区块扫描完成", n.Num, conf.GetBlockSuccRate(n.Network.Type), n.Network.Type)
 
-	if len(transfers) == 0 {
+	if len(transfers) > 0 {
 
-		return
+		transferQueue.In <- transfers
+	}
+}
+
+func getTradeType(net, to, input string, value *big.Int) *model.TradeType {
+	var tradeType, ok = nativeToken[net]
+	if ok && input == "0x" && value.Sign() == 1 { // 原生代币
+
+		return &model.TradeType{Type: tradeType, Native: true}
 	}
 
-	transferQueue.In <- transfers
+	// 触发合约
+	tradeType, ok = contractMap[to]
+	if ok && strings.HasPrefix(input, usdtTransfer) { // USDT转账
+
+		return &model.TradeType{Type: tradeType, Native: false}
+	}
+
+	// 其他合约数据
+	return nil
 }

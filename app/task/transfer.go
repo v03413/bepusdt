@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
+	"github.com/shopspring/decimal"
 	"github.com/smallnest/chanx"
 	"github.com/spf13/cast"
 	bot2 "github.com/v03413/bepusdt/app/bot"
@@ -13,6 +14,7 @@ import (
 	"github.com/v03413/bepusdt/app/model"
 	"github.com/v03413/bepusdt/app/notify"
 	"github.com/v03413/tronprotocol/core"
+	"math/big"
 	"strings"
 	"time"
 )
@@ -20,7 +22,7 @@ import (
 type transfer struct {
 	Network     string
 	TxHash      string
-	Amount      float64
+	Amount      big.Int
 	FromAddress string
 	RecvAddress string
 	Timestamp   time.Time
@@ -54,7 +56,7 @@ func orderTransferHandle(context.Context) {
 		var orders = getAllWaitingOrders()
 		for _, t := range transfers {
 			// 计算交易金额
-			var amount = parseTransAmount(t.Amount)
+			var amount = parseTransAmount(t)
 
 			// 判断金额是否在允许范围内
 			if !inPaymentAmountRange(amount) {
@@ -106,7 +108,7 @@ func notOrderTransferHandle(context.Context) {
 					continue
 				}
 
-				var amount = parseTransAmount(t.Amount)
+				var amount = parseTransAmount(t)
 				if !inPaymentAmountRange(amount) {
 
 					continue
@@ -210,4 +212,38 @@ func tronResourceHandle(context.Context) {
 			}
 		}
 	}
+}
+
+func parseTransAmount(t transfer) decimal.Decimal {
+	var div int32 = -6
+	if tradeType, ok := nativeToken[t.Network]; ok && tradeType != model.OrderTradeTypeTronTrx && tradeType == t.TradeType {
+
+		div = -18 // wei
+	}
+
+	var amount = decimal.NewFromBigInt(&t.Amount, div)
+
+	return amount
+}
+
+func getAllWaitingOrders() map[string]model.TradeOrders {
+	var tradeOrders = model.GetOrderByStatus(model.OrderStatusWaiting)
+	var data = make(map[string]model.TradeOrders) // 当前所有正在等待支付的订单 Lock Key
+	for _, order := range tradeOrders {
+		if time.Now().Unix() >= order.ExpiredAt.Unix() { // 订单过期
+			order.OrderSetExpired()
+			notify.Bepusdt(order)
+
+			continue
+		}
+
+		if order.TradeType == model.OrderTradeTypeUsdtPolygon {
+
+			order.Address = strings.ToLower(order.Address)
+		}
+
+		data[order.Address+order.Amount+order.TradeType] = order
+	}
+
+	return data
 }

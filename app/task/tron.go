@@ -7,20 +7,18 @@ import (
 	"github.com/btcsuite/btcd/btcutil/base58"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/panjf2000/ants/v2"
-	"github.com/shopspring/decimal"
 	"github.com/smallnest/chanx"
 	"github.com/spf13/cast"
 	"github.com/v03413/bepusdt/app/conf"
 	"github.com/v03413/bepusdt/app/log"
 	"github.com/v03413/bepusdt/app/model"
-	"github.com/v03413/bepusdt/app/notify"
 	"github.com/v03413/tronprotocol/api"
 	"github.com/v03413/tronprotocol/core"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/backoff"
 	"google.golang.org/grpc/credentials/insecure"
+	"math/big"
 	"strconv"
-	"strings"
 	"time"
 )
 
@@ -38,16 +36,16 @@ var params = grpc.ConnectParams{
 
 type usdtTrc20TransferRaw struct {
 	RecvAddress string
-	Amount      float64
+	Amount      int64
 }
 
 func init() {
-	register(task{duration: time.Second * 3, callback: tronBlockNumber}) // 大概3秒产生一个区块
-	register(task{duration: time.Second, callback: tronBlockScan})
+	register(task{duration: time.Second * 3, callback: tronBlockRoll}) // 大概3秒产生一个区块
+	register(task{duration: time.Second, callback: tronBlockDispatch})
 }
 
-func tronBlockScan(context.Context) {
-	p, err := ants.NewPoolWithFunc(8, tronProcessBlock)
+func tronBlockDispatch(context.Context) {
+	p, err := ants.NewPoolWithFunc(8, tronBlockParse)
 	if err != nil {
 		panic(err)
 
@@ -65,7 +63,7 @@ func tronBlockScan(context.Context) {
 	}
 }
 
-func tronBlockNumber(context.Context) {
+func tronBlockRoll(context.Context) {
 	var node = conf.GetTronGrpcNode()
 
 	conn, err := grpc.NewClient(node, grpc.WithConnectParams(params), grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -115,7 +113,7 @@ func tronBlockNumber(context.Context) {
 	tronLastBlockNum = now
 }
 
-func tronProcessBlock(n any) {
+func tronBlockParse(n any) {
 	var num = n.(int64)
 	var node = conf.GetTronGrpcNode()
 	var conn *grpc.ClientConn
@@ -203,8 +201,9 @@ func tronProcessBlock(n any) {
 				}
 
 				transfers = append(transfers, transfer{
+					Network:     conf.Tron,
 					TxHash:      id,
-					Amount:      float64(foo.Amount),
+					Amount:      *new(big.Int).SetInt64(foo.Amount),
 					FromAddress: base58CheckEncode(foo.OwnerAddress),
 					RecvAddress: base58CheckEncode(foo.ToAddress),
 					Timestamp:   timestamp,
@@ -240,7 +239,7 @@ func tronProcessBlock(n any) {
 
 				transItem.Network = conf.Tron
 				transItem.TradeType = model.OrderTradeTypeUsdtTrc20
-				transItem.Amount = trc20Contract.Amount
+				transItem.Amount = *new(big.Int).SetInt64(trc20Contract.Amount)
 				transItem.RecvAddress = trc20Contract.RecvAddress
 				transItem.BlockNum = cast.ToUint64(num)
 
@@ -293,7 +292,7 @@ func parseUsdtTrc20Contract(reader *bytes.Reader) usdtTrc20TransferRaw {
 
 	var amount, _ = strconv.ParseInt(hex.EncodeToString(value), 16, 64)
 
-	return usdtTrc20TransferRaw{RecvAddress: toAddress, Amount: float64(amount)}
+	return usdtTrc20TransferRaw{RecvAddress: toAddress, Amount: amount}
 }
 
 func base58CheckEncode(input []byte) string {
@@ -303,32 +302,4 @@ func base58CheckEncode(input []byte) string {
 	input = append(input, checksum...)
 
 	return base58.Encode(input)
-}
-
-func getAllWaitingOrders() map[string]model.TradeOrders {
-	var tradeOrders = model.GetOrderByStatus(model.OrderStatusWaiting)
-	var data = make(map[string]model.TradeOrders) // 当前所有正在等待支付的订单 Lock Key
-	for _, order := range tradeOrders {
-		if time.Now().Unix() >= order.ExpiredAt.Unix() { // 订单过期
-			order.OrderSetExpired()
-			notify.Bepusdt(order)
-
-			continue
-		}
-
-		if order.TradeType == model.OrderTradeTypeUsdtPolygon {
-
-			order.Address = strings.ToLower(order.Address)
-		}
-
-		data[order.Address+order.Amount+order.TradeType] = order
-	}
-
-	return data
-}
-
-func parseTransAmount(amount float64) decimal.Decimal {
-	var result = decimal.NewFromFloat(amount).Div(decimal.NewFromFloat(1000000))
-
-	return result
 }
