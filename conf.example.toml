@@ -10,8 +10,12 @@ static_path = ""
 sqlite_path = "/var/lib/bepusdt/sqlite.db"
 # Tron区块网络的GRPC节点，可选列表：https://developers.tron.network/docs/networks#public-node
 tron_grpc_node = "18.141.79.38:50051"
+# Binance Smart Chain区块网络的RPC节点
+bsc_rpc_endpoint = "https://bsc-dataseed.bnbchain.org/"
 # Polygon区块网络的RPC节点
 polygon_rpc_endpoint = "https://polygon-rpc.com/"
+# Ethereum区块网络的RPC节点，推荐使用Infura或Alchemy等服务提供商的节点
+ethereum_rpc_endpoint = "https://ethereum.publicnode.com/"
 # 日志输出路径
 output_log = "/var/log/bepusdt.log"
 
