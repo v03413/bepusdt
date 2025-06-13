@@ -58,6 +58,9 @@ func orderTransferHandle(context.Context) {
 			// 计算交易金额
 			var amount = parseTransAmount(t)
 
+			// debug
+			// fmt.Println(t.Network, t.TradeType, t.TxHash, amount.String())
+
 			// 判断金额是否在允许范围内
 			if !inPaymentAmountRange(amount) {
 

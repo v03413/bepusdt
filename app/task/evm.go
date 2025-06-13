@@ -22,19 +22,27 @@ import (
 const (
 	usdtTransfer = "0xa9059cbb" // Tether transfer function ID
 	contentType  = "application/json"
+
+	inputAddressTotal = 138 // USDT转账 input 正确总长度
+	inputAddressStart = 34  // USDT转账 接收地址在input中的起始位置
+	inputAddressEnd   = 74  // USDT转账 接收地址在input中的结束位置 amount在input中的起始位置
 )
 
 var chainBlockNum sync.Map
 var nativeToken = map[string]string{
 	conf.Bsc:      model.OrderTradeTypeBscBnb,
+	conf.Xlayer:   model.OrderTradeTypeXlayerOkb,
 	conf.Polygon:  model.OrderTradeTypePolygonPol,
 	conf.Ethereum: model.OrderTradeTypeEthEth,
 }
 var contractMap = map[string]string{
+	"0x1e4a5963abfd975d8c9021ce480b42188849d41d": model.OrderTradeTypeUsdtXlayer,
 	"0x55d398326f99059ff775485246999027b3197955": model.OrderTradeTypeUsdtBep20,
 	"0xc2132d05d31c914a87c6611c10748aeb04b58e8f": model.OrderTradeTypeUsdtPolygon,
 	"0xdac17f958d2ee523a2206206994597c13d831ec7": model.OrderTradeTypeUsdtErc20,
 }
+
+var client = &http.Client{Timeout: time.Second * 5}
 var chainScanQueue = chanx.NewUnboundedChan[evmBlock](context.Background(), 30)
 
 type evmCfg struct {
@@ -87,7 +95,6 @@ func evmBlockRoll(ctx context.Context) {
 
 	var url = cfg.Endpoint
 	var jsonData = []byte(`{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}`)
-	var client = &http.Client{Timeout: time.Second * 5}
 
 	resp, err := client.Post(url, contentType, bytes.NewBuffer(jsonData))
 	if err != nil {
@@ -151,7 +158,6 @@ func evmBlockParse(b any) {
 		return
 	}
 
-	var client = &http.Client{Timeout: time.Second * 5}
 	var post = []byte(fmt.Sprintf(`{"jsonrpc":"2.0","method":"eth_getBlockByNumber","params":["0x%x",true],"id":1}`, n.Num))
 
 	conf.SetBlockTotal(n.Network.Type)
@@ -165,6 +171,8 @@ func evmBlockParse(b any) {
 		return
 	}
 
+	defer resp.Body.Close()
+
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		conf.SetBlockFail(n.Network.Type)
@@ -173,8 +181,6 @@ func evmBlockParse(b any) {
 
 		return
 	}
-
-	defer resp.Body.Close()
 
 	var data = gjson.ParseBytes(body)
 	if data.Get("error").Exists() {
@@ -205,15 +211,15 @@ func evmBlockParse(b any) {
 			continue
 		}
 
-		if !tradeType.Native && len(input) == 138 { // usdt transfer
-			amount, ok = new(big.Int).SetString(input[74:], 16)
+		if !tradeType.Native && len(input) == inputAddressTotal { // usdt transfer
+			amount, ok = new(big.Int).SetString(input[inputAddressEnd:], 16)
 			if !ok {
-				log.Warn("Error converting amount(value)：" + input[74:])
+				log.Warn("Error converting amount(value)：" + input[inputAddressEnd:])
 
 				continue
 			}
 
-			recv = "0x" + input[34:74] // USDT转账接收地址
+			recv = "0x" + input[inputAddressStart:inputAddressEnd] // USDT转账接收地址
 		}
 
 		transfers = append(transfers, transfer{

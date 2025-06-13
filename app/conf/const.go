@@ -12,6 +12,7 @@ const (
 	defaultTrxAtomicity        = 0.01
 	defaultTronGrpcNode        = "18.141.79.38:50051"                 // 默认GRPC节点
 	defaultBscRpcEndpoint      = "https://bsc-dataseed.bnbchain.org/" // 默认BSC RPC节点
+	defaultXlayerRpcEndpoint   = "https://rpc.xlayer.tech/"           // 默认Xlayer RPC节点
 	defaultPolygonRpcEndpoint  = "https://polygon-rpc.com/"           // 默认Polygon RPC节点
 	defaultEthereumRpcEndpoint = "https://ethereum.publicnode.com/"   // 默认Ethereum RPC节点
 	defaultOutputLog           = "/var/log/bepusdt.log"               // 默认日志输出文件

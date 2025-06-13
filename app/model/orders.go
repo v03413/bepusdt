@@ -21,12 +21,14 @@ const (
 	OrderTradeTypeBscBnb     = "bsc.bnb"
 	OrderTradeTypeTronTrx    = "tron.trx"
 	OrderTradeTypeEthEth     = "ethereum.eth"
-	OrderTradeTypePolygonPol = "polygon.pol" // (Matic)
+	OrderTradeTypeXlayerOkb  = "xlayer.okb"
+	OrderTradeTypePolygonPol = "polygon.pol"
 
 	OrderTradeTypeUsdtTrc20   = "usdt.trc20"
 	OrderTradeTypeUsdtPolygon = "usdt.polygon"
 	OrderTradeTypeUsdtErc20   = "usdt.erc20"
 	OrderTradeTypeUsdtBep20   = "usdt.bep20"
+	OrderTradeTypeUsdtXlayer  = "usdt.xlayer"
 )
 
 const (

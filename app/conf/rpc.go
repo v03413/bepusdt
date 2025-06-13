@@ -9,6 +9,15 @@ func GetTronGrpcNode() string {
 	return defaultTronGrpcNode
 }
 
+func GetXlayerRpcEndpoint() string {
+	if cfg.XlayerRpcEndpoint != "" {
+
+		return cfg.XlayerRpcEndpoint
+	}
+
+	return defaultXlayerRpcEndpoint
+}
+
 func GetBscRpcEndpoint() string {
 	if cfg.BscRpcEndpoint != "" {
 
