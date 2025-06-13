@@ -18,6 +18,7 @@ const (
 	OrderStatusSuccess = 2 // 订单成功
 	OrderStatusWaiting = 1 // 等待支付
 
+	OrderTradeTypeBscBnb     = "bsc.bnb"
 	OrderTradeTypeTronTrx    = "tron.trx"
 	OrderTradeTypeEthEth     = "ethereum.eth"
 	OrderTradeTypePolygonPol = "polygon.pol" // (Matic)
@@ -25,6 +26,7 @@ const (
 	OrderTradeTypeUsdtTrc20   = "usdt.trc20"
 	OrderTradeTypeUsdtPolygon = "usdt.polygon"
 	OrderTradeTypeUsdtErc20   = "usdt.erc20"
+	OrderTradeTypeUsdtBep20   = "usdt.bep20"
 )
 
 const (

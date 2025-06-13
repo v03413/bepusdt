@@ -26,10 +26,12 @@ const (
 
 var chainBlockNum sync.Map
 var nativeToken = map[string]string{
+	conf.Bsc:      model.OrderTradeTypeBscBnb,
 	conf.Polygon:  model.OrderTradeTypePolygonPol,
 	conf.Ethereum: model.OrderTradeTypeEthEth,
 }
 var contractMap = map[string]string{
+	"0x63b7e5aE00cc6053358fb9b97B361372FbA10a5e": model.OrderTradeTypeUsdtBep20,
 	"0xc2132d05d31c914a87c6611c10748aeb04b58e8f": model.OrderTradeTypeUsdtPolygon,
 	"0xdac17f958d2ee523a2206206994597c13d831ec7": model.OrderTradeTypeUsdtErc20,
 }

@@ -71,7 +71,7 @@ func cmdStateHandle(ctx context.Context, b *bot.Bot, u *models.Update) {
 	var rows []model.TradeOrders
 	model.DB.Where("created_at > ?", time.Now().Format(time.DateOnly)).Find(&rows)
 	var succ uint64
-	var money, trx, uTrc20, uErc20, uPol float64
+	var money, trx, uTrc20, uErc20, uBep20, uPol float64
 	for _, o := range rows {
 		if o.Status != model.OrderStatusSuccess {
 
@@ -84,6 +84,9 @@ func cmdStateHandle(ctx context.Context, b *bot.Bot, u *models.Update) {
 		var amount = cast.ToFloat64(o.Amount)
 		if o.TradeType == model.OrderTradeTypeTronTrx {
 			trx += amount
+		}
+		if o.TradeType == model.OrderTradeTypeUsdtBep20 {
+			uBep20 += amount
 		}
 		if o.TradeType == model.OrderTradeTypeUsdtTrc20 {
 			uTrc20 += amount
@@ -104,8 +107,10 @@ func cmdStateHandle(ctx context.Context, b *bot.Bot, u *models.Update) {
 	- %.2f TRX
 	- %.2f USDT.Trc20
 	- %.2f USDT.Erc20
+	- %.2f USDT.Bep20
 	- %.2f USDT.Polygon
 🌟扫块成功数据
+	- Bsc %s
 	- Tron %s
 	- Polygon %s
 	- Ethereum %s
@@ -128,7 +133,9 @@ func cmdStateHandle(ctx context.Context, b *bot.Bot, u *models.Update) {
 		trx,
 		uTrc20,
 		uErc20,
+		uBep20,
 		uPol,
+		conf.GetBlockSuccRate(conf.Bsc),
 		conf.GetBlockSuccRate(conf.Tron),
 		conf.GetBlockSuccRate(conf.Polygon),
 		conf.GetBlockSuccRate(conf.Ethereum),

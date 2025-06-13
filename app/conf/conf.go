@@ -8,6 +8,7 @@ type Conf struct {
 	StaticPath          string `toml:"static_path"`
 	SqlitePath          string `toml:"sqlite_path"`
 	TronGrpcNode        string `toml:"tron_grpc_node"`
+	BscRpcEndpoint      string `toml:"bsc_rpc_endpoint"`
 	PolygonRpcEndpoint  string `toml:"polygon_rpc_endpoint"`
 	EthereumRpcEndpoint string `toml:"ethereum_rpc_endpoint"`
 	Pay                 struct {
