@@ -49,7 +49,7 @@ func buildOrder(p orderParams) (model.TradeOrders, error) {
 	if len(wallet) == 0 {
 		log.Error("订单创建失败：还没有配置收款地址")
 
-		return order, fmt.Errorf("还没有配置收款地址")
+		return order, fmt.Errorf("没检测到可用收款地址")
 	}
 
 	// 计算交易金额

@@ -92,10 +92,15 @@ func (wa *WalletAddress) Delete() {
 
 func GetAvailableAddress(address, tradeType string) []WalletAddress {
 	var rows []WalletAddress
+	var db = DB.Where("trade_type = ?", tradeType)
+	if address != "" {
 
-	DB.Where("trade_type = ? and status = ?", tradeType, StatusEnable).Find(&rows)
+		db = db.Where("address = ?", address)
+	}
 
-	if len(rows) == 0 {
+	db.Find(&rows)
+
+	if len(rows) == 0 && address != "" {
 		var wa = WalletAddress{TradeType: tradeType, Address: address, Status: StatusEnable, OtherNotify: OtherNotifyDisable}
 
 		DB.Create(&wa)
