@@ -9,7 +9,7 @@ import (
 	"github.com/v03413/bepusdt/app/conf"
 	"github.com/v03413/bepusdt/app/help"
 	"github.com/v03413/bepusdt/app/model"
-	"github.com/v03413/bepusdt/app/rate"
+	"github.com/v03413/bepusdt/app/task/rate"
 	"time"
 )
 

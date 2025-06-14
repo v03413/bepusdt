@@ -12,7 +12,7 @@ import (
 	"github.com/v03413/bepusdt/app/conf"
 	"github.com/v03413/bepusdt/app/help"
 	"github.com/v03413/bepusdt/app/model"
-	"github.com/v03413/bepusdt/app/notify"
+	"github.com/v03413/bepusdt/app/web/notify"
 	"github.com/v03413/tronprotocol/core"
 	"strings"
 	"time"

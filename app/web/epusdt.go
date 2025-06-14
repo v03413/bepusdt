@@ -6,10 +6,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/cast"
 	"github.com/v03413/bepusdt/app/conf"
-	"github.com/v03413/bepusdt/app/epay"
 	"github.com/v03413/bepusdt/app/help"
 	"github.com/v03413/bepusdt/app/log"
 	"github.com/v03413/bepusdt/app/model"
+	"github.com/v03413/bepusdt/app/web/epay"
 	"net/url"
 	"time"
 )

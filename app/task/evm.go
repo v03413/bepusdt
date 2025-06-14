@@ -37,10 +37,10 @@ var nativeToken = map[string]string{
 	conf.Ethereum: model.OrderTradeTypeEthEth,
 }
 var contractMap = map[string]string{
-	"0x1e4a5963abfd975d8c9021ce480b42188849d41d": model.OrderTradeTypeUsdtXlayer,
-	"0x55d398326f99059ff775485246999027b3197955": model.OrderTradeTypeUsdtBep20,
-	"0xc2132d05d31c914a87c6611c10748aeb04b58e8f": model.OrderTradeTypeUsdtPolygon,
-	"0xdac17f958d2ee523a2206206994597c13d831ec7": model.OrderTradeTypeUsdtErc20,
+	conf.UsdtXlayer:  model.OrderTradeTypeUsdtXlayer,
+	conf.UsdtBep20:   model.OrderTradeTypeUsdtBep20,
+	conf.UsdtPolygon: model.OrderTradeTypeUsdtPolygon,
+	conf.UsdtErc20:   model.OrderTradeTypeUsdtErc20,
 }
 
 var client = &http.Client{Timeout: time.Second * 5}

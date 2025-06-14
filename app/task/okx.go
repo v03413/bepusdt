@@ -7,7 +7,7 @@ import (
 	"github.com/tidwall/gjson"
 	"github.com/v03413/bepusdt/app/conf"
 	"github.com/v03413/bepusdt/app/log"
-	"github.com/v03413/bepusdt/app/rate"
+	"github.com/v03413/bepusdt/app/task/rate"
 	"io"
 	"net/http"
 	"strconv"
