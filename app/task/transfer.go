@@ -56,7 +56,7 @@ func orderTransferHandle(context.Context) {
 		for _, t := range transfers {
 			// debug
 			//if t.Network == conf.Xlayer {
-			//	fmt.Println(t.Network, t.TradeType, t.TxHash, t.Amount.String())
+			//	fmt.Println(t.Network, t.TradeType, t.TxHash, t.Amount.String(), t.RecvAddress)
 			//}
 
 			// 判断金额是否在允许范围内

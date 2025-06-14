@@ -35,6 +35,11 @@ func addWalletAddress(u *models.Update) {
 		return
 	}
 
+	if help.IsValidEvmAddress(address) {
+
+		address = strings.ToLower(address)
+	}
+
 	var tradeType, _ = cache.Get(fmt.Sprintf("%s_%d_trade_type", cbAddressAdd, u.Message.Chat.ID))
 
 	var wa = model.WalletAddress{TradeType: tradeType.(string), Address: address, Status: model.StatusEnable, OtherNotify: model.OtherNotifyEnable}

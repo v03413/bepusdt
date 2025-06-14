@@ -52,6 +52,11 @@ func addStartWalletAddress() {
 			continue
 		}
 
+		if help.IsValidEvmAddress(address) {
+
+			address = strings.ToLower(address)
+		}
+
 		var wa WalletAddress
 		DB.Where("address = ?", address).Limit(1).Find(&wa)
 		if wa.ID != 0 {
