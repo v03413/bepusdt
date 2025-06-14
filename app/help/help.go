@@ -145,3 +145,14 @@ func HexStr2Int(str string) *big.Int {
 
 	return n
 }
+
+func InStrings(str string, list []string) bool {
+	for _, item := range list {
+		if item == str {
+
+			return true
+		}
+	}
+
+	return false
+}

@@ -54,9 +54,8 @@ func signVerify(ctx *gin.Context) {
 }
 
 func createTransaction(ctx *gin.Context) {
+	var address string
 	var data = ctx.GetStringMap("data")
-	var tradeType = model.OrderTradeTypeUsdtTrc20
-	var address = ""
 	var timeout uint64 = 0
 	for _, key := range []string{"order_id", "amount", "notify_url", "redirect_url"} {
 		if _, ok := data[key]; !ok {
@@ -67,10 +66,19 @@ func createTransaction(ctx *gin.Context) {
 		}
 	}
 
-	if v, ok := data["trade_type"]; ok {
+	var tradeType, ok = data["trade_type"]
+	if !ok {
+		ctx.JSON(200, respFailJson("交易类型参数(trade_type)不存在"))
 
-		tradeType = model.GetTradeType(cast.ToString(v))
+		return
 	}
+
+	if !help.InStrings(tradeType.(string), model.SupportTradeTypes) {
+		ctx.JSON(200, respFailJson(fmt.Sprintf("交易类型(%s)不支持", tradeType)))
+
+		return
+	}
+
 	if v, ok := data["timeout"]; ok {
 
 		timeout = cast.ToUint64(v)
@@ -97,7 +105,7 @@ func createTransaction(ctx *gin.Context) {
 		ApiType:     model.OrderApiTypeEpusdt,
 		PayAddress:  address,
 		OrderId:     orderId,
-		TradeType:   tradeType,
+		TradeType:   tradeType.(string),
 		RedirectUrl: cast.ToString(data["redirect_url"]),
 		NotifyUrl:   cast.ToString(data["notify_url"]),
 		Name:        orderId,
