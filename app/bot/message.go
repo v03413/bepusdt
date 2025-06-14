@@ -14,16 +14,8 @@ import (
 
 func SendTradeSuccMsg(order model.TradeOrders) {
 	var tradeType = "USDT"
-	var tradeUnit = `USDT.TRC20`
-	var url = fmt.Sprintf("https://tronscan.org/#/transaction/%s", order.TradeHash)
 	if order.TradeType == model.OrderTradeTypeTronTrx {
 		tradeType = "TRX"
-		tradeUnit = "TRX"
-	}
-	if order.TradeType == model.OrderTradeTypeUsdtPolygon {
-		tradeType = "USDT"
-		tradeUnit = "USDT.Polygon"
-		url = fmt.Sprintf("https://polygonscan.com/tx/%s", order.TradeHash)
 	}
 
 	var text = `
@@ -32,7 +24,7 @@ func SendTradeSuccMsg(order model.TradeOrders) {
 ` + "```" + `
 🚦商户订单：%v
 💰请求金额：%v CNY(%v)
-💲支付数额：%v ` + tradeUnit + `
+💲支付数额：%v ` + order.TradeType + `
 💎交易哈希：%s
 ✅收款地址：%s
 ⏱️创建时间：%s
@@ -57,7 +49,7 @@ func SendTradeSuccMsg(order model.TradeOrders) {
 		ReplyMarkup: &models.InlineKeyboardMarkup{
 			InlineKeyboard: [][]models.InlineKeyboardButton{
 				{
-					models.InlineKeyboardButton{Text: "📝查看交易明细", URL: url},
+					models.InlineKeyboardButton{Text: "📝查看交易明细", URL: order.GetTxDetailUrl()},
 				},
 			},
 		},
