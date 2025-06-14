@@ -24,10 +24,6 @@ func defaultHandle(ctx context.Context, bot *bot.Bot, u *models.Update) {
 		if help.IsValidTronAddress(text) {
 			go queryTronAddressInfo(u.Message)
 		}
-
-		if help.IsValidEvmAddress(text) {
-			go queryPolygonAddressInfo(u.Message)
-		}
 	}
 }
 
@@ -69,25 +65,6 @@ func queryTronAddressInfo(m *models.Message) {
 			InlineKeyboard: [][]models.InlineKeyboardButton{
 				{
 					models.InlineKeyboardButton{Text: "📝查看详细信息", URL: "https://tronscan.org/#/address/" + address},
-				},
-			},
-		},
-	}
-
-	SendMessage(&params)
-}
-
-func queryPolygonAddressInfo(m *models.Message) {
-	var address = strings.TrimSpace(m.Text)
-	var params = bot.SendMessageParams{
-		ChatID:          m.Chat.ID,
-		Text:            getPolygonWalletInfo(address),
-		ParseMode:       models.ParseModeMarkdown,
-		ReplyParameters: &models.ReplyParameters{MessageID: m.ID, ChatID: m.Chat.ID},
-		ReplyMarkup: models.InlineKeyboardMarkup{
-			InlineKeyboard: [][]models.InlineKeyboardButton{
-				{
-					models.InlineKeyboardButton{Text: "📝查看详细信息", URL: "https://polygonscan.com/address/" + address},
 				},
 			},
 		},

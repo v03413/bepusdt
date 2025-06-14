@@ -1,12 +1,10 @@
 package bot
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
-	"github.com/shopspring/decimal"
 	"github.com/tidwall/gjson"
 	"github.com/v03413/bepusdt/app/conf"
 	"github.com/v03413/bepusdt/app/help"
@@ -15,7 +13,6 @@ import (
 	"github.com/v03413/go-cache"
 	"gorm.io/gorm"
 	"io"
-	"math/big"
 	"net/http"
 	"net/url"
 	"strings"
@@ -38,29 +35,13 @@ func cbWalletAction(ctx context.Context, b *bot.Bot, u *models.Update) {
 	var address = ctx.Value("args").([]string)[1]
 
 	var text = "暂不支持..."
-	if strings.HasPrefix(address, "T") {
+	if help.IsValidTronAddress(address) {
 		text = getTronWalletInfo(address)
-	}
-	if help.IsValidEvmAddress(address) {
-		text = getPolygonWalletInfo(address)
-	}
-
-	var uri = "https://tronscan.org/#/address/" + address
-	if help.IsValidEvmAddress(address) {
-
-		uri = "https://polygonscan.com/address/" + address
 	}
 
 	var params = bot.SendMessageParams{ChatID: u.CallbackQuery.Message.Message.Chat.ID, ParseMode: models.ParseModeMarkdown}
 	if text != "" {
 		params.Text = text
-		params.ReplyMarkup = models.InlineKeyboardMarkup{
-			InlineKeyboard: [][]models.InlineKeyboardButton{
-				{
-					models.InlineKeyboardButton{Text: "📝查看详细信息", URL: uri},
-				},
-			},
-		}
 	}
 
 	DeleteMessage(ctx, b, &bot.DeleteMessageParams{
@@ -352,43 +333,4 @@ func getTronWalletInfo(address string) string {
 	}
 
 	return text
-}
-
-func getPolygonWalletInfo(address string) string {
-	var usdt = polygonBalanceOf("0xc2132d05d31c914a87c6611c10748aeb04b58e8f", address)
-	var pol = polygonBalanceOf("0x0000000000000000000000000000000000001010", address)
-
-	return fmt.Sprintf("```"+`
-💰POL 余额：%s
-💲USDT余额：%s
-☘️查询地址：`+address+`
-`+"```",
-		decimal.NewFromBigInt(pol, -18).Round(4).String(),
-		help.Ec(decimal.NewFromBigInt(usdt, -6).String()))
-}
-
-func polygonBalanceOf(contract, address string) *big.Int {
-	var jsonData = []byte(fmt.Sprintf(`{"jsonrpc":"2.0","id":%d,"method":"eth_call","params":[{"from":"0x0000000000000000000000000000000000000000","data":"0x70a08231000000000000000000000000%s","to":"%s"},"latest"]}`,
-		time.Now().Unix(), strings.ToLower(strings.Trim(address, "0x")), strings.ToLower(contract)))
-	var client = &http.Client{Timeout: time.Second * 5}
-	resp, err := client.Post(conf.GetPolygonRpcEndpoint(), "application/json", bytes.NewBuffer(jsonData))
-	if err != nil {
-		log.Warn("Error Post response:", err)
-
-		return big.NewInt(0)
-	}
-
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		log.Warn("Error reading response body:", err)
-
-		return big.NewInt(0)
-	}
-
-	var data = gjson.ParseBytes(body)
-	var result = data.Get("result").String()
-
-	return help.HexStr2Int(result)
 }
