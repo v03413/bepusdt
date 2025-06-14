@@ -53,6 +53,7 @@ func Start() {
 		api.RegisterHandler(bot.HandlerTypeCallbackQueryData, cbWallet, bot.MatchTypePrefix, cbWalletAction)
 		api.RegisterHandler(bot.HandlerTypeCallbackQueryData, cbAddress, bot.MatchTypePrefix, cbAddressAction)
 		api.RegisterHandler(bot.HandlerTypeCallbackQueryData, cbAddressAdd, bot.MatchTypePrefix, cbAddressAddAction)
+		api.RegisterHandler(bot.HandlerTypeCallbackQueryData, cbAddressType, bot.MatchTypePrefix, cbAddressTypeAction)
 		api.RegisterHandler(bot.HandlerTypeCallbackQueryData, cbAddressDelete, bot.MatchTypePrefix, cbAddressDelAction)
 		api.RegisterHandler(bot.HandlerTypeCallbackQueryData, cbAddressEnable, bot.MatchTypePrefix, cbAddressEnableAction)
 		api.RegisterHandler(bot.HandlerTypeCallbackQueryData, cbAddressDisable, bot.MatchTypePrefix, cbAddressDisableAction)

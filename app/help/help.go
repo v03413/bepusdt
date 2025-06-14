@@ -99,7 +99,7 @@ func IsValidTronAddress(address string) bool {
 	return match && err == nil
 }
 
-func IsValidPolygonAddress(address string) bool {
+func IsValidEvmAddress(address string) bool {
 	if len(address) != 42 || !strings.HasPrefix(address, "0x") {
 
 		return false

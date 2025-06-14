@@ -99,10 +99,6 @@ func notOrderTransferHandle(context.Context) {
 		model.DB.Where("status = ? and other_notify = ?", model.StatusEnable, model.OtherNotifyEnable).Find(&was)
 
 		for _, wa := range was {
-			if wa.Chain == model.WaChainPolygon {
-				wa.Address = strings.ToLower(wa.Address)
-			}
-
 			for _, t := range transfers {
 				if t.RecvAddress != wa.Address && t.FromAddress != wa.Address {
 
@@ -161,8 +157,9 @@ func notOrderTransferHandle(context.Context) {
 func tronResourceHandle(context.Context) {
 	for resources := range resourceQueue.Out {
 		var was []model.WalletAddress
+		var types = []string{model.OrderTradeTypeTronTrx, model.OrderTradeTypeUsdtTrc20}
 
-		model.DB.Where("status = ? and other_notify = ? and chain = ?", model.StatusEnable, model.OtherNotifyEnable, model.WaChainTron).Find(&was)
+		model.DB.Where("status = ? and other_notify = ? and trade_type in (?)", model.StatusEnable, model.OtherNotifyEnable, types).Find(&was)
 
 		for _, wa := range was {
 			for _, t := range resources {

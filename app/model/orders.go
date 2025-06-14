@@ -3,7 +3,6 @@ package model
 import (
 	"github.com/shopspring/decimal"
 	"github.com/v03413/bepusdt/app/conf"
-	"github.com/v03413/bepusdt/app/help"
 	"strconv"
 	"sync"
 	"time"
@@ -19,11 +18,11 @@ const (
 	OrderStatusWaiting = 1 // 等待支付
 
 	OrderTradeTypeBscBnb     = "bsc.bnb"
-	OrderTradeTypeTronTrx    = "tron.trx"
 	OrderTradeTypeEthEth     = "ethereum.eth"
 	OrderTradeTypeXlayerOkb  = "xlayer.okb"
 	OrderTradeTypePolygonPol = "polygon.pol"
 
+	OrderTradeTypeTronTrx     = "tron.trx"
 	OrderTradeTypeUsdtTrc20   = "usdt.trc20"
 	OrderTradeTypeUsdtPolygon = "usdt.polygon"
 	OrderTradeTypeUsdtErc20   = "usdt.erc20"
@@ -134,17 +133,27 @@ func (o *TradeOrders) GetStatusEmoji() string {
 }
 
 func (o *TradeOrders) GetTxDetailUrl() string {
-	if help.IsValidTronAddress(o.Address) {
+	if o.TradeType == OrderTradeTypeUsdtErc20 {
 
-		return "https://tronscan.org/#/transaction/" + o.TradeHash
+		return "https://etherscan.io/tx/" + o.TradeHash
 	}
 
-	return "https://polygonscan.com/tx/" + o.TradeHash
-}
+	if o.TradeType == OrderTradeTypeUsdtBep20 {
 
-func (o *TradeOrders) GetTradeChain() string {
+		return "https://bscscan.com/tx/" + o.TradeHash
+	}
 
-	return tradeChain[o.TradeType]
+	if o.TradeType == OrderTradeTypeUsdtXlayer {
+
+		return "https://web3.okx.com/zh-hans/explorer/x-layer/tx/" + o.TradeHash
+	}
+
+	if o.TradeType == OrderTradeTypeUsdtPolygon {
+
+		return "https://polygonscan.com/tx/" + o.TradeHash
+	}
+
+	return "https://tronscan.org/#/transaction/" + o.TradeHash
 }
 
 func GetTradeType(trade string) string {

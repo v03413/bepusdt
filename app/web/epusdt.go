@@ -77,7 +77,7 @@ func createTransaction(ctx *gin.Context) {
 	}
 	if v, ok := data["address"]; ok && cast.ToString(v) != "" {
 		address = cast.ToString(v)
-		if !help.IsValidTronAddress(address) && !help.IsValidPolygonAddress(address) {
+		if !help.IsValidTronAddress(address) && !help.IsValidEvmAddress(address) {
 			ctx.JSON(200, respFailJson(fmt.Sprintf("收款钱包地址(%s)不合法", address)))
 
 			return

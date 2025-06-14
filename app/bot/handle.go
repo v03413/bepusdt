@@ -2,10 +2,12 @@ package bot
 
 import (
 	"context"
+	"fmt"
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
 	"github.com/v03413/bepusdt/app/help"
 	"github.com/v03413/bepusdt/app/model"
+	"github.com/v03413/go-cache"
 	"strings"
 )
 
@@ -23,7 +25,7 @@ func defaultHandle(ctx context.Context, bot *bot.Bot, u *models.Update) {
 			go queryTronAddressInfo(u.Message)
 		}
 
-		if help.IsValidPolygonAddress(text) {
+		if help.IsValidEvmAddress(text) {
 			go queryPolygonAddressInfo(u.Message)
 		}
 	}
@@ -31,28 +33,18 @@ func defaultHandle(ctx context.Context, bot *bot.Bot, u *models.Update) {
 
 func addWalletAddress(u *models.Update) {
 	var address = strings.TrimSpace(u.Message.Text)
-	if !help.IsValidTronAddress(address) && !help.IsValidPolygonAddress(address) {
+	if !help.IsValidTronAddress(address) && !help.IsValidEvmAddress(address) {
 		SendMessage(&bot.SendMessageParams{Text: "钱包地址不合法"})
 
 		return
 	}
 
-	var chain = model.WaChainTron
-	if help.IsValidPolygonAddress(address) {
+	var tradeType, _ = cache.Get(fmt.Sprintf("%s_%d_trade_type", cbAddressAdd, u.Message.Chat.ID))
 
-		chain = model.WaChainPolygon
-	}
-
-	var wa = model.WalletAddress{Chain: chain, Address: address, Status: model.StatusEnable, OtherNotify: model.OtherNotifyEnable}
+	var wa = model.WalletAddress{TradeType: tradeType.(string), Address: address, Status: model.StatusEnable, OtherNotify: model.OtherNotifyEnable}
 	var r = model.DB.Create(&wa)
 	if r.Error != nil {
-		if r.Error.Error() == "UNIQUE constraint failed: wallet_address.address" {
-			SendMessage(&bot.SendMessageParams{Text: "❌地址添加失败，地址重复！"})
-
-			return
-		}
-
-		SendMessage(&bot.SendMessageParams{Text: "❌地址添加失败，错误信息：" + r.Error.Error()})
+		SendMessage(&bot.SendMessageParams{Text: "❌地址添加失败，" + r.Error.Error()})
 
 		return
 	}

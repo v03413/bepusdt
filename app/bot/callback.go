@@ -12,6 +12,7 @@ import (
 	"github.com/v03413/bepusdt/app/help"
 	"github.com/v03413/bepusdt/app/log"
 	"github.com/v03413/bepusdt/app/model"
+	"github.com/v03413/go-cache"
 	"gorm.io/gorm"
 	"io"
 	"math/big"
@@ -24,6 +25,7 @@ import (
 const cbWallet = "wallet"
 const cbAddress = "address_act"
 const cbAddressAdd = "address_add"
+const cbAddressType = "address_type"
 const cbAddressEnable = "address_enable"
 const cbAddressDisable = "address_disable"
 const cbAddressDelete = "address_del"
@@ -39,12 +41,12 @@ func cbWalletAction(ctx context.Context, b *bot.Bot, u *models.Update) {
 	if strings.HasPrefix(address, "T") {
 		text = getTronWalletInfo(address)
 	}
-	if help.IsValidPolygonAddress(address) {
+	if help.IsValidEvmAddress(address) {
 		text = getPolygonWalletInfo(address)
 	}
 
 	var uri = "https://tronscan.org/#/address/" + address
-	if help.IsValidPolygonAddress(address) {
+	if help.IsValidEvmAddress(address) {
 
 		uri = "https://polygonscan.com/address/" + address
 	}
@@ -69,17 +71,39 @@ func cbWalletAction(ctx context.Context, b *bot.Bot, u *models.Update) {
 }
 
 func cbAddressAddAction(ctx context.Context, b *bot.Bot, u *models.Update) {
-	var params = &bot.SendMessageParams{
+	var tradeType = ctx.Value("args").([]string)[1]
+	var k = fmt.Sprintf("%s_%d_trade_type", cbAddressAdd, u.CallbackQuery.Message.Message.Chat.ID)
+
+	cache.Set(k, tradeType, -1)
+
+	SendMessage(&bot.SendMessageParams{
 		Text:   replayAddressText,
 		ChatID: u.CallbackQuery.Message.Message.Chat.ID,
 		ReplyMarkup: &models.ForceReply{
 			ForceReply:            true,
 			Selective:             true,
-			InputFieldPlaceholder: "输入钱包地址",
+			InputFieldPlaceholder: fmt.Sprintf("钱包地址(%s)", tradeType),
 		},
+	})
+}
+
+func cbAddressTypeAction(ctx context.Context, b *bot.Bot, u *models.Update) {
+	var btn [][]models.InlineKeyboardButton
+	for _, v := range model.SupportTradeTypes {
+		btn = append(btn, []models.InlineKeyboardButton{
+			{
+				Text:         fmt.Sprintf("💎 %s", strings.ToUpper(v)),
+				CallbackData: fmt.Sprintf("%s|%s", cbAddressAdd, v),
+			},
+		})
 	}
 
-	SendMessage(params)
+	SendMessage(&bot.SendMessageParams{
+		Text:        "*🏝️ 请选择添加的钱包地址类型：*",
+		ChatID:      u.CallbackQuery.Message.Message.Chat.ID,
+		ParseMode:   models.ParseModeMarkdown,
+		ReplyMarkup: models.InlineKeyboardMarkup{InlineKeyboard: btn},
+	})
 }
 
 func cbAddressDelAction(ctx context.Context, b *bot.Bot, u *models.Update) {
@@ -238,7 +262,7 @@ func cbOrderDetailAction(ctx context.Context, b *bot.Bot, u *models.Update) {
 	📊交易汇率：` + o.TradeRate + `(` + conf.GetUsdtRate() + `)
 	💲交易数额：` + o.Amount + `
 	💰交易金额：` + fmt.Sprintf("%.2f", o.Money) + ` CNY
-	💍交易类别：` + strings.ToUpper(o.TradeType) + fmt.Sprintf("(%s)", o.GetTradeChain()) + `
+	💍交易类别：` + strings.ToUpper(o.TradeType) + `
 	🌏商户网站：` + site.String() + `
 	🔋收款状态：` + o.GetStatusLabel() + `
 	🍀回调状态：` + notifyStateLabel + `

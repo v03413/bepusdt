@@ -19,7 +19,7 @@ const cmdState = "state"
 const cmdWallet = "wallet"
 const cmdOrder = "order"
 
-const replayAddressText = "🚚 请发送一个合法的钱包地址"
+const replayAddressText = "🚚 请发送需要添加的钱包地址"
 
 func cmdGetIdHandle(ctx context.Context, b *bot.Bot, u *models.Update) {
 
@@ -58,7 +58,7 @@ func cmdStartHandle(ctx context.Context, b *bot.Bot, u *models.Update) {
 		chatID = u.CallbackQuery.Message.Message.Chat.ID
 	}
 
-	btn = append(btn, []models.InlineKeyboardButton{{Text: "👛 添加新的钱包地址", CallbackData: cbAddressAdd}})
+	btn = append(btn, []models.InlineKeyboardButton{{Text: "👛 收款地址添加", CallbackData: cbAddressType}})
 
 	SendMessage(&bot.SendMessageParams{
 		ChatID:      chatID,
