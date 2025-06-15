@@ -55,6 +55,7 @@ func Start() {
 		api.RegisterHandler(bot.HandlerTypeCallbackQueryData, cbAddressAdd, bot.MatchTypePrefix, cbAddressAddAction)
 		api.RegisterHandler(bot.HandlerTypeCallbackQueryData, cbAddressType, bot.MatchTypePrefix, cbAddressTypeAction)
 		api.RegisterHandler(bot.HandlerTypeCallbackQueryData, cbAddressDelete, bot.MatchTypePrefix, cbAddressDelAction)
+		api.RegisterHandler(bot.HandlerTypeCallbackQueryData, cbAddressBack, bot.MatchTypePrefix, cbAddressBackAction)
 		api.RegisterHandler(bot.HandlerTypeCallbackQueryData, cbAddressEnable, bot.MatchTypePrefix, cbAddressEnableAction)
 		api.RegisterHandler(bot.HandlerTypeCallbackQueryData, cbAddressDisable, bot.MatchTypePrefix, cbAddressDisableAction)
 		api.RegisterHandler(bot.HandlerTypeCallbackQueryData, cbAddressOtherNotify, bot.MatchTypePrefix, cbAddressOtherNotifyAction)

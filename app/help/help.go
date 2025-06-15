@@ -123,6 +123,15 @@ func MaskAddress(address string) string {
 	return address[:8] + " ***** " + address[len(address)-10:]
 }
 
+func MaskAddress2(address string) string {
+	if len(address) <= 20 {
+
+		return address
+	}
+
+	return "*** " + address[len(address)-8:]
+}
+
 func MaskHash(hash string) string {
 	if len(hash) <= 20 {
 

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
+	"github.com/spf13/cast"
 	"github.com/tidwall/gjson"
 	"github.com/v03413/bepusdt/app/conf"
 	"github.com/v03413/bepusdt/app/help"
@@ -26,6 +27,7 @@ const cbAddressType = "address_type"
 const cbAddressEnable = "address_enable"
 const cbAddressDisable = "address_disable"
 const cbAddressDelete = "address_del"
+const cbAddressBack = "address_back"
 const cbAddressOtherNotify = "address_other_notify"
 const cbOrderDetail = "order_detail"
 const cbMarkNotifySucc = "mark_notify_succ"
@@ -125,6 +127,7 @@ func cbAddressAction(ctx context.Context, b *bot.Bot, u *models.Update) {
 						models.InlineKeyboardButton{Text: "✅启用", CallbackData: cbAddressEnable + "|" + id},
 						models.InlineKeyboardButton{Text: "❌禁用", CallbackData: cbAddressDisable + "|" + id},
 						models.InlineKeyboardButton{Text: "⛔️删除", CallbackData: cbAddressDelete + "|" + id},
+						models.InlineKeyboardButton{Text: "🔙返回", CallbackData: cbAddressBack + "|" + cast.ToString(u.CallbackQuery.Message.Message.ID)},
 					},
 					{
 						models.InlineKeyboardButton{Text: otherTextLabel, CallbackData: cbAddressOtherNotify + "|" + id},
@@ -135,6 +138,15 @@ func cbAddressAction(ctx context.Context, b *bot.Bot, u *models.Update) {
 
 		EditMessageText(ctx, b, params)
 	}
+}
+
+func cbAddressBackAction(ctx context.Context, b *bot.Bot, u *models.Update) {
+	DeleteMessage(ctx, b, &bot.DeleteMessageParams{
+		ChatID:    u.CallbackQuery.Message.Message.Chat.ID,
+		MessageID: cast.ToInt(ctx.Value("args").([]string)[1]),
+	})
+
+	cmdStartHandle(ctx, b, u)
 }
 
 func cbAddressEnableAction(ctx context.Context, b *bot.Bot, u *models.Update) {
