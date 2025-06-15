@@ -15,6 +15,9 @@ func init() {
 				Usdt:   -6,  // usdt.polygon 小数位数
 				Native: -18, // polygon.pol 小数位数
 			},
+			Block: block{
+				ConfirmedOffset: numConfirmedSub,
+			},
 		}),
 		duration: time.Second * 3,
 		callback: evmBlockRoll,

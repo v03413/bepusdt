@@ -209,7 +209,7 @@ func tronBlockParse(n any) {
 					RecvAddress: base58CheckEncode(foo.ToAddress),
 					Timestamp:   timestamp,
 					TradeType:   model.OrderTradeTypeTronTrx,
-					BlockNum:    cast.ToUint64(num),
+					BlockNum:    cast.ToInt64(num),
 				})
 
 				continue
@@ -242,7 +242,7 @@ func tronBlockParse(n any) {
 				transItem.TradeType = model.OrderTradeTypeUsdtTrc20
 				transItem.Amount = decimal.NewFromBigInt(new(big.Int).SetInt64(trc20Contract.Amount), -6)
 				transItem.RecvAddress = trc20Contract.RecvAddress
-				transItem.BlockNum = cast.ToUint64(num)
+				transItem.BlockNum = cast.ToInt64(num)
 
 				transfers = append(transfers, transItem)
 			}

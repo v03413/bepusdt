@@ -26,7 +26,7 @@ type transfer struct {
 	RecvAddress string
 	Timestamp   time.Time
 	TradeType   string
-	BlockNum    uint64
+	BlockNum    int64
 }
 
 type resource struct {

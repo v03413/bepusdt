@@ -15,6 +15,9 @@ func init() {
 				Usdt:   -18, // usdt.bep20 小数位数
 				Native: -18, // bsc.bnb 小数位数
 			},
+			Block: block{
+				ConfirmedOffset: numConfirmedSub,
+			},
 		}),
 		duration: time.Second * 3,
 		callback: evmBlockRoll,

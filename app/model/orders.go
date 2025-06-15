@@ -60,7 +60,7 @@ type TradeOrders struct {
 	NotifyUrl   string    `gorm:"type:varchar(255);not null;default:'';comment:异步地址"`
 	NotifyNum   int       `gorm:"column:notify_num;type:int(11);not null;default:0;comment:回调次数"`
 	NotifyState int       `gorm:"column:notify_state;type:tinyint(1);not null;default:0;comment:回调状态 1：成功 0：失败"`
-	RefBlockNum uint64    `gorm:"type:bigint(20);not null;default:0;comment:交易所在区块"`
+	RefBlockNum int64     `gorm:"type:bigint(20);not null;default:0;comment:交易所在区块"`
 	ExpiredAt   time.Time `gorm:"column:expired_at;type:timestamp;not null;comment:失效时间"`
 	CreatedAt   time.Time `gorm:"autoCreateTime;type:timestamp;not null;comment:创建时间"`
 	UpdatedAt   time.Time `gorm:"autoUpdateTime;type:timestamp;not null;comment:更新时间"`
@@ -79,7 +79,7 @@ func (o *TradeOrders) OrderSetExpired() {
 	DB.Save(o)
 }
 
-func (o *TradeOrders) MarkSuccess(blockNum uint64, from, hash string, at time.Time) {
+func (o *TradeOrders) MarkSuccess(blockNum int64, from, hash string, at time.Time) {
 	o.FromAddress = from
 	o.ConfirmedAt = at
 	o.TradeHash = hash

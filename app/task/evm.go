@@ -51,15 +51,21 @@ type decimals struct {
 	Native int32 // 原生代币小数位数
 }
 
+type block struct {
+	RollDelayOffset int64 // 延迟偏移量，某些RPC节点如果不延迟，会报错 block is out of range，目前发现 https://rpc.xlayer.tech/ 存在此问题
+	ConfirmedOffset int64 // 确认偏移量，开启交易确认后，区块高度需要减去此值认为交易已确认
+}
+
 type evmCfg struct {
 	Type     string
 	Endpoint string
 	Decimals decimals
+	Block    block
 }
 
 type evmBlock struct {
 	Network evmCfg
-	Num     uint64
+	Num     int64
 }
 
 func init() {
@@ -120,21 +126,21 @@ func evmBlockRoll(ctx context.Context) {
 	}
 
 	var res = gjson.ParseBytes(body)
-	var now = help.HexStr2Int(res.Get("result").String()).Uint64()
-	if now == 0 {
+	var now = help.HexStr2Int(res.Get("result").String()).Int64() - cfg.Block.RollDelayOffset
+	if now <= 0 {
 
 		return
 	}
 
 	if conf.GetTradeIsConfirmed() {
 
-		now = now - numConfirmedSub
+		now = now - cfg.Block.ConfirmedOffset
 	}
 
-	var lastBlockNumber uint64
+	var lastBlockNumber int64
 	if v, ok := chainBlockNum.Load(cfg.Type); ok {
 
-		lastBlockNumber = v.(uint64)
+		lastBlockNumber = v.(int64)
 	}
 
 	// 首次启动

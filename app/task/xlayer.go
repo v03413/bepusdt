@@ -15,6 +15,9 @@ func init() {
 				Usdt:   -6,  // usdt.xlayer 小数位数
 				Native: -18, // xlayer.okb 小数位数
 			},
+			Block: block{
+				ConfirmedOffset: numConfirmedSub,
+			},
 		}),
 		duration: time.Second,
 		callback: evmBlockRoll,

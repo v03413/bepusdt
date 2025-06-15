@@ -15,6 +15,9 @@ func init() {
 				Usdt:   -6,  // usdt.erc20 小数位数
 				Native: -18, // ethereum.eth 小数位数
 			},
+			Block: block{
+				ConfirmedOffset: numConfirmedSub,
+			},
 		}),
 		duration: time.Second * 12,
 		callback: evmBlockRoll,
