@@ -38,7 +38,6 @@ type WalletAddress struct {
 // 启动时添加初始钱包地址
 func addStartWalletAddress() {
 	for _, itm := range conf.GetWalletAddress() {
-		fmt.Println(itm)
 		var info = strings.Split(itm, ":")
 		if len(info) != 2 {
 

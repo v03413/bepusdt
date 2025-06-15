@@ -193,7 +193,7 @@ func evmBlockParse(b any) {
 	if data.Get("error").Exists() {
 		conf.SetBlockFail(n.Network.Type)
 		chainScanQueue.In <- n
-		log.Warn("Polygon getBlockByNumber response error ", data.Get("error").String())
+		log.Warn(fmt.Sprintf("%s getBlockByNumber response error %s %v", n.Network.Type, data.Get("error").String(), n))
 
 		return
 	}
