@@ -53,7 +53,7 @@
 
 ### 如何获取参数 TG_BOT_ADMIN_ID
 
-Telegram 加入群`@bepusdt_group`，随后发送命令`/id`，其用户信息即包含`TG_BOT_ADMIN_ID`
+Telegram 搜索加入群`@BEpusdtChat`，随后发送命令`/info`，返回的`ID`就是`TG_BOT_ADMIN_ID`
 
 ## ⚠️ 特别注意
 
@@ -163,10 +163,8 @@ POST /api/v1/order/cancel-transaction
 
 ## 🏝️ 交流反馈
 
-**最近我的 Telegram 账号被冻结，导致关联频道和群组均无法访问，我正在尝试申诉，如果一直无法恢复，可能我会重新创建新的频道和群组。**
-
-- ~~Telegram 频道：[https://t.me/bepusdt](https://t.me/bepusdt)~~
-- ~~Telegram 群组：[https://t.me/bepusdt_group](https://t.me/bepusdt_group)~~
+- Telegram 频道：[https://t.me/BepusdtChannel](https://t.me/BepusdtChannel)
+- Telegram 群组：[https://t.me/BepusdtChat](https://t.me/BepusdtChat)
 
 ## 🙏 感谢
 
