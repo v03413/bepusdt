@@ -16,6 +16,7 @@ func xlayerInit() {
 				Native: -18, // xlayer.okb 小数位数
 			},
 			Block: block{
+				RollDelayOffset: 3,
 				ConfirmedOffset: numConfirmedSub,
 			},
 		}),
