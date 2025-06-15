@@ -16,7 +16,7 @@ func bscInit() {
 				Native: -18, // bsc.bnb 小数位数
 			},
 			Block: block{
-				ConfirmedOffset: numConfirmedSub,
+				ConfirmedOffset: 15,
 			},
 		}),
 		duration: time.Second * 3,

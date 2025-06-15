@@ -17,10 +17,10 @@ func xlayerInit() {
 			},
 			Block: block{
 				RollDelayOffset: 3,
-				ConfirmedOffset: numConfirmedSub,
+				ConfirmedOffset: 12,
 			},
 		}),
-		duration: time.Second,
+		duration: time.Second * 3,
 		callback: evmBlockRoll,
 	})
 }

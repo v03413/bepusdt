@@ -16,7 +16,7 @@ func ethInit() {
 				Native: -18, // ethereum.eth 小数位数
 			},
 			Block: block{
-				ConfirmedOffset: numConfirmedSub,
+				ConfirmedOffset: 12,
 			},
 		}),
 		duration: time.Second * 12,

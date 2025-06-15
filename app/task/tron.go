@@ -23,8 +23,8 @@ import (
 	"time"
 )
 
-// 暂且认为交易所在区块高度和当前区块高度差值超过30，说明此交易已经被网络确认
-const numConfirmedSub = 30
+// Tron区块确认偏移量
+const tronBlockConfirmedOffset = 30
 
 // usdt trc20 contract address 41a614f803b6fd780986a42c78ec9c7f77e6ded13c TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t
 var usdtTrc20ContractAddress = []byte{0x41, 0xa6, 0x14, 0xf8, 0x03, 0xb6, 0xfd, 0x78, 0x09, 0x86, 0xa4, 0x2c, 0x78, 0xec, 0x9c, 0x7f, 0x77, 0xe6, 0xde, 0xd1, 0x3c}
@@ -90,7 +90,7 @@ func tronBlockRoll(context.Context) {
 	var now = block.BlockHeader.RawData.Number
 	if conf.GetTradeIsConfirmed() {
 
-		now = now - numConfirmedSub
+		now = now - tronBlockConfirmedOffset
 	}
 
 	// 首次启动

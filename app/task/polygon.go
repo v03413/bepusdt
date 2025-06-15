@@ -16,7 +16,7 @@ func polygonInit() {
 				Native: -18, // polygon.pol 小数位数
 			},
 			Block: block{
-				ConfirmedOffset: numConfirmedSub,
+				ConfirmedOffset: 40,
 			},
 		}),
 		duration: time.Second * 3,
