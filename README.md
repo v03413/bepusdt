@@ -23,19 +23,17 @@
 
 ## 🎉 新特性
 
+**🌟 目前支持收款类型：trx usdt.trc20 usdt.bep20(币安) usdt.erc20(以太) usdt.polygon usdt.xlayer(OKX)**
+
 - ✅ 完全兼容 `Epusdt`，插件可无缝替换
 - ✅ 实时同步 USDT 汇率，支持自定义浮动
-- ✅ 无需依赖 `MySQL`、`Redis`，支持 `Docker` 部署
-- ✅ 支持非订单交易监控，钱包余额变动即时通知
-- ✅ 机器人支持实时汇率查询与浮动计算
-- ✅ 机器人支持任意地址 USDT、TRX 余额查询
-- ✅ 订单收款与余额变动可指定群组推送
+- ✅ 无`MySQL Redis`依赖，支持`Docker`部署
+- ✅ 支持非订单交易监控，钱包余额变动通知
 - ✅ 支持自定义 USDT 支付精度与递增颗粒度
 - ✅ 底层区块扫描，无第三方 API，秒级响应
-- ✅ 支持 TRX、USDT.Polygon 收款及余额监控
-- ✅ 支持钱包能量代理与能量回收监控通知
+- ✅ 支持波场能量代理与能量回收监控通知
 - ✅ 原生支持易支付对接，无需第三方插件
-- ✅ 支持创建订单时自定义钱包地址
+- ✅ 支持创建订单时 自定义钱包地址 超时
 - ✅ 订单支持“等待支付”“支付超时”状态回调
 
 ## 🚀 安装部署
@@ -78,7 +76,7 @@ POST /api/v1/order/create-transaction
 ```json
 {
   "address": "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t",  // 可根据实际情况传入收款地址，亦可留空
-  "trade_type": "usdt.trc20",  // usdt.trc20(默认) tron.trx usdt.polygon
+  "trade_type": "usdt.trc20",  // usdt.trc20(默认) tron.trx 可选列表 https://github.com/v03413/bepusdt/blob/16d8df2cc5acc3d41c1c014ecb5370bd97f7e955/app/model/orders.go#L25:L30
   "order_id": "787240927112940881",   // 商户订单编号
   "amount": 28.88,   // 请求支付金额，CNY
   "signature":"123456abcd", // 签名
