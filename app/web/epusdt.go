@@ -189,6 +189,7 @@ func checkoutCounter(ctx *gin.Context) {
 		"return_url": order.ReturnUrl,
 		"usdt_rate":  order.TradeRate,
 		"trade_id":   tradeId,
+		"order_id":   order.OrderId,
 		"trade_type": order.TradeType,
 	})
 }
@@ -212,5 +213,10 @@ func checkStatus(ctx *gin.Context) {
 	}
 
 	// 返回响应数据
-	ctx.JSON(200, gin.H{"trade_id": tradeId, "status": order.Status, "return_url": returnUrl})
+	ctx.JSON(200, gin.H{
+		"trade_id":   tradeId,
+		"trade_hash": order.TradeHash,
+		"status":     order.Status,
+		"return_url": returnUrl,
+	})
 }

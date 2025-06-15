@@ -1,138 +1,93 @@
-<html>
+<!DOCTYPE html>
+<html lang="zh-CN">
+
 <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
-    <meta name="renderer" content="webkit">
-    <meta name="HandheldFriendly" content="True"/>
-    <meta name="MobileOptimized" content="320"/>
-    <meta name="format-detection" content="telephone=no"/>
-    <meta name="apple-mobile-web-app-capable" content="yes"/>
-    <meta name="apple-mobile-web-app-status-bar-style" content="black"/>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>USDT・X Layer 一款更好用的个人USDT收款网关 Bepusdt</title>
     <link rel="shortcut icon" href="/img/tether.svg"/>
-    <link href="/css/main.min.css" rel="stylesheet"/>
-    <title>Bepusdt - 一款更好USDT支付中间件</title>
+    <link rel="stylesheet" href="/css/usdt.min.css">
     <script src="/js/jquery.min.js"></script>
     <script src="/js/jquery.qrcode_1.0.min.js"></script>
-    <script src="/js/clipboard.min.js"></script>
-    <script src="/js/layer.min.js"></script>
+    <script src="/js/usdt.min.js"></script>
 </head>
+
 <body>
-<div class="container">
-    <div class="header">
-        <div class="icon">
-            <img class="logo" src="/img/tether.svg" alt="logo">
+<div class="payment-container">
+    <div class="crypto-icon">USDT</div>
+    <h1 class="payment-title">USDT 支付</h1>
+    <p class="payment-subtitle">
+        <span class="status-indicator"></span>
+        请使用 OKX<strong>(X Layer)</strong> 进行转账
+        <span class="network-badge">X Layer</span>
+    </p>
+    <div class="order-info">
+        <div class="order-item">
+            <span class="order-label">转账金额:</span>
+            <span class="order-value amount-highlight" id="payAmount">{{.amount}} USDT</span>
         </div>
-        <h1>{{.http_host}}</h1>
-        <label>
-            请扫描二维码或点击金额和地址粘贴转账USDT(Xlayer)支付。<br>
-            <b style="color: red">转账金额必须为下方显示的金额且需要在倒计时内完成转账，否则无法被系统确认！</b>
-        </label>
+        <div class="order-item">
+            <span class="order-label">商户订单:</span>
+            <span class="order-value" id="orderNumber">{{.order_id}}</span>
+        </div>
     </div>
-    <div class="content">
-        <div class="section">
-            <div class="title">
-                <h1 class="amount parse-amount" data-clipboard-text="{{.amount}}" id="usdt">
-                    {{.amount}} <span>USDT.Xlayer</span>
-                </h1>
+    <div class="countdown-banner">
+        <div class="countdown-content">
+            <div class="countdown-info">
+                <div class="countdown-title">⏰ 支付倒计时</div>
+                <div class="countdown-subtitle">请在时间内完成转账</div>
             </div>
-            <div class="address parse-action" data-clipboard-text="{{.address}}" id="address">
-                {{.address}}
-            </div>
-            <div class="main">
-                <div class="qr-image" id="qrcode"></div>
-            </div>
-            <div class="timer">
-                <ul class="downcount">
-                    <li>
-                        <span class="hours">00</span>
-                        <p class="hours_ref">时</p>
-                    </li>
-                    <li class="seperator">:</li>
-                    <li>
-                        <span class="minutes">00</span>
-                        <p class="minutes_ref">分</p>
-                    </li>
-                    <li class="seperator">:</li>
-                    <li>
-                        <span class="seconds">00</span>
-                        <p class="seconds_ref">秒</p>
-                    </li>
-                </ul>
+            <div class="countdown-timer" id="countdown">
+                <div class="time-unit">
+                    <span class="time-number" id="minutes">15</span>
+                    <span class="time-label">分</span>
+                </div>
+                <span class="time-separator">:</span>
+                <div class="time-unit">
+                    <span class="time-number" id="seconds">00</span>
+                    <span class="time-label">秒</span>
+                </div>
             </div>
         </div>
     </div>
-    <div class="footer">
-        <p>Powered by <a href="https://github.com/v03413/bepusdt" target="_blank">v03413 - Bepusdt</a></p>
+    <div class="qr-section">
+        <div class="qr-code" id="qrcode"></div>
+        <div class="address-section">
+            <div class="address-label">收款地址 (X Layer 网络)</div>
+            <div class="address-text" id="walletAddress">{{.address}}</div>
+            <button class="copy-btn" onclick="copyAddress()">复制地址</button>
+        </div>
+    </div>
+    <div class="instructions">
+        <h4>📋 转账说明</h4>
+        <ol>
+            <li>必须使用 <strong>X Layer 网络</strong> 进行转账</li>
+            <li>转账完成后系统会自动确认到账</li>
+            <li>转账金额必须与显示金额完全一致</li>
+            <li>如果有其它疑问 请联系客服处理</li>
+        </ol>
+    </div>
+    <div class="footer-info">
+        <div class="project-info">
+            <span class="powered-by">Powered by</span>
+            <a href="https://github.com/v03413/bepusdt" target="_blank" class="project-link">
+                <strong>Bepusdt</strong>
+            </a>
+            <span class="open-source">Github</span>
+        </div>
     </div>
 </div>
+
 <script>
-    let expire = {{.expire}};
-    let startTime = Date.now();
-
-    // 支付时间倒计时
-    function clock() {
-        let now = Date.now();
-        let elapsed = Math.floor((now - startTime) / 1000);  // 计算已过去的秒数
-        let seconds = expire - elapsed;  // 计算剩余秒数
-
-        let minute = Math.floor(seconds / 60);
-        let hour = Math.floor(minute / 60);
-
-        if (seconds <= 0) {
-            return layer.alert("支付超时，请重新发起支付！", {icon: 5});
-        }
-
-        $('.hours').text(hour.toString().padStart(2, '0'));
-        $('.minutes').text(minute.toString().padStart(2, '0'));
-        $('.seconds').text((seconds % 60).toString().padStart(2, '0'));
-
-        setTimeout(clock, 1000);
-    }
-
-    function checkStatus() {
-        $.ajax({
-            type: "GET",
-            dataType: "json",
-            url: "/pay/check-status/{{.trade_id}}",
-            success: function (data) {
-                if (data.status === 1) {
-                    // 等待支付
-                    return setTimeout(checkStatus, 5000);
-                }
-                if (data.status === 2) {  // 支付成功
-                    layer.msg('支付成功，正在跳转中...', {icon: 16, shade: 0.01, time: 20000});
-
-                    return window.location.href = data.return_url;
-                }
-                if (data.status === 3) {
-
-                    return layer.alert("支付超时，请重新发起支付！", {icon: 5, title: "❌ 支付超时"});
-                }
-            }
+    document.addEventListener('DOMContentLoaded', function () {
+        USDTPayment.init({
+            expire: "{{.expire}}",
+            address: "{{.address}}",
+            trade_id: "{{.trade_id}}",
+            return_url: "{{.return_url}}"
         });
-    }
-
-    $(function () {
-        $('#qrcode').qrcode({
-            text: "{{.address}}",
-            width: 230,
-            height: 230,
-            foreground: "#000000",
-            background: "#ffffff",
-            typeNumber: -1
-        });
-
-        (new ClipboardJS('#usdt')).on('success', function (e) {
-            return layer.msg('金额复制成功');
-        });
-        (new ClipboardJS('#address')).on('success', function (e) {
-            layer.msg('地址复制成功');
-        });
-
-        setTimeout(clock, 1000);
-        setTimeout(checkStatus, 2000);
     });
 </script>
 </body>
+
 </html>
