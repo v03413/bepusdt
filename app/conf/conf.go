@@ -1,18 +1,14 @@
 package conf
 
 type Conf struct {
-	AppUri              string `toml:"app_uri"`
-	AuthToken           string `toml:"auth_token"`
-	Listen              string `toml:"listen"`
-	OutputLog           string `toml:"output_log"`
-	StaticPath          string `toml:"static_path"`
-	SqlitePath          string `toml:"sqlite_path"`
-	TronGrpcNode        string `toml:"tron_grpc_node"`
-	BscRpcEndpoint      string `toml:"bsc_rpc_endpoint"`
-	XlayerRpcEndpoint   string `toml:"xlayer_rpc_endpoint"`
-	PolygonRpcEndpoint  string `toml:"polygon_rpc_endpoint"`
-	EthereumRpcEndpoint string `toml:"ethereum_rpc_endpoint"`
-	Pay                 struct {
+	AppUri       string `toml:"app_uri"`
+	AuthToken    string `toml:"auth_token"`
+	Listen       string `toml:"listen"`
+	OutputLog    string `toml:"output_log"`
+	StaticPath   string `toml:"static_path"`
+	SqlitePath   string `toml:"sqlite_path"`
+	TronGrpcNode string `toml:"tron_grpc_node"`
+	Pay          struct {
 		TrxAtom          float64  `toml:"trx_atom"`
 		TrxRate          string   `toml:"trx_rate"`
 		UsdtAtom         float64  `toml:"usdt_atom"`
@@ -23,6 +19,12 @@ type Conf struct {
 		PaymentAmountMin float64  `toml:"payment_amount_min"`
 		PaymentAmountMax float64  `toml:"payment_amount_max"`
 	} `toml:"pay"`
+	EvmRpc struct {
+		Bsc      string `toml:"bsc"`
+		Xlayer   string `toml:"xlayer"`
+		Polygon  string `toml:"polygon"`
+		Ethereum string `toml:"ethereum"`
+	} `toml:"evm_rpc"`
 	Bot struct {
 		Token   string `toml:"token"`
 		AdminID int64  `toml:"admin_id"`

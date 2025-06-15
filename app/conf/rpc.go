@@ -10,36 +10,36 @@ func GetTronGrpcNode() string {
 }
 
 func GetXlayerRpcEndpoint() string {
-	if cfg.XlayerRpcEndpoint != "" {
+	if cfg.EvmRpc.Xlayer != "" {
 
-		return cfg.XlayerRpcEndpoint
+		return cfg.EvmRpc.Xlayer
 	}
 
 	return defaultXlayerRpcEndpoint
 }
 
 func GetBscRpcEndpoint() string {
-	if cfg.BscRpcEndpoint != "" {
+	if cfg.EvmRpc.Bsc != "" {
 
-		return cfg.BscRpcEndpoint
+		return cfg.EvmRpc.Bsc
 	}
 
 	return defaultBscRpcEndpoint
 }
 
 func GetPolygonRpcEndpoint() string {
-	if cfg.PolygonRpcEndpoint != "" {
+	if cfg.EvmRpc.Polygon != "" {
 
-		return cfg.PolygonRpcEndpoint
+		return cfg.EvmRpc.Polygon
 	}
 
 	return defaultPolygonRpcEndpoint
 }
 
 func GetEthereumRpcEndpoint() string {
-	if cfg.EthereumRpcEndpoint != "" {
+	if cfg.EvmRpc.Ethereum != "" {
 
-		return cfg.EthereumRpcEndpoint
+		return cfg.EvmRpc.Ethereum
 	}
 
 	return defaultEthereumRpcEndpoint
