@@ -38,6 +38,7 @@ type WalletAddress struct {
 // 启动时添加初始钱包地址
 func addStartWalletAddress() {
 	for _, itm := range conf.GetWalletAddress() {
+		fmt.Println(itm)
 		var info = strings.Split(itm, ":")
 		if len(info) != 2 {
 
@@ -45,6 +46,7 @@ func addStartWalletAddress() {
 		}
 
 		var address = info[1]
+		var tradeType = info[0]
 
 		if !help.IsValidTronAddress(address) && !help.IsValidEvmAddress(address) {
 			fmt.Println("❌钱包地址不合法：", address)
@@ -58,20 +60,20 @@ func addStartWalletAddress() {
 		}
 
 		var wa WalletAddress
-		DB.Where("address = ?", address).Limit(1).Find(&wa)
+		DB.Where("address = ? and trade_type = ?", address, tradeType).Limit(1).Find(&wa)
 		if wa.ID != 0 {
 
 			continue
 		}
 
-		var err = DB.Create(&WalletAddress{TradeType: info[0], Address: address, Status: StatusEnable}).Error
+		var err = DB.Create(&WalletAddress{TradeType: tradeType, Address: address, Status: StatusEnable}).Error
 		if err != nil {
 			fmt.Println("❌钱包地址添加失败：", err)
 
 			continue
 		}
 
-		fmt.Println("✅钱包地址添加成功：", info[0], address)
+		fmt.Println("✅钱包地址添加成功：", tradeType, address)
 	}
 }
 
