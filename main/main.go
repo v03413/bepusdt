@@ -19,6 +19,7 @@ func init() {
 	log.Init()
 	bot.Init()
 	model.Init()
+	task.Init()
 
 	if conf.BotToken() == "" || conf.BotAdminID() == 0 {
 

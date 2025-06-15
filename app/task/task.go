@@ -19,6 +19,13 @@ var (
 	mu    sync.Mutex
 )
 
+func Init() {
+	bscInit()
+	ethInit()
+	polygonInit()
+	xlayerInit()
+}
+
 func register(t task) {
 	mu.Lock()
 	defer mu.Unlock()

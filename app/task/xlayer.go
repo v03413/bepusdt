@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func init() {
+func xlayerInit() {
 	register(task{
 		ctx: context.WithValue(context.Background(), "cfg", evmCfg{
 			Endpoint: conf.GetXlayerRpcEndpoint(),

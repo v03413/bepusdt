@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func init() {
+func bscInit() {
 	register(task{
 		ctx: context.WithValue(context.Background(), "cfg", evmCfg{
 			Endpoint: conf.GetBscRpcEndpoint(),

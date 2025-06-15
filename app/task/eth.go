@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func init() {
+func ethInit() {
 	register(task{
 		ctx: context.WithValue(context.Background(), "cfg", evmCfg{
 			Endpoint: conf.GetEthereumRpcEndpoint(),
