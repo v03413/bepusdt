@@ -49,6 +49,10 @@
 - [API 对接开发签名算法](./docs/sign.md)
 - [对接 回调通知说明](./docs/notify-epusdt.md)
 
+## 🖼 功能截图
+
+![screenshot](./docs/images/screenshot.png)
+
 ## 🤔 常见问题
 
 ### 如何获取参数 TG_BOT_ADMIN_ID
