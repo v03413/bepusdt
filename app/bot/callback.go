@@ -236,7 +236,7 @@ func cbOrderDetailAction(ctx context.Context, b *bot.Bot, u *models.Update) {
 		InlineKeyboard: [][]models.InlineKeyboardButton{
 			{
 				models.InlineKeyboardButton{Text: "🌏商户网站", URL: site.String()},
-				models.InlineKeyboardButton{Text: "📝交易明细", URL: o.GetTxDetailUrl()},
+				models.InlineKeyboardButton{Text: "📝交易明细", URL: o.GetDetailUrl()},
 			},
 		},
 	}

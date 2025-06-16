@@ -132,28 +132,33 @@ func (o *TradeOrders) GetStatusEmoji() string {
 	return label
 }
 
-func (o *TradeOrders) GetTxDetailUrl() string {
-	if o.TradeType == OrderTradeTypeUsdtErc20 {
+func (o *TradeOrders) GetDetailUrl() string {
 
-		return "https://etherscan.io/tx/" + o.TradeHash
+	return GetDetailUrl(o.TradeType, o.TradeHash)
+}
+
+func GetDetailUrl(tradeType, hash string) string {
+	if tradeType == OrderTradeTypeUsdtErc20 {
+
+		return "https://etherscan.io/tx/" + hash
 	}
 
-	if o.TradeType == OrderTradeTypeUsdtBep20 {
+	if tradeType == OrderTradeTypeUsdtBep20 {
 
-		return "https://bscscan.com/tx/" + o.TradeHash
+		return "https://bscscan.com/tx/" + hash
 	}
 
-	if o.TradeType == OrderTradeTypeUsdtXlayer {
+	if tradeType == OrderTradeTypeUsdtXlayer {
 
-		return "https://web3.okx.com/zh-hans/explorer/x-layer/tx/" + o.TradeHash
+		return "https://web3.okx.com/zh-hans/explorer/x-layer/tx/" + hash
 	}
 
-	if o.TradeType == OrderTradeTypeUsdtPolygon {
+	if tradeType == OrderTradeTypeUsdtPolygon {
 
-		return "https://polygonscan.com/tx/" + o.TradeHash
+		return "https://polygonscan.com/tx/" + hash
 	}
 
-	return "https://tronscan.org/#/transaction/" + o.TradeHash
+	return "https://tronscan.org/#/transaction/" + hash
 }
 
 func GetTradeType(trade string) string {

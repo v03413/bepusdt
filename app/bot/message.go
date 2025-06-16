@@ -49,7 +49,7 @@ func SendTradeSuccMsg(order model.TradeOrders) {
 		ReplyMarkup: &models.InlineKeyboardMarkup{
 			InlineKeyboard: [][]models.InlineKeyboardButton{
 				{
-					models.InlineKeyboardButton{Text: "📝查看交易明细", URL: order.GetTxDetailUrl()},
+					models.InlineKeyboardButton{Text: "📝查看交易明细", URL: order.GetDetailUrl()},
 				},
 			},
 		},

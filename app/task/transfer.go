@@ -60,7 +60,7 @@ func orderTransferHandle(context.Context) {
 			//}
 
 			// 判断金额是否在允许范围内
-			if !inPaymentAmountRange(t.Amount) {
+			if !inAmountRange(t.Amount) {
 
 				continue
 			}
@@ -96,7 +96,7 @@ func notOrderTransferHandle(context.Context) {
 	for transfers := range notOrderQueue.Out {
 		var was []model.WalletAddress
 
-		model.DB.Where("status = ? and other_notify = ?", model.StatusEnable, model.OtherNotifyEnable).Find(&was)
+		model.DB.Where("other_notify = ?", model.OtherNotifyEnable).Find(&was)
 
 		for _, wa := range was {
 			for _, t := range transfers {
@@ -105,7 +105,7 @@ func notOrderTransferHandle(context.Context) {
 					continue
 				}
 
-				if !inPaymentAmountRange(t.Amount) {
+				if !inAmountRange(t.Amount) {
 
 					continue
 				}
@@ -113,11 +113,6 @@ func notOrderTransferHandle(context.Context) {
 				if !model.IsNeedNotifyByTxid(t.TxHash) {
 
 					continue
-				}
-
-				var url = "https://tronscan.org/#/transaction/" + t.TxHash
-				if t.TradeType == model.OrderTradeTypeUsdtPolygon {
-					url = "https://polygonscan.com/tx/" + t.TxHash
 				}
 
 				var title = "收入"
@@ -144,7 +139,7 @@ func notOrderTransferHandle(context.Context) {
 					ReplyMarkup: models.InlineKeyboardMarkup{
 						InlineKeyboard: [][]models.InlineKeyboardButton{
 							{
-								models.InlineKeyboardButton{Text: "📝查看交易明细", URL: url},
+								models.InlineKeyboardButton{Text: "📝查看交易明细", URL: model.GetDetailUrl(t.TradeType, t.TxHash)},
 							},
 						},
 					},
