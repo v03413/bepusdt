@@ -1,10 +1,12 @@
 package bot
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
+	"github.com/shopspring/decimal"
 	"github.com/spf13/cast"
 	"github.com/tidwall/gjson"
 	"github.com/v03413/bepusdt/app/conf"
@@ -14,6 +16,7 @@ import (
 	"github.com/v03413/go-cache"
 	"gorm.io/gorm"
 	"io"
+	"math/big"
 	"net/http"
 	"net/url"
 	"strings"
@@ -36,7 +39,7 @@ const dbOrderNotifyRetry = "order_notify_retry"
 func cbWalletAction(ctx context.Context, b *bot.Bot, u *models.Update) {
 	var address = ctx.Value("args").([]string)[1]
 
-	var text = "暂不支持..."
+	var text = bot.EscapeMarkdownUnescaped("暂不支持...")
 	if help.IsValidTronAddress(address) {
 		text = getTronWalletInfo(address)
 	}
@@ -344,4 +347,40 @@ func getTronWalletInfo(address string) string {
 	}
 
 	return text
+}
+
+func getEvmWalletInfo(address string) string {
+	var usdt = evmBalanceOf("0xc2132d05d31c914a87c6611c10748aeb04b58e8f", address)
+
+	return fmt.Sprintf("```"+`
+💲USDT余额：%s
+☘️查询地址：`+address+`
+`+"```",
+		help.Ec(decimal.NewFromBigInt(usdt, -6).String()))
+}
+
+func evmBalanceOf(contract, address string) *big.Int {
+	var jsonData = []byte(fmt.Sprintf(`{"jsonrpc":"2.0","id":%d,"method":"eth_call","params":[{"from":"0x0000000000000000000000000000000000000000","data":"0x70a08231000000000000000000000000%s","to":"%s"},"latest"]}`,
+		time.Now().Unix(), strings.ToLower(strings.Trim(address, "0x")), strings.ToLower(contract)))
+	var client = &http.Client{Timeout: time.Second * 5}
+	resp, err := client.Post(conf.GetPolygonRpcEndpoint(), "application/json", bytes.NewBuffer(jsonData))
+	if err != nil {
+		log.Warn("Error Post response:", err)
+
+		return big.NewInt(0)
+	}
+
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Warn("Error reading response body:", err)
+
+		return big.NewInt(0)
+	}
+
+	var data = gjson.ParseBytes(body)
+	var result = data.Get("result").String()
+
+	return help.HexStr2Int(result)
 }

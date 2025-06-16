@@ -164,9 +164,9 @@ func cmdWalletHandle(ctx context.Context, b *bot.Bot, u *models.Update) {
 	var btn [][]models.InlineKeyboardButton
 	if model.DB.Find(&was).Error == nil {
 		for _, wa := range was {
-			var text = fmt.Sprintf("[✅已启用] %s", help.MaskAddress(wa.Address))
+			var text = fmt.Sprintf("[✅已启用] %s %s", help.MaskAddress2(wa.Address), wa.TradeType)
 			if wa.Status == model.StatusDisable {
-				text = fmt.Sprintf("[❌已禁用] %s", help.MaskAddress(wa.Address))
+				text = fmt.Sprintf("[❌已禁用] %s %s", help.MaskAddress2(wa.Address), wa.TradeType)
 			}
 
 			btn = append(btn, []models.InlineKeyboardButton{
