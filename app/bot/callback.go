@@ -112,15 +112,16 @@ func cbAddressAction(ctx context.Context, b *bot.Bot, u *models.Update) {
 
 	var wa model.WalletAddress
 	if model.DB.Where("id = ?", id).First(&wa).Error == nil {
-		var otherTextLabel = "✅已启用 非订单交易监控通知"
+		var otherTextLabel = "🟢已启用 非订单交易监控通知"
 		if wa.OtherNotify != 1 {
-			otherTextLabel = "❌已禁用 非订单交易监控通知"
+			otherTextLabel = "🔴已禁用 非订单交易监控通知"
 		}
 
-		var params = &bot.EditMessageTextParams{
+		EditMessageText(ctx, b, &bot.EditMessageTextParams{
 			ChatID:    u.CallbackQuery.Message.Message.Chat.ID,
 			MessageID: u.CallbackQuery.Message.Message.ID,
-			Text:      wa.Address,
+			Text:      fmt.Sprintf("> %s", wa.Address),
+			ParseMode: models.ParseModeMarkdown,
 			ReplyMarkup: models.InlineKeyboardMarkup{
 				InlineKeyboard: [][]models.InlineKeyboardButton{
 					{
@@ -134,9 +135,7 @@ func cbAddressAction(ctx context.Context, b *bot.Bot, u *models.Update) {
 					},
 				},
 			},
-		}
-
-		EditMessageText(ctx, b, params)
+		})
 	}
 }
 

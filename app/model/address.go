@@ -30,7 +30,7 @@ type WalletAddress struct {
 	Status      uint8     `gorm:"column:status;type:tinyint(1);not null;default:1;comment:地址状态"`
 	TradeType   string    `gorm:"column:trade_type;type:varchar(20);not null;comment:交易类型"`
 	Address     string    `gorm:"column:address;type:varchar(64);not null;index;comment:钱包地址"`
-	OtherNotify uint8     `gorm:"column:other_notify;type:tinyint(1);not null;default:0;comment:其它转账通知"`
+	OtherNotify uint8     `gorm:"column:other_notify;type:tinyint(1);not null;default:0;comment:其它通知"`
 	CreatedAt   time.Time `gorm:"column:created_at;autoCreateTime;type:timestamp;not null;comment:创建时间"`
 	UpdatedAt   time.Time `gorm:"column:updated_at;autoUpdateTime;type:timestamp;not null;comment:更新时间"`
 }
