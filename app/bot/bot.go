@@ -85,7 +85,7 @@ func Start() {
 		return
 	}
 
-	SendMessage(&bot.SendMessageParams{ChatID: conf.BotAdminID(), Text: Welcome()})
+	SendMessage(&bot.SendMessageParams{ChatID: conf.BotNotifyTarget(), Text: Welcome()})
 
 	fmt.Println(fmt.Sprintf("Bot UserName: %s %s%s", me.Username, me.FirstName, me.LastName))
 
