@@ -12,7 +12,7 @@ func ethInit() {
 			Endpoint: conf.GetEthereumRpcEndpoint(),
 			Type:     conf.Ethereum,
 			Decimals: decimals{
-				Usdt:   -6,  // usdt.erc20 小数位数
+				Usdt:   conf.UsdtEthDecimals,
 				Native: -18, // ethereum.eth 小数位数
 			},
 			Block: block{

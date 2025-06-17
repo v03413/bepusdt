@@ -96,6 +96,70 @@ func (wa *WalletAddress) Delete() {
 	DB.Delete(wa)
 }
 
+func (wa *WalletAddress) GetUsdtContract() string {
+	if wa.TradeType == OrderTradeTypeUsdtPolygon {
+
+		return conf.UsdtPolygon
+	}
+	if wa.TradeType == OrderTradeTypeUsdtErc20 {
+
+		return conf.UsdtErc20
+	}
+	if wa.TradeType == OrderTradeTypeUsdtBep20 {
+
+		return conf.UsdtBep20
+	}
+	if wa.TradeType == OrderTradeTypeUsdtXlayer {
+
+		return conf.UsdtXlayer
+	}
+
+	return ""
+}
+
+func (wa *WalletAddress) GetUsdtDecimals() int32 {
+	if wa.TradeType == OrderTradeTypeUsdtPolygon {
+
+		return conf.UsdtPolygonDecimals
+	}
+	if wa.TradeType == OrderTradeTypeUsdtErc20 {
+
+		return conf.UsdtEthDecimals
+	}
+	if wa.TradeType == OrderTradeTypeUsdtBep20 {
+
+		return conf.UsdtBscDecimals
+	}
+	if wa.TradeType == OrderTradeTypeUsdtXlayer {
+
+		return conf.UsdtXlayerDecimals
+	}
+
+	return -6
+}
+
+func (wa *WalletAddress) GetEvmRpcEndpoint() string {
+	if wa.TradeType == OrderTradeTypeUsdtPolygon {
+
+		return conf.GetPolygonRpcEndpoint()
+	}
+	if wa.TradeType == OrderTradeTypeUsdtErc20 {
+
+		return conf.GetEthereumRpcEndpoint()
+	}
+	if wa.TradeType == OrderTradeTypeUsdtBep20 {
+
+		return conf.GetBscRpcEndpoint()
+	}
+	if wa.TradeType == OrderTradeTypeUsdtXlayer {
+
+		return conf.GetXlayerRpcEndpoint()
+	}
+
+	return ""
+
+}
+
 func GetAvailableAddress(address, tradeType string) []WalletAddress {
 	var rows []WalletAddress
 	var db = DB.Where("trade_type = ?", tradeType)

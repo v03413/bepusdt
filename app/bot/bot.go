@@ -46,7 +46,6 @@ func Start() {
 		api.RegisterHandler(bot.HandlerTypeMessageText, cmdGetId, bot.MatchTypeCommand, cmdGetIdHandle)
 		api.RegisterHandler(bot.HandlerTypeMessageText, cmdStart, bot.MatchTypeCommand, cmdStartHandle)
 		api.RegisterHandler(bot.HandlerTypeMessageText, cmdState, bot.MatchTypeCommand, cmdStateHandle)
-		api.RegisterHandler(bot.HandlerTypeMessageText, cmdWallet, bot.MatchTypeCommand, cmdWalletHandle)
 		api.RegisterHandler(bot.HandlerTypeMessageText, cmdOrder, bot.MatchTypeCommand, cmdOrderHandle)
 
 		api.RegisterHandler(bot.HandlerTypeCallbackQueryData, cbOrderDetail, bot.MatchTypePrefix, cbOrderDetailAction)
@@ -68,7 +67,6 @@ func Start() {
 			{Command: cmdGetId, Description: "获取ID"},
 			{Command: cmdStart, Description: "开始使用"},
 			{Command: cmdState, Description: "收款状态"},
-			{Command: cmdWallet, Description: "钱包信息"},
 			{Command: cmdOrder, Description: "最近订单"},
 		},
 	})

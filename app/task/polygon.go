@@ -12,7 +12,7 @@ func polygonInit() {
 			Endpoint: conf.GetPolygonRpcEndpoint(),
 			Type:     conf.Polygon,
 			Decimals: decimals{
-				Usdt:   -6,  // usdt.polygon 小数位数
+				Usdt:   conf.UsdtPolygonDecimals,
 				Native: -18, // polygon.pol 小数位数
 			},
 			Block: block{

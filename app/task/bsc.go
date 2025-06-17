@@ -12,7 +12,7 @@ func bscInit() {
 			Endpoint: conf.GetBscRpcEndpoint(),
 			Type:     conf.Bsc,
 			Decimals: decimals{
-				Usdt:   -18, // usdt.bep20 小数位数
+				Usdt:   conf.UsdtBscDecimals,
 				Native: -18, // bsc.bnb 小数位数
 			},
 			Block: block{

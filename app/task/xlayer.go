@@ -12,7 +12,7 @@ func xlayerInit() {
 			Endpoint: conf.GetXlayerRpcEndpoint(),
 			Type:     conf.Xlayer,
 			Decimals: decimals{
-				Usdt:   -6,  // usdt.xlayer 小数位数
+				Usdt:   conf.UsdtXlayerDecimals,
 				Native: -18, // xlayer.okb 小数位数
 			},
 			Block: block{

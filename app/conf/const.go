@@ -20,8 +20,16 @@ const (
 )
 
 const (
-	UsdtXlayer  = "0x1e4a5963abfd975d8c9021ce480b42188849d41d" // Xlayer USDT合约地址
+	UsdtErc20   = "0xdac17f958d2ee523a2206206994597c13d831ec7" // Eth USDT合约地址
 	UsdtBep20   = "0x55d398326f99059ff775485246999027b3197955" // BSC USDT合约地址
+	UsdtXlayer  = "0x1e4a5963abfd975d8c9021ce480b42188849d41d" // Xlayer USDT合约地址
 	UsdtPolygon = "0xc2132d05d31c914a87c6611c10748aeb04b58e8f" // Polygon USDT合约地址
-	UsdtErc20   = "0xdac17f958d2ee523a2206206994597c13d831ec7" // Ethereum USDT合约地址
+)
+
+// UsdtDecimals USDT合约小数位数
+const (
+	UsdtBscDecimals     = -18 // USDT BEP20小数位数
+	UsdtEthDecimals     = -6  // USDT ERC20小数位数
+	UsdtXlayerDecimals  = -6  // USDT Xlayer小数位数
+	UsdtPolygonDecimals = -6  // USDT Polygon小数位数
 )

@@ -16,7 +16,6 @@ import (
 	"github.com/v03413/go-cache"
 	"gorm.io/gorm"
 	"io"
-	"math/big"
 	"net/http"
 	"net/url"
 	"strings"
@@ -120,10 +119,18 @@ func cbAddressAction(ctx context.Context, b *bot.Bot, u *models.Update) {
 			otherTextLabel = "🔴已禁用 非订单交易监控通知"
 		}
 
+		var text = fmt.Sprintf("> %s", wa.Address)
+		if help.IsValidTronAddress(wa.Address) {
+			text = getTronWalletInfo(wa.Address)
+		}
+		if help.IsValidEvmAddress(wa.Address) {
+			text = getEvmWalletInfo(wa)
+		}
+
 		EditMessageText(ctx, b, &bot.EditMessageTextParams{
 			ChatID:    u.CallbackQuery.Message.Message.Chat.ID,
 			MessageID: u.CallbackQuery.Message.Message.ID,
-			Text:      fmt.Sprintf("> %s", wa.Address),
+			Text:      text,
 			ParseMode: models.ParseModeMarkdown,
 			ReplyMarkup: models.InlineKeyboardMarkup{
 				InlineKeyboard: [][]models.InlineKeyboardButton{
@@ -325,49 +332,43 @@ func getTronWalletInfo(address string) string {
 	var latestOperationTime = time.UnixMilli(result.Get("latest_operation_time").Int())
 	var netRemaining = result.Get("bandwidth.netRemaining").Int() + result.Get("bandwidth.freeNetRemaining").Int()
 	var netLimit = result.Get("bandwidth.netLimit").Int() + result.Get("bandwidth.freeNetLimit").Int()
-	var text = "```" + `
-☘️ 查询地址：` + address + `
-💰 TRX余额：0.00 TRX
-💲 USDT余额：0.00 USDT
-📬 交易数量：` + result.Get("totalTransactionCount").String() + `
-📈 转账数量：↑ ` + result.Get("transactions_out").String() + ` ↓ ` + result.Get("transactions_in").String() + `
-📡 宽带资源：` + fmt.Sprintf("%v", netRemaining) + ` / ` + fmt.Sprintf("%v", netLimit) + ` 
-🔋 能量资源：` + result.Get("bandwidth.energyRemaining").String() + ` / ` + result.Get("bandwidth.energyLimit").String() + `
-⏰ 创建时间：` + dateCreated.Format(time.DateTime) + `
-⏰ 最后活动：` + latestOperationTime.Format(time.DateTime) + "\n```"
+	var text = `
+>💰 TRX余额：0.00 TRX
+>💲 USDT余额：0.00 USDT
+>📬 交易数量：` + result.Get("totalTransactionCount").String() + `
+>📈 转账数量：↑ ` + result.Get("transactions_out").String() + ` ↓ ` + result.Get("transactions_in").String() + `
+>📡 宽带资源：` + fmt.Sprintf("%v", netRemaining) + ` / ` + fmt.Sprintf("%v", netLimit) + ` 
+>🔋 能量资源：` + result.Get("bandwidth.energyRemaining").String() + ` / ` + result.Get("bandwidth.energyLimit").String() + `
+>⏰ 创建时间：` + help.Ec(dateCreated.Format(time.DateTime)) + `
+>⏰ 最后活动：` + help.Ec(latestOperationTime.Format(time.DateTime)) + `
+>☘️ 查询地址：` + address
 
 	for _, v := range result.Get("withPriceTokens").Array() {
 		if v.Get("tokenName").String() == "trx" {
-			text = strings.Replace(text, "0.00 TRX", fmt.Sprintf("%.2f TRX", v.Get("balance").Float()/1000000), 1)
+			text = strings.Replace(text, "0.00 TRX", help.Ec(fmt.Sprintf("%.2f TRX", v.Get("balance").Float()/1000000)), 1)
 		}
 		if v.Get("tokenName").String() == "Tether USD" {
-
-			text = strings.Replace(text, "0.00 USDT", fmt.Sprintf("%.2f USDT", v.Get("balance").Float()/1000000), 1)
+			text = strings.Replace(text, "0.00 USDT", help.Ec(fmt.Sprintf("%.2f USDT", v.Get("balance").Float()/1000000)), 1)
 		}
 	}
 
 	return text
 }
 
-func getEvmWalletInfo(address string) string {
-	var usdt = evmBalanceOf("0xc2132d05d31c914a87c6611c10748aeb04b58e8f", address)
+func getEvmWalletInfo(wa model.WalletAddress) string {
 
-	return fmt.Sprintf("```"+`
-💲USDT余额：%s
-☘️查询地址：`+address+`
-`+"```",
-		help.Ec(decimal.NewFromBigInt(usdt, -6).String()))
+	return fmt.Sprintf(">💲余额：%s\\(%s\\)\n>☘️地址：`%s`", help.Ec(evmUSDTBalanceOf(wa)), help.Ec(wa.TradeType), wa.Address)
 }
 
-func evmBalanceOf(contract, address string) *big.Int {
+func evmUSDTBalanceOf(wa model.WalletAddress) string {
 	var jsonData = []byte(fmt.Sprintf(`{"jsonrpc":"2.0","id":%d,"method":"eth_call","params":[{"from":"0x0000000000000000000000000000000000000000","data":"0x70a08231000000000000000000000000%s","to":"%s"},"latest"]}`,
-		time.Now().Unix(), strings.ToLower(strings.Trim(address, "0x")), strings.ToLower(contract)))
+		time.Now().Unix(), strings.ToLower(strings.Trim(wa.Address, "0x")), strings.ToLower(wa.GetUsdtContract())))
 	var client = &http.Client{Timeout: time.Second * 5}
-	resp, err := client.Post(conf.GetPolygonRpcEndpoint(), "application/json", bytes.NewBuffer(jsonData))
+	resp, err := client.Post(wa.GetEvmRpcEndpoint(), "application/json", bytes.NewBuffer(jsonData))
 	if err != nil {
 		log.Warn("Error Post response:", err)
 
-		return big.NewInt(0)
+		return "0.00"
 	}
 
 	defer resp.Body.Close()
@@ -376,11 +377,11 @@ func evmBalanceOf(contract, address string) *big.Int {
 	if err != nil {
 		log.Warn("Error reading response body:", err)
 
-		return big.NewInt(0)
+		return "0.00"
 	}
 
 	var data = gjson.ParseBytes(body)
 	var result = data.Get("result").String()
 
-	return help.HexStr2Int(result)
+	return decimal.NewFromBigInt(help.HexStr2Int(result), wa.GetUsdtDecimals()).String()
 }

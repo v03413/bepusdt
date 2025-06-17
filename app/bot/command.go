@@ -16,7 +16,6 @@ import (
 const cmdGetId = "id"
 const cmdStart = "start"
 const cmdState = "state"
-const cmdWallet = "wallet"
 const cmdOrder = "order"
 
 const replayAddressText = "🚚 请发送需要添加的钱包地址"
@@ -156,33 +155,6 @@ func cmdStateHandle(ctx context.Context, b *bot.Bot, u *models.Update) {
 		ChatID:    u.Message.Chat.ID,
 		Text:      text,
 		ParseMode: models.ParseModeMarkdown,
-	})
-}
-
-func cmdWalletHandle(ctx context.Context, b *bot.Bot, u *models.Update) {
-	var was []model.WalletAddress
-	var btn [][]models.InlineKeyboardButton
-	if model.DB.Find(&was).Error == nil {
-		for _, wa := range was {
-			var text = fmt.Sprintf("[✅已启用] %s %s", help.MaskAddress2(wa.Address), wa.TradeType)
-			if wa.Status == model.StatusDisable {
-				text = fmt.Sprintf("[❌已禁用] %s %s", help.MaskAddress2(wa.Address), wa.TradeType)
-			}
-
-			btn = append(btn, []models.InlineKeyboardButton{
-				{
-					Text:         text,
-					CallbackData: fmt.Sprintf("%s|%v", cbWallet, wa.Address),
-				},
-			})
-		}
-	}
-
-	SendMessage(&bot.SendMessageParams{
-		ChatID:      u.Message.Chat.ID,
-		Text:        "*\\>\\>请选择需要查询的钱包地址*",
-		ParseMode:   models.ParseModeMarkdown,
-		ReplyMarkup: &models.InlineKeyboardMarkup{InlineKeyboard: btn},
 	})
 }
 
