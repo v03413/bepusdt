@@ -1,0 +1,18 @@
+# 这是一个简化配置文件参考，按此配置文件调整足以满足大部分需求
+app_uri = "https://coin.example.com"
+auth_token = "123234zxc"
+listen = ":8080"
+
+[pay]
+usdt_rate = "~0.98"
+trx_rate = "~0.95"
+expire_time = 1200
+wallet_address = [
+    #    "交易类型:地址",
+    #    "tron.trx:TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t",
+    #    "usdt.trc20:TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t",
+    #    "usdt.bep20:0x55d398326f99059ff775485246999027b3197955",
+]
+[bot]
+admin_id = 1888888888
+token = "6888888888:ANGR7LHYm_EAttj9FTq3LtlAa-Nrh4tdNZ8"

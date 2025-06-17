@@ -25,7 +25,12 @@ trx_rate = "~0.95"
 # 交易过期时间，单位秒，如无特殊需求不建议修改。
 expire_time = 1200
 # 启动时需要添加的钱包地址，多个请用半角符逗号,分开；当然，同样也支持通过机器人添加。
-wallet_address = []
+wallet_address = [
+    #    写法举例： 币种:地址
+    #    "tron.trx:TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t",
+    #    "usdt.trc20:TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t",
+    #    "usdt.bep20:0x55d398326f99059ff775485246999027b3197955",
+]
 # 是否需要网络确认，禁用可以提高回调速度，启用则可以防止交易失败
 trade_is_confirmed = false
 # 支付监控的允许数额范围(闭区间)，设置合理数值可避免一些诱导式诈骗交易提醒
