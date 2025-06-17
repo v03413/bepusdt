@@ -97,67 +97,48 @@ func (wa *WalletAddress) Delete() {
 }
 
 func (wa *WalletAddress) GetUsdtContract() string {
-	if wa.TradeType == OrderTradeTypeUsdtPolygon {
-
+	switch wa.TradeType {
+	case OrderTradeTypeUsdtPolygon:
 		return conf.UsdtPolygon
-	}
-	if wa.TradeType == OrderTradeTypeUsdtErc20 {
-
+	case OrderTradeTypeUsdtErc20:
 		return conf.UsdtErc20
-	}
-	if wa.TradeType == OrderTradeTypeUsdtBep20 {
-
+	case OrderTradeTypeUsdtBep20:
 		return conf.UsdtBep20
-	}
-	if wa.TradeType == OrderTradeTypeUsdtXlayer {
-
+	case OrderTradeTypeUsdtXlayer:
 		return conf.UsdtXlayer
+	default:
+		return ""
 	}
-
-	return ""
 }
 
 func (wa *WalletAddress) GetUsdtDecimals() int32 {
-	if wa.TradeType == OrderTradeTypeUsdtPolygon {
-
+	switch wa.TradeType {
+	case OrderTradeTypeUsdtPolygon:
 		return conf.UsdtPolygonDecimals
-	}
-	if wa.TradeType == OrderTradeTypeUsdtErc20 {
-
+	case OrderTradeTypeUsdtErc20:
 		return conf.UsdtEthDecimals
-	}
-	if wa.TradeType == OrderTradeTypeUsdtBep20 {
-
+	case OrderTradeTypeUsdtBep20:
 		return conf.UsdtBscDecimals
-	}
-	if wa.TradeType == OrderTradeTypeUsdtXlayer {
-
+	case OrderTradeTypeUsdtXlayer:
 		return conf.UsdtXlayerDecimals
+	default:
+		return -6
 	}
-
-	return -6
 }
 
 func (wa *WalletAddress) GetEvmRpcEndpoint() string {
-	if wa.TradeType == OrderTradeTypeUsdtPolygon {
-
+	switch wa.TradeType {
+	case OrderTradeTypeUsdtPolygon:
 		return conf.GetPolygonRpcEndpoint()
-	}
-	if wa.TradeType == OrderTradeTypeUsdtErc20 {
-
+	case OrderTradeTypeUsdtErc20:
 		return conf.GetEthereumRpcEndpoint()
-	}
-	if wa.TradeType == OrderTradeTypeUsdtBep20 {
-
+	case OrderTradeTypeUsdtBep20:
 		return conf.GetBscRpcEndpoint()
-	}
-	if wa.TradeType == OrderTradeTypeUsdtXlayer {
-
+	case OrderTradeTypeUsdtXlayer:
 		return conf.GetXlayerRpcEndpoint()
+	default:
+		return ""
 	}
-
-	return ""
-
 }
 
 func GetAvailableAddress(address, tradeType string) []WalletAddress {
