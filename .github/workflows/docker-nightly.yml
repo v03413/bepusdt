@@ -1,10 +1,8 @@
-name: docker-beta
+name: docker-nightly
 on:
-  push:
-    branches:
-      - 'main'
-    paths:
-      - 'app/version.go'
+  schedule:
+    - cron: '0 16 * * *'
+  workflow_dispatch:
 env:
   APP_NAME: bepusdt
   DOCKER_HUB_USER: v03413
@@ -40,5 +38,5 @@ jobs:
             APP_NAME=${{ env.APP_NAME }}
             APP_VERSION=${{ env.APP_VERSION }}
           tags: |
-            ${{ env.DOCKER_HUB_REPO }}:beta
-            ${{ env.DOCKER_HUB_REPO }}:beta-${{ env.APP_VERSION }}
+            ${{ env.DOCKER_HUB_REPO }}:nightly
+            ${{ env.DOCKER_HUB_REPO }}:nightly-${{ env.APP_VERSION }}
