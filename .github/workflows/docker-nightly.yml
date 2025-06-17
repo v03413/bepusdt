@@ -25,7 +25,9 @@ jobs:
           username: ${{ env.DOCKER_HUB_USER }}
           password: ${{ secrets.DOCKER_HUB_BETA_TOKEN }}
       - name: Generate App Version
-        run: echo "APP_VERSION=$(git rev-parse HEAD | cut -c 1-6)" >> $GITHUB_ENV
+        run: |
+          echo "APP_VERSION=$(git rev-parse HEAD | cut -c 1-6)" >> $GITHUB_ENV
+          echo "APP_DATE=$(date +'%Y%m%d')" >> $GITHUB_ENV
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
@@ -39,4 +41,4 @@ jobs:
             APP_VERSION=${{ env.APP_VERSION }}
           tags: |
             ${{ env.DOCKER_HUB_REPO }}:nightly
-            ${{ env.DOCKER_HUB_REPO }}:nightly-${{ env.APP_VERSION }}
+            ${{ env.DOCKER_HUB_REPO }}:nightly-${{ env.APP_DATE }}-${{ env.APP_VERSION }}
