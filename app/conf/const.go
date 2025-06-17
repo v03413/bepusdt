@@ -2,8 +2,8 @@ package conf
 
 const (
 	defaultExpireTime          = 600      // 订单默认有效期 10分钟
-	DefaultUsdtCnyRate         = 6.4      // 默认USDT汇率
-	DefaultTrxCnyRate          = 0.95     // 默认TRX汇率
+	DefaultUsdtCnyRate         = 6.4      // 默认USDT基准汇率
+	DefaultTrxCnyRate          = 0.95     // 默认TRX基准汇率
 	defaultAuthToken           = "123234" // 默认授权码
 	defaultListen              = ":8080"  // 默认监听地址
 	defaultPaymentMinAmount    = 0.01

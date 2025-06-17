@@ -44,21 +44,13 @@ func Init() error {
 }
 
 func GetUsdtRate() string {
-	if cfg.Pay.UsdtRate != "" {
 
-		return cfg.Pay.UsdtRate
-	}
-
-	return cast.ToString(DefaultUsdtCnyRate)
+	return cfg.Pay.UsdtRate
 }
 
 func GetTrxRate() string {
-	if cfg.Pay.TrxRate != "" {
 
-		return cfg.Pay.TrxRate
-	}
-
-	return cast.ToString(DefaultTrxCnyRate)
+	return cfg.Pay.TrxRate
 }
 
 func GetUsdtAtomicity() (decimal.Decimal, int) {

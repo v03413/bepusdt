@@ -28,7 +28,7 @@ func OkxUsdtRateStart(context.Context) {
 		rate.SetOkxUsdtCnyRate(conf.GetUsdtRate(), rawRate)
 	}
 
-	log.Info("当前 USDT_CNY 计算汇率：", rate.GetUsdtCalcRate(cast.ToFloat64(conf.DefaultUsdtCnyRate)))
+	log.Info("当前 USDT_CNY 计算汇率：", rate.GetUsdtCalcRate())
 }
 
 // OkxTrxUsdtRateStart  Okx TRX_CNY 汇率监控
@@ -40,7 +40,7 @@ func OkxTrxUsdtRateStart(context.Context) {
 		rate.SetOkxTrxCnyRate(conf.GetTrxRate(), price)
 	}
 
-	log.Info("当前 TRX_CNY 计算汇率：", rate.GetTrxCalcRate(cast.ToFloat64(conf.DefaultTrxCnyRate)))
+	log.Info("当前 TRX_CNY 计算汇率：", rate.GetTrxCalcRate())
 }
 
 // getOkxUsdtCnySellPrice  Okx  C2C快捷交易 USDT出售 实时汇率

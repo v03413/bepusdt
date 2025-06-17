@@ -147,8 +147,8 @@ func cmdStateHandle(ctx context.Context, b *bot.Bot, u *models.Update) {
 		conf.GetBlockSuccRate(conf.Ethereum),
 		cast.ToString(rate.GetOkxTrxRawRate()),
 		cast.ToString(rate.GetOkxUsdtRawRate()),
-		cast.ToString(rate.GetTrxCalcRate(conf.DefaultTrxCnyRate)),
-		cast.ToString(rate.GetUsdtCalcRate(conf.DefaultUsdtCnyRate)),
+		cast.ToString(rate.GetTrxCalcRate()),
+		cast.ToString(rate.GetUsdtCalcRate()),
 	)
 
 	SendMessage(&bot.SendMessageParams{

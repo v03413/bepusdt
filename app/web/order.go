@@ -38,10 +38,10 @@ func buildOrder(p orderParams) (model.TradeOrders, error) {
 	defer lock.Unlock()
 
 	// 获取兑换汇率
-	var calcRate = rate.GetUsdtCalcRate(conf.DefaultUsdtCnyRate)
+	var calcRate = rate.GetUsdtCalcRate()
 	if p.TradeType == model.OrderTradeTypeTronTrx {
 
-		calcRate = rate.GetTrxCalcRate(conf.DefaultTrxCnyRate)
+		calcRate = rate.GetTrxCalcRate()
 	}
 
 	// 获取钱包地址

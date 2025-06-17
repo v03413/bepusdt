@@ -12,26 +12,18 @@ import (
 
 var okxTrxCnyCalcRate = 0.0
 var okxUsdtCnyCalcRate = 0.0
-var okxUsdtCnyRawRate = conf.DefaultUsdtCnyRate // okx 交易所 usdt 兑 cny原始汇率
-var okxTrxCnyRawRate = conf.DefaultTrxCnyRate   // okx 交易所 trx/cny 市场价
+var okxUsdtCnyRawRate = conf.DefaultUsdtCnyRate // okx 交易所 usdt/cny 原始汇率；6.4是初始默认值值，后续但凡有新的汇率数据更新都会覆盖这个值
+var okxTrxCnyRawRate = conf.DefaultTrxCnyRate   // okx 交易所 trx/cny 原始汇率
 var okxRatePrecision = 2                        // 汇率保留位数，强迫症，另一方面两位小数足以覆盖大部分CNY使用场景
 
-func GetTrxCalcRate(defaultRate float64) float64 {
-	if okxTrxCnyCalcRate > 0 {
+func GetTrxCalcRate() float64 {
 
-		return okxTrxCnyCalcRate
-	}
-
-	return defaultRate
+	return okxTrxCnyCalcRate
 }
 
-func GetUsdtCalcRate(defaultRate float64) float64 {
-	if okxUsdtCnyCalcRate > 0 {
+func GetUsdtCalcRate() float64 {
 
-		return okxUsdtCnyCalcRate
-	}
-
-	return defaultRate
+	return okxUsdtCnyCalcRate
 }
 
 func GetOkxUsdtRawRate() float64 {
