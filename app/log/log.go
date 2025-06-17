@@ -9,7 +9,7 @@ import (
 
 var logger *logrus.Logger
 
-func Init() {
+func Init() error {
 	logger = logrus.New()
 	logger.SetFormatter(&logrus.TextFormatter{
 		ForceColors:     true,
@@ -23,10 +23,12 @@ func Init() {
 	output, err := os.OpenFile(conf.GetOutputLog(), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	if err != nil {
 
-		panic(err)
+		return err
 	}
 
 	logger.SetOutput(output)
+
+	return nil
 }
 
 func Debug(args ...interface{}) {

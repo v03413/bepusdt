@@ -2,6 +2,7 @@ package conf
 
 import (
 	"flag"
+	"fmt"
 	"github.com/pelletier/go-toml/v2"
 	"github.com/shopspring/decimal"
 	"github.com/spf13/cast"
@@ -24,20 +25,22 @@ var (
 	path string
 )
 
-func Init() {
+func Init() error {
 	flag.StringVar(&path, "conf", "./conf.toml", "config file path")
 	flag.Parse()
 
 	data, err := os.ReadFile(path)
 	if err != nil {
 
-		panic("配置文件加载失败：" + err.Error())
+		return fmt.Errorf("配置文件加载失败：%w", err)
 	}
 
 	if err = toml.Unmarshal(data, &cfg); err != nil {
 
-		panic("配置数据解析失败：" + err.Error())
+		return fmt.Errorf("配置数据解析失败：%w", err)
 	}
+
+	return nil
 }
 
 func GetUsdtRate() string {

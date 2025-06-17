@@ -13,8 +13,7 @@ import (
 var api *bot.Bot
 var err error
 
-func Init() {
-
+func Init() error {
 	var opts = []bot.Option{
 		//bot.WithDebug(),
 		bot.WithCheckInitTimeout(time.Minute),
@@ -23,11 +22,8 @@ func Init() {
 	}
 
 	api, err = bot.New(conf.BotToken(), opts...)
-	if err != nil {
-		panic(err)
 
-		return
-	}
+	return err
 }
 
 func Start() {

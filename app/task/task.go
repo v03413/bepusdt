@@ -19,11 +19,13 @@ var (
 	mu    sync.Mutex
 )
 
-func Init() {
+func Init() error {
 	bscInit()
 	ethInit()
 	polygonInit()
 	xlayerInit()
+
+	return nil
 }
 
 func register(t task) {

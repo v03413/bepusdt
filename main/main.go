@@ -14,12 +14,17 @@ import (
 	"runtime"
 )
 
+type Initializer func() error
+
+var initializers = []Initializer{conf.Init, log.Init, bot.Init, model.Init, task.Init}
+
 func init() {
-	conf.Init()
-	log.Init()
-	bot.Init()
-	model.Init()
-	task.Init()
+	for _, initFunc := range initializers {
+		if err := initFunc(); err != nil {
+
+			panic(fmt.Sprintf("初始化失败: %v", err))
+		}
+	}
 
 	if conf.BotToken() == "" || conf.BotAdminID() == 0 {
 
