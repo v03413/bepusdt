@@ -24,7 +24,7 @@ v03413/bepusdt:latest
 - `-p 8080:8080` 表示将容器的 8080 端口映射到宿主机的 8080 端口，使得应用可以通过宿主机的端口访问。
 - `--restart=unless-stopped` 确保你的容器在遇到问题时可以自动重启。
 
-如果想使用最新的开发版本，可以将镜像名 `v03413/bepusdt:latest` 替换为 `v03413/bepusdt:beta`
+版本说明：`v03413/bepusdt:latest` 为最新发行版镜像，`v03413/bepusdt:nightly`为每日构建的开发版。
 
 ## 验证部署
 
