@@ -68,9 +68,7 @@ func createTransaction(ctx *gin.Context) {
 
 	var tradeType, ok = data["trade_type"]
 	if !ok {
-		ctx.JSON(200, respFailJson("交易类型参数(trade_type)不存在"))
-
-		return
+		tradeType = model.OrderTradeTypeUsdtTrc20 // 默认 USDT TRC20
 	}
 
 	if !help.InStrings(tradeType.(string), model.SupportTradeTypes) {
