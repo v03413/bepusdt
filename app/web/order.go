@@ -47,9 +47,8 @@ func buildOrder(p orderParams) (model.TradeOrders, error) {
 	// 获取钱包地址
 	var wallet = model.GetAvailableAddress(p.PayAddress, p.TradeType)
 	if len(wallet) == 0 {
-		log.Error("订单创建失败：还没有配置收款地址")
 
-		return order, fmt.Errorf("没检测到可用收款地址")
+		return order, fmt.Errorf(fmt.Sprintf("类型(%s)没检测到可用收款地址", p.TradeType))
 	}
 
 	// 计算交易金额
