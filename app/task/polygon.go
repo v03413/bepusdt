@@ -16,6 +16,7 @@ func polygonInit() {
 				Native: -18, // polygon.pol 小数位数
 			},
 			Block: block{
+				InitStartOffset: -600,
 				ConfirmedOffset: 40,
 			},
 		}),

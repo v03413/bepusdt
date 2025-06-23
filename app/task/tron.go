@@ -25,6 +25,7 @@ import (
 
 // Tron区块确认偏移量
 const tronBlockConfirmedOffset = 30
+const tronBlockInitStartOffset = -400 // 大概为过去20分钟的区块高度
 
 // usdt trc20 contract address 41a614f803b6fd780986a42c78ec9c7f77e6ded13c TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t
 var usdtTrc20ContractAddress = []byte{0x41, 0xa6, 0x14, 0xf8, 0x03, 0xb6, 0xfd, 0x78, 0x09, 0x86, 0xa4, 0x2c, 0x78, 0xec, 0x9c, 0x7f, 0x77, 0xe6, 0xde, 0xd1, 0x3c}
@@ -96,7 +97,7 @@ func tronBlockRoll(context.Context) {
 	// 首次启动
 	if tronLastBlockNum == 0 {
 
-		tronLastBlockNum = now - 1
+		tronLastBlockNum = now + tronBlockInitStartOffset
 	}
 
 	// 区块高度没有变化

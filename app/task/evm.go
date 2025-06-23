@@ -52,6 +52,7 @@ type decimals struct {
 }
 
 type block struct {
+	InitStartOffset int64 // 首次偏移量，第一次启动时，区块高度需要叠加此值，设置为负值可解决部分已创建但未超时(未扫描)的订单问题
 	RollDelayOffset int64 // 延迟偏移量，某些RPC节点如果不延迟，会报错 block is out of range，目前发现 https://rpc.xlayer.tech/ 存在此问题
 	ConfirmedOffset int64 // 确认偏移量，开启交易确认后，区块高度需要减去此值认为交易已确认
 }
@@ -146,7 +147,7 @@ func evmBlockRoll(ctx context.Context) {
 	// 首次启动
 	if lastBlockNumber == 0 {
 
-		lastBlockNumber = now - 1
+		lastBlockNumber = now + cfg.Block.InitStartOffset
 	}
 
 	// 区块高度没有变化

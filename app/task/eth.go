@@ -16,6 +16,7 @@ func ethInit() {
 				Native: -18, // ethereum.eth 小数位数
 			},
 			Block: block{
+				InitStartOffset: -100,
 				ConfirmedOffset: 12,
 			},
 		}),

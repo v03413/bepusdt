@@ -16,6 +16,7 @@ func bscInit() {
 				Native: -18, // bsc.bnb 小数位数
 			},
 			Block: block{
+				InitStartOffset: -400,
 				ConfirmedOffset: 15,
 			},
 		}),
