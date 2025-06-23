@@ -194,3 +194,8 @@ func GetPaymentAmountMax() decimal.Decimal {
 
 	return decimal.NewFromFloat(val)
 }
+
+func GetWebhookUrl() string {
+
+	return cfg.WebhookUrl
+}

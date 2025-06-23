@@ -82,6 +82,8 @@ func orderTransferHandle(context.Context) {
 			// 标记成功
 			o.MarkSuccess(t.BlockNum, t.FromAddress, t.TxHash, t.Timestamp)
 
+			model.PushWebhookEvent(model.WebhookEventOrderPaid, o)
+			
 			go notify.Handle(o)         // 通知订单支付成功
 			go bot2.SendTradeSuccMsg(o) // TG发送订单信息
 		}
@@ -213,6 +215,7 @@ func getAllWaitingOrders() map[string]model.TradeOrders {
 		if time.Now().Unix() >= order.ExpiredAt.Unix() { // 订单过期
 			order.OrderSetExpired()
 			notify.Bepusdt(order)
+			model.PushWebhookEvent(model.WebhookEventOrderTimeout, order)
 
 			continue
 		}

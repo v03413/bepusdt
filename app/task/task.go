@@ -8,6 +8,8 @@ import (
 	"time"
 )
 
+type contextKey struct{}
+
 type task struct {
 	ctx      context.Context
 	duration time.Duration

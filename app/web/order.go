@@ -93,5 +93,7 @@ func buildOrder(p orderParams) (model.TradeOrders, error) {
 		return order, err
 	}
 
+	model.PushWebhookEvent(model.WebhookEventOrderCreate, tradeOrder)
+
 	return tradeOrder, nil
 }

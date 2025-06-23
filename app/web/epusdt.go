@@ -159,6 +159,8 @@ func cancelTransaction(ctx *gin.Context) {
 		return
 	}
 
+	model.PushWebhookEvent(model.WebhookEventOrderCancel, order)
+
 	ctx.JSON(200, respSuccJson(gin.H{"trade_id": tradeId}))
 }
 
