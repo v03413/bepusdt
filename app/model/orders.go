@@ -11,11 +11,11 @@ import (
 const (
 	OrderNotifyStateSucc = 1 // 回调成功
 	OrderNotifyStateFail = 0 // 回调失败
-	OrderStatusCanceled  = 4 // 订单取消
 
-	OrderStatusExpired = 3 // 订单过期
-	OrderStatusSuccess = 2 // 订单成功
-	OrderStatusWaiting = 1 // 等待支付
+	OrderStatusCanceled = 4 // 订单取消
+	OrderStatusExpired  = 3 // 订单过期
+	OrderStatusSuccess  = 2 // 订单成功
+	OrderStatusWaiting  = 1 // 等待支付
 
 	OrderTradeTypeBscBnb     = "bsc.bnb"
 	OrderTradeTypeEthEth     = "ethereum.eth"
@@ -89,7 +89,7 @@ func (o *TradeOrders) MarkSuccess(blockNum int64, from, hash string, at time.Tim
 	DB.Save(o)
 }
 
-func (o *TradeOrders) OrderSetNotifyState(state int) error {
+func (o *TradeOrders) SetNotifyState(state int) error {
 	o.NotifyNum += 1
 	o.NotifyState = state
 
@@ -191,7 +191,8 @@ func GetOrderByStatus(Status int) []TradeOrders {
 
 func GetNotifyFailedTradeOrders() ([]TradeOrders, error) {
 	var orders []TradeOrders
-	var res = DB.Where("status = ?", OrderStatusSuccess).Where("notify_num > ?", 0).
+	var res = DB.Where("status = ?", OrderStatusSuccess).
+		Where("notify_num <= ?", conf.NotifyMaxRetry).
 		Where("notify_state = ?", OrderNotifyStateFail).Find(&orders)
 
 	return orders, res.Error

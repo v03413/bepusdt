@@ -3,6 +3,7 @@ package notify
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/v03413/bepusdt/app"
 	"github.com/v03413/bepusdt/app/bot"
 	"github.com/v03413/bepusdt/app/conf"
 	"github.com/v03413/bepusdt/app/help"
@@ -77,7 +78,7 @@ func epay(order model.TradeOrders) {
 		return
 	}
 
-	err = order.OrderSetNotifyState(model.OrderNotifyStateSucc)
+	err = order.SetNotifyState(model.OrderNotifyStateSucc)
 	if err != nil {
 		log.Error("订单标记通知成功错误：", err, order.OrderId)
 	} else {
@@ -124,6 +125,7 @@ func epusdt(order model.TradeOrders) {
 
 	postReq.Header.Set("Content-Type", "application/json")
 	postReq.Header.Set("Powered-By", "https://github.com/v03413/bepusdt")
+	postReq.Header.Set("User-Agent", "BEpusdt/"+app.Version)
 	resp, err := client.Do(postReq)
 	if err != nil {
 		markNotifyFail(order, err.Error())
@@ -151,7 +153,7 @@ func epusdt(order model.TradeOrders) {
 		return
 	}
 
-	err = order.OrderSetNotifyState(model.OrderNotifyStateSucc)
+	err = order.SetNotifyState(model.OrderNotifyStateSucc)
 	if err != nil {
 		log.Error("订单标记通知成功错误：", err, order.OrderId)
 	} else {
@@ -212,16 +214,16 @@ func Bepusdt(order model.TradeOrders) {
 		// 再次序列化
 		jsonBody, err = json.Marshal(body)
 		var client = http.Client{Timeout: time.Second * 5}
-		var postReq, err2 = http.NewRequest("POST", o.NotifyUrl, strings.NewReader(string(jsonBody)))
+		var req, err2 = http.NewRequest("POST", o.NotifyUrl, strings.NewReader(string(jsonBody)))
 		if err2 != nil {
 			db.Rollback()
 
 			return err
 		}
 
-		postReq.Header.Set("Content-Type", "application/json")
-		postReq.Header.Set("Powered-By", "https://github.com/v03413/bepusdt")
-		resp, err := client.Do(postReq)
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Powered-By", "https://github.com/v03413/bepusdt")
+		resp, err := client.Do(req)
 		if err != nil {
 			db.Rollback()
 
@@ -251,7 +253,7 @@ func Bepusdt(order model.TradeOrders) {
 }
 
 func markNotifyFail(order model.TradeOrders, reason string) {
-	log.Warn(fmt.Sprintf("订单回调失败(%v)：%s %v", order.TradeId, reason, order.OrderSetNotifyState(model.OrderNotifyStateFail)))
+	log.Warn(fmt.Sprintf("订单回调失败(%v)：%s %v", order.TradeId, reason, order.SetNotifyState(model.OrderNotifyStateFail)))
 	go func() {
 		bot.SendNotifyFailed(order, reason)
 	}()

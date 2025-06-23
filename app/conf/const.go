@@ -33,3 +33,5 @@ const (
 	UsdtXlayerDecimals  = -6  // USDT Xlayer小数位数
 	UsdtPolygonDecimals = -6  // USDT Polygon小数位数
 )
+
+const NotifyMaxRetry = 10 // 最大重试次数
