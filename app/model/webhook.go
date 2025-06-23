@@ -63,7 +63,7 @@ func (w Webhook) SetStatus(status int8) {
 	}
 
 	w.Num = w.Num + 1
-	if w.Num > 10 {
+	if w.Num > conf.NotifyMaxRetry {
 
 		w.Status = WebhookStatusFail
 	}

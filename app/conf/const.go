@@ -34,4 +34,4 @@ const (
 	UsdtPolygonDecimals = -6  // USDT Polygon小数位数
 )
 
-const NotifyMaxRetry = 10 // 最大重试次数
+const NotifyMaxRetry = 10 // 最大重试次数，订单回调失败、Webhook失败
