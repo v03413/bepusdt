@@ -12,6 +12,8 @@ sqlite_path = "/var/lib/bepusdt/sqlite.db"
 tron_grpc_node = "18.141.79.38:50051"
 # 日志输出路径
 output_log = "/var/log/bepusdt.log"
+# Webhook地址，留空则不弃用
+webhook_url = ""
 
 [pay]
 # usdt 支付原子颗粒度，0.01表示支付数额保留两位小数，相同金额时递增颗粒度为0.01，依次类推，如无特殊需求不建议修改。
