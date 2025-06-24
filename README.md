@@ -3,7 +3,7 @@
 
 ---  
 
-# Bepusdt (Better Easy Payment Usdt)
+# BEpusdt (Better Easy Payment Usdt)
 
 <p align="center">
 <img src="./static/img/tether.svg" width="15%" alt="tether">
@@ -32,9 +32,10 @@
 - ✅ 支持自定义 USDT 支付精度与递增颗粒度
 - ✅ 底层区块扫描，无第三方 API，秒级响应
 - ✅ 支持波场能量代理与能量回收监控通知
-- ✅ 原生支持易支付对接，无需第三方插件
-- ✅ 支持创建订单时 自定义钱包地址 超时
-- ✅ 订单支持“等待支付”“支付超时”状态回调
+- ✅ 原生支持易支付对接，无三方插件依赖
+- ✅ 支持创建订单时 自定义超时 钱包地址
+- ✅ 完整支持`等待支付 支付超时`回调
+- ✅ 支持事件`WebHook` 方便多方协同
 
 ## 🚀 安装部署
 
@@ -48,7 +49,7 @@
 - [彩虹易支付对接教程](./docs/epay.md)
 - [API 对接开发签名算法](./docs/sign.md)
 - [对接 回调通知说明](./docs/notify-epusdt.md)
-- [Webhook 事件回调](./docs/webhook.md)  
+- [Webhook 事件回调](./docs/webhook.md)
 
 ## 🖼 功能截图
 
@@ -168,8 +169,8 @@ POST /api/v1/order/cancel-transaction
 
 ## 🏝️ 交流反馈
 
-- Telegram 频道：[https://t.me/BepusdtChannel](https://t.me/BepusdtChannel)
-- Telegram 群组：[https://t.me/BepusdtChat](https://t.me/BepusdtChat)
+- Telegram 群组：[https://t.me/BEpusdtChat](https://t.me/BEpusdtChat)
+- Telegram 频道：[https://t.me/BEpusdtChannel](https://t.me/BEpusdtChannel)
 
 ## 🙏 感谢
 
