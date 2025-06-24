@@ -161,19 +161,6 @@ func GetDetailUrl(tradeType, hash string) string {
 	return "https://tronscan.org/#/transaction/" + hash
 }
 
-func GetTradeType(trade string) string {
-	if trade == OrderTradeTypeTronTrx {
-
-		return OrderTradeTypeTronTrx
-	}
-	if trade == OrderTradeTypeUsdtPolygon {
-
-		return OrderTradeTypeUsdtPolygon
-	}
-
-	return OrderTradeTypeUsdtTrc20
-}
-
 func GetTradeOrder(tradeId string) (TradeOrders, bool) {
 	var order TradeOrders
 	var res = DB.Where("trade_id = ?", tradeId).Take(&order)

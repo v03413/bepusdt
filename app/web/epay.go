@@ -49,7 +49,7 @@ func epaySubmit(ctx *gin.Context) {
 	var tradeType = model.OrderTradeTypeUsdtTrc20
 	if v, ok := data["type"]; ok {
 
-		tradeType = model.GetTradeType(cast.ToString(v))
+		tradeType = cast.ToString(v)
 	}
 
 	var params = orderParams{
