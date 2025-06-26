@@ -88,7 +88,8 @@ POST /api/v1/order/create-transaction
   "signature":"123456abcd", // 签名
   "notify_url": "https://example.com/callback",   // 回调地址
   "redirect_url": "https://example.com/callback", // 支付成功跳转地址
-  "timeout": 1200 // 超时时间(秒) 最低60；留空则取配置文件 expire_time，还是没有取默认600
+  "timeout": 1200, // 超时时间(秒) 最低60；留空则取配置文件 expire_time，还是没有取默认600
+  "rate": 7.4 // 强制指定汇率，留空则取配置汇率；支持多种写法，如：7.4表示固定7.4、～1.02表示最新汇率上浮2%、～0.97表示最新汇率下浮3%、+0.3表示最新加0.3、-0.2表示最新减0.2
 }
 ```
 
