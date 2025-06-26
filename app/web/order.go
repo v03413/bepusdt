@@ -2,13 +2,14 @@ package web
 
 import (
 	"fmt"
+	"sync"
+	"time"
+
 	"github.com/v03413/bepusdt/app/conf"
 	"github.com/v03413/bepusdt/app/help"
 	"github.com/v03413/bepusdt/app/log"
 	"github.com/v03413/bepusdt/app/model"
 	"github.com/v03413/bepusdt/app/task/rate"
-	"sync"
-	"time"
 )
 
 type orderParams struct {
@@ -21,6 +22,7 @@ type orderParams struct {
 	NotifyUrl   string  `json:"notify_url"`   // 异步通知地址
 	Name        string  `json:"name"`         // 商品名称
 	Timeout     uint64  `json:"timeout"`      // 订单超时时间（秒）
+	Rate        string  `json:"rate"`         // 强制指定汇率
 }
 
 func buildOrder(p orderParams) (model.TradeOrders, error) {
@@ -29,7 +31,6 @@ func buildOrder(p orderParams) (model.TradeOrders, error) {
 
 	model.DB.Where("order_id = ?", p.OrderId).Find(&order)
 	if order.Status == model.OrderStatusWaiting || order.Status == model.OrderStatusSuccess {
-
 		return order, nil
 	}
 
@@ -38,16 +39,23 @@ func buildOrder(p orderParams) (model.TradeOrders, error) {
 	defer lock.Unlock()
 
 	// 获取兑换汇率
-	var calcRate = rate.GetUsdtCalcRate()
-	if p.TradeType == model.OrderTradeTypeTronTrx {
-
-		calcRate = rate.GetTrxCalcRate()
+	var calcRate float64
+	if p.Rate != "" {
+		rawRate := rate.GetOkxUsdtRawRate()
+		if p.TradeType == model.OrderTradeTypeTronTrx {
+			rawRate = rate.GetOkxTrxRawRate()
+		}
+		calcRate = rate.ParseFloatRate(p.Rate, rawRate)
+	} else {
+		calcRate = rate.GetUsdtCalcRate()
+		if p.TradeType == model.OrderTradeTypeTronTrx {
+			calcRate = rate.GetTrxCalcRate()
+		}
 	}
 
 	// 获取钱包地址
-	var wallet = model.GetAvailableAddress(p.PayAddress, p.TradeType)
+	wallet := model.GetAvailableAddress(p.PayAddress, p.TradeType)
 	if len(wallet) == 0 {
-
 		return order, fmt.Errorf(fmt.Sprintf("类型(%s)没检测到可用收款地址", p.TradeType))
 	}
 
@@ -55,20 +63,19 @@ func buildOrder(p orderParams) (model.TradeOrders, error) {
 	address, amount := model.CalcTradeAmount(wallet, calcRate, p.Money, p.TradeType)
 	tradeId, err := help.GenerateTradeId()
 	if err != nil {
-
 		return order, err
 	}
 
 	// 超时处理
-	var timeout = conf.GetExpireTime() * time.Second
+	timeout := conf.GetExpireTime() * time.Second
 	if p.Timeout >= 60 { // 至少60秒
 
 		timeout = time.Duration(p.Timeout) * time.Second
 	}
 
 	// 创建交易订单
-	var expiredAt = time.Now().Add(timeout)
-	var tradeOrder = model.TradeOrders{
+	expiredAt := time.Now().Add(timeout)
+	tradeOrder := model.TradeOrders{
 		OrderId:     p.OrderId,
 		TradeId:     tradeId,
 		TradeHash:   tradeId, // 这里默认填充一个本地交易ID，等支付成功后再更新为实际交易哈希

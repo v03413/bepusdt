@@ -3,6 +3,9 @@ package web
 import (
 	"encoding/json"
 	"fmt"
+	"net/url"
+	"time"
+
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/cast"
 	"github.com/v03413/bepusdt/app/conf"
@@ -10,8 +13,6 @@ import (
 	"github.com/v03413/bepusdt/app/log"
 	"github.com/v03413/bepusdt/app/model"
 	"github.com/v03413/bepusdt/app/web/epay"
-	"net/url"
-	"time"
 )
 
 func signVerify(ctx *gin.Context) {
@@ -24,7 +25,7 @@ func signVerify(ctx *gin.Context) {
 		return
 	}
 
-	var m = make(map[string]any)
+	m := make(map[string]any)
 	if err = json.Unmarshal(rawData, &m); err != nil {
 		log.Error(err.Error())
 		ctx.JSON(400, gin.H{"error": err.Error()})
@@ -55,7 +56,7 @@ func signVerify(ctx *gin.Context) {
 
 func createTransaction(ctx *gin.Context) {
 	var address string
-	var data = ctx.GetStringMap("data")
+	data := ctx.GetStringMap("data")
 	var timeout uint64 = 0
 	for _, key := range []string{"order_id", "amount", "notify_url", "redirect_url"} {
 		if _, ok := data[key]; !ok {
@@ -66,7 +67,7 @@ func createTransaction(ctx *gin.Context) {
 		}
 	}
 
-	var tradeType, ok = data["trade_type"]
+	tradeType, ok := data["trade_type"]
 	if !ok {
 		tradeType = model.OrderTradeTypeUsdtTrc20 // 默认 USDT TRC20
 	}
@@ -78,7 +79,6 @@ func createTransaction(ctx *gin.Context) {
 	}
 
 	if v, ok := data["timeout"]; ok {
-
 		timeout = cast.ToUint64(v)
 	}
 	if v, ok := data["address"]; ok && cast.ToString(v) != "" {
@@ -91,14 +91,13 @@ func createTransaction(ctx *gin.Context) {
 	}
 
 	// 解析请求地址
-	var host = "http://" + ctx.Request.Host
+	host := "http://" + ctx.Request.Host
 	if ctx.Request.TLS != nil {
-
 		host = "https://" + ctx.Request.Host
 	}
 
-	var orderId = cast.ToString(data["order_id"])
-	var params = orderParams{
+	orderId := cast.ToString(data["order_id"])
+	params := orderParams{
 		Money:       cast.ToFloat64(data["amount"]),
 		ApiType:     model.OrderApiTypeEpusdt,
 		PayAddress:  address,
@@ -108,9 +107,10 @@ func createTransaction(ctx *gin.Context) {
 		NotifyUrl:   cast.ToString(data["notify_url"]),
 		Name:        orderId,
 		Timeout:     timeout,
+		Rate:        cast.ToString(data["rate"]),
 	}
 
-	var order, err = buildOrder(params)
+	order, err := buildOrder(params)
 	if err != nil {
 		ctx.JSON(200, respFailJson(fmt.Sprintf("订单创建失败：%s", err.Error())))
 
@@ -132,7 +132,7 @@ func createTransaction(ctx *gin.Context) {
 }
 
 func cancelTransaction(ctx *gin.Context) {
-	var data = ctx.GetStringMap("data")
+	data := ctx.GetStringMap("data")
 	tradeId, ok := data["trade_id"].(string)
 	if !ok {
 		ctx.JSON(200, respFailJson("参数 trade_id 不存在"))
@@ -140,7 +140,7 @@ func cancelTransaction(ctx *gin.Context) {
 		return
 	}
 
-	var order, ok2 = model.GetTradeOrder(tradeId)
+	order, ok2 := model.GetTradeOrder(tradeId)
 	if !ok2 {
 		ctx.JSON(200, respFailJson("订单不存在"))
 
@@ -165,8 +165,8 @@ func cancelTransaction(ctx *gin.Context) {
 }
 
 func checkoutCounter(ctx *gin.Context) {
-	var tradeId = ctx.Param("trade_id")
-	var order, ok = model.GetTradeOrder(tradeId)
+	tradeId := ctx.Param("trade_id")
+	order, ok := model.GetTradeOrder(tradeId)
 	if !ok {
 		ctx.String(200, "订单不存在")
 
@@ -195,8 +195,8 @@ func checkoutCounter(ctx *gin.Context) {
 }
 
 func checkStatus(ctx *gin.Context) {
-	var tradeId = ctx.Param("trade_id")
-	var order, ok = model.GetTradeOrder(tradeId)
+	tradeId := ctx.Param("trade_id")
+	order, ok := model.GetTradeOrder(tradeId)
 	if !ok {
 		ctx.JSON(200, respFailJson("订单不存在"))
 

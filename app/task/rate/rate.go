@@ -39,16 +39,16 @@ func GetOkxTrxRawRate() float64 {
 func SetOkxTrxCnyRate(syntax string, rawRate float64) {
 	rawRate = round(rawRate, okxRatePrecision)
 	okxTrxCnyRawRate = rawRate
-	okxTrxCnyCalcRate = parseFloatRate(syntax, rawRate)
+	okxTrxCnyCalcRate = ParseFloatRate(syntax, rawRate)
 }
 
 func SetOkxUsdtCnyRate(syntax string, rawRate float64) {
 	rawRate = round(rawRate, okxRatePrecision)
 	okxUsdtCnyRawRate = rawRate
-	okxUsdtCnyCalcRate = parseFloatRate(syntax, rawRate)
+	okxUsdtCnyCalcRate = ParseFloatRate(syntax, rawRate)
 }
 
-func parseFloatRate(syntax string, rawVal float64) float64 {
+func ParseFloatRate(syntax string, rawVal float64) float64 {
 	if syntax == "" {
 
 		return rawVal
