@@ -12,7 +12,7 @@ import (
 )
 
 func defaultHandle(ctx context.Context, bot *bot.Bot, u *models.Update) {
-	if u.Message.ReplyToMessage != nil && u.Message.ReplyToMessage.Text == replayAddressText {
+	if u.Message != nil && u.Message.ReplyToMessage != nil && u.Message.ReplyToMessage.Text == replayAddressText {
 		addWalletAddress(u)
 
 		return

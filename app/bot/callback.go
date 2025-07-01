@@ -32,8 +32,9 @@ const cbAddressDelete = "address_del"
 const cbAddressBack = "address_back"
 const cbAddressOtherNotify = "address_other_notify"
 const cbOrderDetail = "order_detail"
+const cbOrderList = "order_list"
 const cbMarkNotifySucc = "mark_notify_succ"
-const dbOrderNotifyRetry = "order_notify_retry"
+const cbOrderNotifyRetry = "order_notify_retry"
 
 func cbWalletAction(ctx context.Context, b *bot.Bot, u *models.Update) {
 	var address = ctx.Value("args").([]string)[1]
@@ -214,71 +215,106 @@ func cbAddressOtherNotifyAction(ctx context.Context, b *bot.Bot, u *models.Updat
 }
 
 func cbOrderDetailAction(ctx context.Context, b *bot.Bot, u *models.Update) {
-	var args = ctx.Value("args").([]string)
-
-	var o model.TradeOrders
-
-	if model.DB.Where("trade_id = ?", args[1]).First(&o).Error != nil {
+	args := ctx.Value("args").([]string)
+	if len(args) < 2 {
 
 		return
 	}
 
-	var urlInfo, er2 = url.Parse(o.NotifyUrl)
-	if er2 != nil {
-		log.Error("商户网站地址解析错误：" + er2.Error())
+	var order model.TradeOrders
+	if err := model.DB.Where("trade_id = ?", args[1]).First(&order).Error; err != nil {
 
 		return
 	}
 
-	var notifyStateLabel = "✅回调成功"
-	if o.NotifyState != model.OrderNotifyStateSucc {
+	urlInfo, err := url.Parse(order.NotifyUrl)
+	if err != nil {
+		log.Error("商户网站地址解析错误：" + err.Error())
+
+		return
+	}
+
+	// 确定回调状态标签
+	var notifyStateLabel string
+	switch {
+	case order.Status == model.OrderStatusWaiting:
+		notifyStateLabel = order.GetStatusLabel()
+	case order.Status == model.OrderStatusExpired:
+		notifyStateLabel = "🈚️没有回调"
+	case order.NotifyState == model.OrderNotifyStateSucc:
+		notifyStateLabel = "✅回调成功"
+	default:
 		notifyStateLabel = "❌回调失败"
 	}
-	if model.OrderStatusWaiting == o.Status {
-		notifyStateLabel = o.GetStatusLabel()
-	}
-	if model.OrderStatusExpired == o.Status {
-		notifyStateLabel = "🈚️没有回调"
-	}
 
-	var site = &url.URL{Scheme: urlInfo.Scheme, Host: urlInfo.Host}
-	var markup = models.InlineKeyboardMarkup{
+	site := &url.URL{Scheme: urlInfo.Scheme, Host: urlInfo.Host}
+	markup := models.InlineKeyboardMarkup{
 		InlineKeyboard: [][]models.InlineKeyboardButton{
 			{
-				models.InlineKeyboardButton{Text: "🌏商户网站", URL: site.String()},
-				models.InlineKeyboardButton{Text: "📝交易明细", URL: o.GetDetailUrl()},
+				{Text: "🌏商户网站", URL: site.String()},
+				{Text: "📝交易明细", URL: order.GetDetailUrl()},
+			},
+			{
+				{Text: "📦返回订单列表", CallbackData: fmt.Sprintf("%s|%s", cbOrderList, args[2])},
 			},
 		},
 	}
 
-	if o.Status == model.OrderStatusSuccess && o.NotifyState == model.OrderNotifyStateFail {
+	if order.Status == model.OrderStatusSuccess && order.NotifyState == model.OrderNotifyStateFail {
 		markup.InlineKeyboard = append(markup.InlineKeyboard, []models.InlineKeyboardButton{
-			{Text: "✅标记回调成功", CallbackData: cbMarkNotifySucc + "|" + o.TradeId},
-			{Text: "⚡️立刻回调重试", CallbackData: dbOrderNotifyRetry + "|" + o.TradeId},
+			{Text: "✅标记回调成功", CallbackData: cbMarkNotifySucc + "|" + order.TradeId},
+			{Text: "⚡️立刻回调重试", CallbackData: cbOrderNotifyRetry + "|" + order.TradeId},
 		})
 	}
 
-	var text = "```" + `
-	⛵️系统订单：` + o.TradeId + `
-	📌商户订单：` + o.OrderId + `
-	📊交易汇率：` + o.TradeRate + `(` + conf.GetUsdtRate() + `)
-	💲交易数额：` + o.Amount + `
-	💰交易金额：` + fmt.Sprintf("%.2f", o.Money) + ` CNY
-	💍交易类别：` + strings.ToUpper(o.TradeType) + `
-	🌏商户网站：` + site.String() + `
-	🔋收款状态：` + o.GetStatusLabel() + `
-	🍀回调状态：` + notifyStateLabel + `
-	💎️收款地址：` + help.MaskAddress(o.Address) + `
-	🕒创建时间：` + o.CreatedAt.Format(time.DateTime) + `
-	🕒失效时间：` + o.ExpiredAt.Format(time.DateTime) + `
-	⚖️️确认时间：` + o.ConfirmedAt.Format(time.DateTime) + `
-	` + "\n```"
+	text := fmt.Sprintf("```\n"+
+		"⛵️系统订单：%s\n"+
+		"📌商户订单：%s\n"+
+		"📊交易汇率：%s(%s)\n"+
+		"💲交易数额：%s\n"+
+		"💰交易金额：%.2f CNY\n"+
+		"💍交易类别：%s\n"+
+		"🌏商户网站：%s\n"+
+		"🔋收款状态：%s\n"+
+		"🍀回调状态：%s\n"+
+		"💎️收款地址：%s\n"+
+		"🕒创建时间：%s\n"+
+		"🕒失效时间：%s\n"+
+		"⚖️️确认时间：%s\n"+
+		"```",
+		order.TradeId,
+		order.OrderId,
+		order.TradeRate, conf.GetUsdtRate(),
+		order.Amount,
+		order.Money,
+		strings.ToUpper(order.TradeType),
+		site.String(),
+		order.GetStatusLabel(),
+		notifyStateLabel,
+		help.MaskAddress(order.Address),
+		order.CreatedAt.Format(time.DateTime),
+		order.ExpiredAt.Format(time.DateTime),
+		order.ConfirmedAt.Format(time.DateTime))
 
-	SendMessage(&bot.SendMessageParams{
-		ChatID:      conf.BotAdminID(),
+	EditMessageText(ctx, b, &bot.EditMessageTextParams{
+		ChatID:      u.CallbackQuery.Message.Message.Chat.ID,
+		MessageID:   u.CallbackQuery.Message.Message.ID,
 		Text:        text,
 		ParseMode:   models.ParseModeMarkdown,
 		ReplyMarkup: markup,
+	})
+}
+
+func cbOrderListAction(ctx context.Context, b *bot.Bot, u *models.Update) {
+	page := cast.ToInt(ctx.Value("args").([]string)[1])
+	buttons := buildOrderListWithNavigation(page)
+
+	EditMessageText(ctx, b, &bot.EditMessageTextParams{
+		ChatID:      u.CallbackQuery.Message.Message.Chat.ID,
+		MessageID:   u.CallbackQuery.Message.Message.ID,
+		Text:        orderListText,
+		ParseMode:   models.ParseModeMarkdown,
+		ReplyMarkup: &models.InlineKeyboardMarkup{InlineKeyboard: buttons},
 	})
 }
 

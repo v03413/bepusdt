@@ -55,7 +55,8 @@ func Start() {
 		api.RegisterHandler(bot.HandlerTypeCallbackQueryData, cbAddressDisable, bot.MatchTypePrefix, cbAddressDisableAction)
 		api.RegisterHandler(bot.HandlerTypeCallbackQueryData, cbAddressOtherNotify, bot.MatchTypePrefix, cbAddressOtherNotifyAction)
 		api.RegisterHandler(bot.HandlerTypeCallbackQueryData, cbMarkNotifySucc, bot.MatchTypePrefix, cbMarkNotifySuccAction)
-		api.RegisterHandler(bot.HandlerTypeCallbackQueryData, dbOrderNotifyRetry, bot.MatchTypePrefix, dbOrderNotifyRetryAction)
+		api.RegisterHandler(bot.HandlerTypeCallbackQueryData, cbOrderNotifyRetry, bot.MatchTypePrefix, dbOrderNotifyRetryAction)
+		api.RegisterHandler(bot.HandlerTypeCallbackQueryData, cbOrderList, bot.MatchTypePrefix, cbOrderListAction)
 	}
 
 	_, err = api.SetMyCommands(ctx, &bot.SetMyCommandsParams{
@@ -63,7 +64,7 @@ func Start() {
 			{Command: cmdGetId, Description: "获取ID"},
 			{Command: cmdStart, Description: "开始使用"},
 			{Command: cmdState, Description: "收款状态"},
-			{Command: cmdOrder, Description: "最近订单"},
+			{Command: cmdOrder, Description: "订单列表"},
 		},
 	})
 	if err != nil {
@@ -114,5 +115,13 @@ func EditMessageText(ctx context.Context, b *bot.Bot, p *bot.EditMessageTextPara
 	if err != nil {
 
 		log.Warn("BotEditMessageText Error:", err.Error())
+	}
+}
+
+func EditMessageReplyMarkup(ctx context.Context, b *bot.Bot, p *bot.EditMessageReplyMarkupParams) {
+	_, err := b.EditMessageReplyMarkup(ctx, p)
+	if err != nil {
+
+		log.Warn("BotEditMessageReplyMarkup Error:", err.Error())
 	}
 }

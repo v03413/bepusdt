@@ -10,6 +10,7 @@ import (
 	"github.com/v03413/bepusdt/app/help"
 	"github.com/v03413/bepusdt/app/model"
 	"github.com/v03413/bepusdt/app/task/rate"
+	"math"
 	"time"
 )
 
@@ -19,6 +20,8 @@ const cmdState = "state"
 const cmdOrder = "order"
 
 const replayAddressText = "🚚 请发送需要添加的钱包地址"
+const orderListText = "*现有订单列表，点击可查看详细信息，不同颜色对应着不同支付状态！*\n>🟢收款成功 🔴交易过期 🟡等待支付 ⚪️订单取消\n>🌟按钮内容 订单创建时间 订单号末八位 交易金额"
+const orderPageSize = 8
 
 func cmdGetIdHandle(ctx context.Context, b *bot.Bot, u *models.Update) {
 
@@ -159,23 +162,69 @@ func cmdStateHandle(ctx context.Context, b *bot.Bot, u *models.Update) {
 }
 
 func cmdOrderHandle(ctx context.Context, b *bot.Bot, u *models.Update) {
-	var orders []model.TradeOrders
-	var btn [][]models.InlineKeyboardButton
-	if model.DB.Order("id desc").Limit(8).Find(&orders).Error == nil {
-		for _, o := range orders {
-			btn = append(btn, []models.InlineKeyboardButton{
-				{
-					Text:         fmt.Sprintf("%s %s 💰%.2f", o.GetStatusEmoji(), o.OrderId, o.Money),
-					CallbackData: fmt.Sprintf("%s|%v", cbOrderDetail, o.TradeId),
-				},
-			})
-		}
+	buttons := buildOrderListWithNavigation(1)
+	if buttons == nil {
+		SendMessage(&bot.SendMessageParams{
+			ChatID:    u.Message.Chat.ID,
+			Text:      "*订单列表暂时为空！*",
+			ParseMode: models.ParseModeMarkdown,
+		})
+		return
 	}
 
 	SendMessage(&bot.SendMessageParams{
 		ChatID:      u.Message.Chat.ID,
-		Text:        "*下面是最近的8个订单，点击可查看详细信息*\n```\n🟢 收款成功 🔴 交易过期 \n🟡 等待支付 ⚪️ 订单取消\n```",
+		Text:        orderListText,
 		ParseMode:   models.ParseModeMarkdown,
-		ReplyMarkup: &models.InlineKeyboardMarkup{InlineKeyboard: btn},
+		ReplyMarkup: &models.InlineKeyboardMarkup{InlineKeyboard: buttons},
 	})
+}
+
+func buildOrderListWithNavigation(page int) [][]models.InlineKeyboardButton {
+	buttons, total := buildOrderButtons(page, orderPageSize)
+	if buttons == nil {
+		return nil
+	}
+	return append(buttons, buildPageNavigation(page, total, orderPageSize)...)
+}
+
+func buildOrderButtons(page, size int) ([][]models.InlineKeyboardButton, int) {
+	var total int64
+	model.DB.Model(&model.TradeOrders{}).Count(&total)
+	if total == 0 {
+		return nil, 0
+	}
+
+	var orders []model.TradeOrders
+	model.DB.Order("id desc").Offset((page - 1) * size).Limit(size).Find(&orders)
+
+	buttons := make([][]models.InlineKeyboardButton, 0, len(orders))
+	for _, o := range orders {
+		buttons = append(buttons, []models.InlineKeyboardButton{{
+			Text:         fmt.Sprintf("%s〚%s〛%s 💰%.2f", o.GetStatusEmoji(), o.CreatedAt.Format("1/2 15:04"), o.OrderId[len(o.OrderId)-8:], o.Money),
+			CallbackData: fmt.Sprintf("%s|%v|%d", cbOrderDetail, o.TradeId, page),
+		}})
+	}
+
+	return buttons, int(total)
+}
+
+func buildPageNavigation(page, total, size int) [][]models.InlineKeyboardButton {
+	totalPage := int(math.Ceil(float64(total) / float64(size)))
+
+	prevBtn := models.InlineKeyboardButton{Text: "🏠首页", CallbackData: "-"}
+	if page > 1 {
+		prevBtn = models.InlineKeyboardButton{Text: "⬅️上一页", CallbackData: fmt.Sprintf("%s|%d", cbOrderList, page-1)}
+	}
+
+	nextBtn := models.InlineKeyboardButton{Text: "🔙末页", CallbackData: "-"}
+	if page < totalPage {
+		nextBtn = models.InlineKeyboardButton{Text: "➡️下一页", CallbackData: fmt.Sprintf("%s|%d", cbOrderList, page+1)}
+	}
+
+	return [][]models.InlineKeyboardButton{{
+		prevBtn,
+		{Text: fmt.Sprintf("📄第[%d/%d]页", page, totalPage), CallbackData: "-"},
+		nextBtn,
+	}}
 }
