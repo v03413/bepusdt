@@ -9,6 +9,15 @@ func GetTronGrpcNode() string {
 	return defaultTronGrpcNode
 }
 
+func GetSolanaRpcEndpoint() string {
+	if cfg.EvmRpc.Solana != "" {
+
+		return cfg.EvmRpc.Solana
+	}
+
+	return defaultSolanaRpcEndpoint
+}
+
 func GetXlayerRpcEndpoint() string {
 	if cfg.EvmRpc.Xlayer != "" {
 

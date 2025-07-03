@@ -3,7 +3,7 @@ testdata_dir = "testdata"
 tmp_dir = "tmp"
 
 [build]
-args_bin = ["-conf", "/usr/local/bepusdt/conf.toml"]
+args_bin = ["-conf", "/Users/wang/Projects/golang/bepusdt/conf.toml"]
 bin = "./tmp/main"
 cmd = "go build -o ./tmp/main -trimpath -ldflags \"-s -w -buildid=\" ./main"
 delay = 3000

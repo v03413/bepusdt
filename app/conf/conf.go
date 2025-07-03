@@ -22,6 +22,7 @@ type Conf struct {
 	} `toml:"pay"`
 	EvmRpc struct {
 		Bsc      string `toml:"bsc"`
+		Solana   string `toml:"solana"`
 		Xlayer   string `toml:"xlayer"`
 		Polygon  string `toml:"polygon"`
 		Ethereum string `toml:"ethereum"`
