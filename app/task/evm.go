@@ -125,13 +125,13 @@ func evmBlockRoll(ctx context.Context) {
 		lastBlockNumber = v.(int64)
 	}
 
-	// 首次启动
-	if lastBlockNumber == 0 {
-		lastBlockNumber = evmBlockInitOffset(now, cfg.Block.InitStartOffset, cfg)
+	if lastBlockNumber == 0 { // 首次启动
+
+		lastBlockNumber = evmBlockInitOffset(now, cfg.Block.InitStartOffset, cfg) - 1
 	}
 
-	// 区块高度没有变化
-	if now <= lastBlockNumber {
+	chainBlockNum.Store(cfg.Type, now)
+	if now <= lastBlockNumber { // 区块高度没有变化
 
 		return
 	}
@@ -148,8 +148,6 @@ func evmBlockRoll(ctx context.Context) {
 	if len(blocks) > 0 {
 		chainScanQueue.In <- blocks
 	}
-
-	chainBlockNum.Store(cfg.Type, now)
 }
 
 func evmBlockInitOffset(now, offset int64, cfg evmCfg) int64 {
@@ -159,6 +157,13 @@ func evmBlockInitOffset(now, offset int64, cfg evmCfg) int64 {
 		defer ticker.Stop()
 
 		for b := now; b >= now+offset; b-- {
+			var count int64 = 0
+			model.DB.Model(&model.TradeOrders{}).Where("status = ?", model.OrderStatusWaiting).Count(&count)
+			if count == 0 { // 没有待支付的订单，往回扫没必要
+
+				return
+			}
+
 			blocks = append(blocks, evmBlock{Num: b, Network: cfg})
 			if len(blocks) >= blockParseMaxNum {
 				chainScanQueue.In <- blocks
@@ -256,7 +261,7 @@ func evmBlockParse(b any) {
 			}
 
 			amount := decimal.NewFromBigInt(rawAmount, first.Network.Decimals.Native)
-			tradeType := getTradeType(first.Network.Type, recv, input, rawAmount)
+			tradeType := evmParseTradeType(first.Network.Type, recv, input, rawAmount)
 			if tradeType == nil {
 
 				continue
@@ -295,7 +300,7 @@ func evmBlockParse(b any) {
 	}
 }
 
-func getTradeType(net, to, input string, value *big.Int) *model.TradeType {
+func evmParseTradeType(net, to, input string, value *big.Int) *model.TradeType {
 	var tradeType, ok = nativeToken[net]
 	if ok && input == "0x" && value.Sign() == 1 { // 原生代币
 
