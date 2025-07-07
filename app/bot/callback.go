@@ -254,9 +254,6 @@ func cbOrderDetailAction(ctx context.Context, b *bot.Bot, u *models.Update) {
 				{Text: "🌏商户网站", URL: site.String()},
 				{Text: "📝交易明细", URL: order.GetDetailUrl()},
 			},
-			{
-				{Text: "📦返回订单列表", CallbackData: fmt.Sprintf("%s|%s", cbOrderList, args[2])},
-			},
 		},
 	}
 
@@ -264,6 +261,12 @@ func cbOrderDetailAction(ctx context.Context, b *bot.Bot, u *models.Update) {
 		markup.InlineKeyboard = append(markup.InlineKeyboard, []models.InlineKeyboardButton{
 			{Text: "✅标记回调成功", CallbackData: cbMarkNotifySucc + "|" + order.TradeId},
 			{Text: "⚡️立刻回调重试", CallbackData: cbOrderNotifyRetry + "|" + order.TradeId},
+		})
+	}
+
+	if len(args) == 3 {
+		markup.InlineKeyboard = append(markup.InlineKeyboard, []models.InlineKeyboardButton{
+			{Text: "📦返回订单列表", CallbackData: fmt.Sprintf("%s|%s", cbOrderList, args[2])},
 		})
 	}
 
