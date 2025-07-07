@@ -10,13 +10,13 @@ const (
 	defaultPaymentMaxAmount    = 99999
 	defaultUsdtAtomicity       = 0.01 // 原子精度
 	defaultTrxAtomicity        = 0.01
-	defaultTronGrpcNode        = "18.141.79.38:50051"                 // 默认GRPC节点
-	defaultBscRpcEndpoint      = "https://bsc-dataseed.bnbchain.org/" // 默认BSC RPC节点
-	defaultXlayerRpcEndpoint   = "https://xlayerrpc.okx.com/"         // 默认Xlayer RPC节点
-	defaultPolygonRpcEndpoint  = "https://polygon-rpc.com/"           // 默认Polygon RPC节点
-	defaultEthereumRpcEndpoint = "https://ethereum.publicnode.com/"   // 默认Ethereum RPC节点
-	defaultOutputLog           = "/var/log/bepusdt.log"               // 默认日志输出文件
-	defaultSqlitePath          = "/var/lib/bepusdt/sqlite.db"         // 默认数据库文件
+	defaultTronGrpcNode        = "18.141.79.38:50051"                      // 默认GRPC节点
+	defaultBscRpcEndpoint      = "https://bsc-dataseed.bnbchain.org/"      // 默认BSC RPC节点
+	defaultXlayerRpcEndpoint   = "https://xlayerrpc.okx.com/"              // 默认Xlayer RPC节点
+	defaultPolygonRpcEndpoint  = "https://polygon-bor-rpc.publicnode.com/" // 默认Polygon RPC节点
+	defaultEthereumRpcEndpoint = "https://ethereum.publicnode.com/"        // 默认Ethereum RPC节点
+	defaultOutputLog           = "/var/log/bepusdt.log"                    // 默认日志输出文件
+	defaultSqlitePath          = "/var/lib/bepusdt/sqlite.db"              // 默认数据库文件
 )
 
 const (
