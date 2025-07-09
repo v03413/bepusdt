@@ -28,6 +28,7 @@ const (
 	OrderTradeTypeUsdtErc20   = "usdt.erc20"
 	OrderTradeTypeUsdtBep20   = "usdt.bep20"
 	OrderTradeTypeUsdtXlayer  = "usdt.xlayer"
+	OrderTradeTypeUsdtSolana  = "usdt.solana"
 )
 
 const (

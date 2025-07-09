@@ -15,6 +15,7 @@ import (
 const (
 	Bsc      = "bsc" // Binance Smart Chain
 	Tron     = "tron"
+	Solana   = "solana"
 	Xlayer   = "xlayer"
 	Polygon  = "polygon"
 	Ethereum = "ethereum"
