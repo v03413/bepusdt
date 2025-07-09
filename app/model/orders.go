@@ -140,23 +140,19 @@ func (o *TradeOrders) GetDetailUrl() string {
 
 func GetDetailUrl(tradeType, hash string) string {
 	if tradeType == OrderTradeTypeUsdtErc20 {
-
 		return "https://etherscan.io/tx/" + hash
 	}
-
 	if tradeType == OrderTradeTypeUsdtBep20 {
-
 		return "https://bscscan.com/tx/" + hash
 	}
-
 	if tradeType == OrderTradeTypeUsdtXlayer {
-
 		return "https://web3.okx.com/zh-hans/explorer/x-layer/tx/" + hash
 	}
-
 	if tradeType == OrderTradeTypeUsdtPolygon {
-
 		return "https://polygonscan.com/tx/" + hash
+	}
+	if tradeType == OrderTradeTypeUsdtSolana {
+		return "https://solscan.io/tx/" + hash
 	}
 
 	return "https://tronscan.org/#/transaction/" + hash

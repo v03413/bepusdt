@@ -45,7 +45,7 @@ var contractMap = map[string]string{
 	conf.UsdtErc20:   model.OrderTradeTypeUsdtErc20,
 }
 
-var client = &http.Client{Timeout: time.Second * 10}
+var client = &http.Client{Timeout: time.Second * 30}
 var chainScanQueue = chanx.NewUnboundedChan[[]evmBlock](context.Background(), 30)
 
 type decimals struct {

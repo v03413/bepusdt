@@ -4,6 +4,7 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
+	"github.com/btcsuite/btcd/btcutil/base58"
 	gonanoid "github.com/matoous/go-nanoid/v2"
 	"math"
 	"math/big"
@@ -112,6 +113,12 @@ func IsValidEvmAddress(address string) bool {
 	}
 
 	return true
+}
+
+func IsValidSolanaAddress(address string) bool {
+	data := base58.Decode(address)
+
+	return len(data) == 32
 }
 
 func MaskAddress(address string) string {

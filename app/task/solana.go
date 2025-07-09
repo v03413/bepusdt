@@ -108,7 +108,7 @@ func (s *solana) slotRoll(context.Context) {
 }
 
 func (s *solana) slotDispatch(ctx context.Context) {
-	p, err := ants.NewPoolWithFunc(8, s.slotParse)
+	p, err := ants.NewPoolWithFunc(3, s.slotParse)
 	if err != nil {
 		panic(err)
 
@@ -150,7 +150,7 @@ func (s *solana) slotInitOffset(now int64) {
 			model.DB.Model(&model.TradeOrders{}).Where("status = ? and trade_type = ?", model.OrderStatusWaiting, model.OrderTradeTypeUsdtSolana).Count(&count)
 			if count == 0 { // 没有待支付的订单，往回扫没必要
 
-				//return
+				return
 			}
 
 			s.slotQueue.In <- num
@@ -300,16 +300,19 @@ func (s *solana) parseTransfer(instr gjson.Result, accountKeys []string, usdtTok
 
 		return trans
 	}
+
 	data := base58.Decode(instr.Get("data").String())
-	if len(data) != 9 { // data 必然是9个字节
+	dLen := len(data)
+	isTransfer := data[0] == 3 && dLen == 9
+	isTransferChecked := data[0] == 12 && dLen == 10
+	if !isTransfer && !isTransferChecked {
 
 		return trans
 	}
 
-	// not transfer && transferChecked instruction
-	if data[0] != 3 && data[0] != 12 {
-
-		return trans
+	var exp int32 = -6
+	if isTransferChecked {
+		exp = int32(data[9]) * -1
 	}
 
 	from, ok := usdtTokenAccountMap[accountKeys[accounts[0].Int()]]
@@ -320,13 +323,16 @@ func (s *solana) parseTransfer(instr gjson.Result, accountKeys []string, usdtTok
 
 	trans.FromAddress = from
 	trans.RecvAddress = usdtTokenAccountMap[accountKeys[accounts[1].Int()]]
+	if isTransferChecked {
+		trans.RecvAddress = usdtTokenAccountMap[accountKeys[accounts[2].Int()]]
+	}
 
 	buf := make([]byte, 8)
 	copy(buf[:], data[1:9])
 	number := binary.LittleEndian.Uint64(buf)
 	b := new(big.Int)
 	b.SetUint64(number)
-	trans.Amount = decimal.NewFromBigInt(b, -6) // USDT的精度是6位小数
+	trans.Amount = decimal.NewFromBigInt(b, exp) // USDT的精度是6位小数
 
 	return trans
 }

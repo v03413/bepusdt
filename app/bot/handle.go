@@ -29,7 +29,7 @@ func defaultHandle(ctx context.Context, bot *bot.Bot, u *models.Update) {
 
 func addWalletAddress(u *models.Update) {
 	var address = strings.TrimSpace(u.Message.Text)
-	if !help.IsValidTronAddress(address) && !help.IsValidEvmAddress(address) {
+	if !help.IsValidTronAddress(address) && !help.IsValidEvmAddress(address) && !help.IsValidSolanaAddress(address) {
 		SendMessage(&bot.SendMessageParams{Text: "钱包地址不合法"})
 
 		return
