@@ -42,7 +42,7 @@ func addWalletAddress(u *models.Update) {
 
 	var tradeType, _ = cache.Get(fmt.Sprintf("%s_%d_trade_type", cbAddressAdd, u.Message.Chat.ID))
 
-	var wa = model.WalletAddress{TradeType: tradeType.(string), Address: address, Status: model.StatusEnable, OtherNotify: model.OtherNotifyEnable}
+	var wa = model.WalletAddress{TradeType: tradeType.(string), Address: address, Status: model.StatusEnable, OtherNotify: model.OtherNotifyDisable}
 	var r = model.DB.Create(&wa)
 	if r.Error != nil {
 		SendMessage(&bot.SendMessageParams{Text: "❌地址添加失败，" + r.Error.Error()})
