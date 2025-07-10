@@ -44,6 +44,13 @@ var contractMap = map[string]string{
 	conf.UsdtPolygon: model.OrderTradeTypeUsdtPolygon,
 	conf.UsdtErc20:   model.OrderTradeTypeUsdtErc20,
 }
+var chainUsdtMap = map[string]string{
+	conf.Bsc:      model.OrderTradeTypeUsdtBep20,
+	conf.Xlayer:   model.OrderTradeTypeUsdtXlayer,
+	conf.Polygon:  model.OrderTradeTypeUsdtPolygon,
+	conf.Ethereum: model.OrderTradeTypeUsdtErc20,
+	conf.Solana:   model.OrderTradeTypeUsdtSolana,
+}
 
 var client = &http.Client{Timeout: time.Second * 30}
 var chainScanQueue = chanx.NewUnboundedChan[[]evmBlock](context.Background(), 30)
@@ -90,6 +97,11 @@ func evmBlockRoll(ctx context.Context) {
 		return
 	}
 
+	if rollBreak(cfg.Type) {
+
+		return
+	}
+
 	post := []byte(`{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}`)
 	resp, err := client.Post(cfg.Endpoint, contentType, bytes.NewBuffer(post))
 	if err != nil {
@@ -125,7 +137,7 @@ func evmBlockRoll(ctx context.Context) {
 		lastBlockNumber = v.(int64)
 	}
 
-	if lastBlockNumber == 0 { // 首次启动
+	if now-lastBlockNumber > conf.BlockHeightMaxDiff {
 
 		lastBlockNumber = evmBlockInitOffset(now, cfg.Block.InitStartOffset, cfg) - 1
 	}
@@ -157,9 +169,7 @@ func evmBlockInitOffset(now, offset int64, cfg evmCfg) int64 {
 		defer ticker.Stop()
 
 		for b := now; b >= now+offset; b-- {
-			var count int64 = 0
-			model.DB.Model(&model.TradeOrders{}).Where("status = ?", model.OrderStatusWaiting).Count(&count)
-			if count == 0 { // 没有待支付的订单，往回扫没必要
+			if rollBreak(cfg.Type) {
 
 				return
 			}
@@ -316,4 +326,27 @@ func evmParseTradeType(net, to, input string, value *big.Int) *model.TradeType {
 
 	// 其他合约数据
 	return nil
+}
+
+func rollBreak(network string) bool {
+	usdt, ok := chainUsdtMap[network]
+	if !ok {
+
+		return true
+	}
+
+	var count int64 = 0
+	model.DB.Model(&model.TradeOrders{}).Where("status = ? and trade_type = ?", model.OrderStatusWaiting, usdt).Count(&count)
+	if count > 0 {
+
+		return false
+	}
+
+	model.DB.Model(&model.WalletAddress{}).Where("other_notify = ? and trade_type = ?", model.OtherNotifyEnable, usdt).Count(&count)
+	if count > 0 {
+
+		return false
+	}
+
+	return true
 }

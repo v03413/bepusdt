@@ -18,11 +18,6 @@ import (
 	"time"
 )
 
-const (
-	solanaUsdtMint = "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB"
-	solanaSplToken = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-)
-
 // 参考文档
 //  - https://solana.com/zh/docs/rpc
 //  - https://github.com/solana-program/token/blob/main/program/src/instruction.rs
@@ -52,6 +47,11 @@ func newSolana() solana {
 }
 
 func (s *solana) slotRoll(context.Context) {
+	if rollBreak(conf.Solana) {
+
+		return
+	}
+
 	post := []byte(`{"jsonrpc":"2.0","id":1,"method":"getSlot"}`)
 
 	resp, err := client.Post(conf.GetSolanaRpcEndpoint(), contentType, bytes.NewBuffer(post))
@@ -88,7 +88,7 @@ func (s *solana) slotRoll(context.Context) {
 		now = now - s.slotConfirmedOffset
 	}
 
-	if s.lastSlotNum == 0 { // 首次启动
+	if now-s.lastSlotNum > conf.BlockHeightMaxDiff { // 区块高度变化过大，强制丢块重扫
 		s.lastSlotNum = now
 		s.slotInitOffset(now)
 	}
@@ -146,9 +146,7 @@ func (s *solana) slotInitOffset(now int64) {
 		defer ticker.Stop()
 
 		for num := now; num >= now+s.slotInitStartOffset; num-- {
-			var count int64 = 0
-			model.DB.Model(&model.TradeOrders{}).Where("status = ? and trade_type = ?", model.OrderStatusWaiting, model.OrderTradeTypeUsdtSolana).Count(&count)
-			if count == 0 { // 没有待支付的订单，往回扫没必要
+			if rollBreak(conf.Solana) {
 
 				return
 			}
@@ -211,7 +209,7 @@ func (s *solana) slotParse(n any) {
 		// 查找SPL Token索引
 		splTokenIndex := int64(-1)
 		for i, v := range accountKeys {
-			if v == solanaSplToken {
+			if v == conf.SolSplToken {
 				splTokenIndex = int64(i)
 
 				break
@@ -228,7 +226,7 @@ func (s *solana) slotParse(n any) {
 		usdtTokenAccountMap := make(map[string]string)
 		for _, v := range []string{"postTokenBalances", "preTokenBalances"} {
 			for _, itm := range trans.Get("meta." + v).Array() {
-				if itm.Get("mint").String() != solanaUsdtMint || itm.Get("programId").String() != solanaSplToken {
+				if itm.Get("mint").String() != conf.UsdtSolana || itm.Get("programId").String() != conf.SolSplToken {
 
 					continue
 				}
