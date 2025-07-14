@@ -55,7 +55,7 @@ func orderTransferHandle(context.Context) {
 		var orders = getAllWaitingOrders()
 		for _, t := range transfers {
 			// debug
-			//if t.Network == conf.Xlayer {
+			//if t.Network == conf.Aptos {
 			//	fmt.Println(t.Network, t.TradeType, t.TxHash, t.Amount.String(), t.RecvAddress)
 			//}
 
@@ -83,7 +83,7 @@ func orderTransferHandle(context.Context) {
 			o.MarkSuccess(t.BlockNum, t.FromAddress, t.TxHash, t.Timestamp)
 
 			model.PushWebhookEvent(model.WebhookEventOrderPaid, o)
-			
+
 			go notify.Handle(o)         // 通知订单支付成功
 			go bot2.SendTradeSuccMsg(o) // TG发送订单信息
 		}

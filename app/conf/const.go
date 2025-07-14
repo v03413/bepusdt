@@ -17,17 +17,19 @@ const (
 	defaultXlayerRpcEndpoint   = "https://xlayerrpc.okx.com/"         // 默认Xlayer RPC节点
 	defaultPolygonRpcEndpoint  = "https://polygon-rpc.com/"           // 默认Polygon RPC节点
 	defaultEthereumRpcEndpoint = "https://ethereum.publicnode.com/"   // 默认Ethereum RPC节点
+	defaultAptosRpcEndpoint    = "https://api.mainnet.aptoslabs.com/" // 默认Aptos RPC节点
 	defaultOutputLog           = "/var/log/bepusdt.log"               // 默认日志输出文件
 	defaultSqlitePath          = "/var/lib/bepusdt/sqlite.db"         // 默认数据库文件
 )
 
 const (
-	UsdtErc20   = "0xdac17f958d2ee523a2206206994597c13d831ec7"   // Eth USDT合约地址
-	UsdtBep20   = "0x55d398326f99059ff775485246999027b3197955"   // BSC USDT合约地址
-	UsdtXlayer  = "0x1e4a5963abfd975d8c9021ce480b42188849d41d"   // Xlayer USDT合约地址
-	UsdtPolygon = "0xc2132d05d31c914a87c6611c10748aeb04b58e8f"   // Polygon USDT合约地址
-	UsdtSolana  = "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB" // Solana USDT合约地址
-	SolSplToken = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"  // Solana SPL Token合约地址
+	UsdtErc20   = "0xdac17f958d2ee523a2206206994597c13d831ec7"                         // Eth USDT合约地址
+	UsdtBep20   = "0x55d398326f99059ff775485246999027b3197955"                         // BSC USDT合约地址
+	UsdtXlayer  = "0x1e4a5963abfd975d8c9021ce480b42188849d41d"                         // Xlayer USDT合约地址
+	UsdtPolygon = "0xc2132d05d31c914a87c6611c10748aeb04b58e8f"                         // Polygon USDT合约地址
+	UsdtSolana  = "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB"                       // Solana USDT合约地址
+	SolSplToken = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"                        // Solana SPL Token合约地址
+	UsdtAptos   = "0x357b0b74bc833e95a115ad22604854d6b0fca151cecd94111770e5d6ffc9dc2b" // Aptos USDT合约地址
 )
 
 // UsdtDecimals USDT合约小数位数
@@ -36,6 +38,7 @@ const (
 	UsdtEthDecimals     = -6  // USDT ERC20小数位数
 	UsdtXlayerDecimals  = -6  // USDT Xlayer小数位数
 	UsdtPolygonDecimals = -6  // USDT Polygon小数位数
+	UsdtAptosDecimals   = -6  // USDT Aptos小数位数
 )
 
 const (

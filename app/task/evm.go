@@ -50,6 +50,7 @@ var chainUsdtMap = map[string]string{
 	conf.Polygon:  model.OrderTradeTypeUsdtPolygon,
 	conf.Ethereum: model.OrderTradeTypeUsdtErc20,
 	conf.Solana:   model.OrderTradeTypeUsdtSolana,
+	conf.Aptos:    model.OrderTradeTypeUsdtAptos,
 }
 
 var client = &http.Client{Timeout: time.Second * 30}

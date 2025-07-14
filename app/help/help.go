@@ -121,6 +121,22 @@ func IsValidSolanaAddress(address string) bool {
 	return len(data) == 32
 }
 
+func IsValidAptosAddress(address string) bool {
+	if strings.HasPrefix(address, "0x") || strings.HasPrefix(address, "0X") {
+
+		address = address[2:]
+	}
+
+	if len(address) != 64 {
+
+		return false
+	}
+
+	matched, _ := regexp.MatchString("^[0-9a-fA-F]{64}$", address)
+
+	return matched
+}
+
 func MaskAddress(address string) string {
 	if len(address) <= 20 {
 

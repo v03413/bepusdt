@@ -21,6 +21,7 @@ var SupportTradeTypes = []string{
 	OrderTradeTypeUsdtTrc20,
 	OrderTradeTypeUsdtErc20,
 	OrderTradeTypeUsdtBep20,
+	OrderTradeTypeUsdtAptos,
 	OrderTradeTypeUsdtXlayer,
 	OrderTradeTypeUsdtSolana,
 	OrderTradeTypeUsdtPolygon,

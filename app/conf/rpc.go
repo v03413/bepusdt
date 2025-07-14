@@ -9,6 +9,14 @@ func GetTronGrpcNode() string {
 	return defaultTronGrpcNode
 }
 
+func GetAptosRpcNode() string {
+	if cfg.AptosRpcNode != "" {
+		return cfg.AptosRpcNode
+	}
+
+	return defaultAptosRpcEndpoint
+}
+
 func GetSolanaRpcEndpoint() string {
 	if cfg.EvmRpc.Solana != "" {
 

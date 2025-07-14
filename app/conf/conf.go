@@ -8,6 +8,7 @@ type Conf struct {
 	StaticPath   string `toml:"static_path"`
 	SqlitePath   string `toml:"sqlite_path"`
 	TronGrpcNode string `toml:"tron_grpc_node"`
+	AptosRpcNode string `toml:"aptos_rpc_node"`
 	WebhookUrl   string `toml:"webhook_url"`
 	Pay          struct {
 		TrxAtom          float64  `toml:"trx_atom"`
