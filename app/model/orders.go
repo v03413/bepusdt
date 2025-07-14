@@ -1,6 +1,7 @@
 package model
 
 import (
+	"fmt"
 	"github.com/shopspring/decimal"
 	"github.com/v03413/bepusdt/app/conf"
 	"strconv"
@@ -154,6 +155,9 @@ func GetDetailUrl(tradeType, hash string) string {
 	}
 	if tradeType == OrderTradeTypeUsdtSolana {
 		return "https://solscan.io/tx/" + hash
+	}
+	if tradeType == OrderTradeTypeUsdtAptos {
+		return fmt.Sprintf("https://explorer.aptoslabs.com/txn/%s?network=mainnet", hash)
 	}
 
 	return "https://tronscan.org/#/transaction/" + hash

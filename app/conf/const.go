@@ -17,7 +17,7 @@ const (
 	defaultXlayerRpcEndpoint   = "https://xlayerrpc.okx.com/"         // 默认Xlayer RPC节点
 	defaultPolygonRpcEndpoint  = "https://polygon-rpc.com/"           // 默认Polygon RPC节点
 	defaultEthereumRpcEndpoint = "https://ethereum.publicnode.com/"   // 默认Ethereum RPC节点
-	defaultAptosRpcEndpoint    = "https://api.mainnet.aptoslabs.com/" // 默认Aptos RPC节点
+	defaultAptosRpcEndpoint    = "https://aptos-rest.publicnode.com/" // 默认Aptos RPC节点
 	defaultOutputLog           = "/var/log/bepusdt.log"               // 默认日志输出文件
 	defaultSqlitePath          = "/var/lib/bepusdt/sqlite.db"         // 默认数据库文件
 )

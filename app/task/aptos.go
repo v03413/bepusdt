@@ -44,7 +44,7 @@ func init() {
 
 func newAptos() aptos {
 	return aptos{
-		versionChunkSize:       100,
+		versionChunkSize:       100, // 目前好像最大就只能100
 		versionConfirmedOffset: 1000,
 		versionInitStartOffset: -100 * 500,
 		lastVersion:            0,
