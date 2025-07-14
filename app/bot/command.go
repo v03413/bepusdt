@@ -73,7 +73,7 @@ func cmdStateHandle(ctx context.Context, b *bot.Bot, u *models.Update) {
 	var rows []model.TradeOrders
 	model.DB.Where("created_at > ?", time.Now().Format(time.DateOnly)).Find(&rows)
 	var succ uint64
-	var money, trx, uTrc20, uErc20, uBep20, uXlayer, uSolana, uPol float64
+	var money, trx, uTrc20, uErc20, uBep20, uXlayer, uSolana, uPol, uAptos float64
 	for _, o := range rows {
 		if o.Status != model.OrderStatusSuccess {
 
@@ -105,6 +105,9 @@ func cmdStateHandle(ctx context.Context, b *bot.Bot, u *models.Update) {
 		if o.TradeType == model.OrderTradeTypeUsdtSolana {
 			uSolana += amount
 		}
+		if o.TradeType == model.OrderTradeTypeUsdtAptos {
+			uAptos += amount
+		}
 	}
 
 	var base = "```" + `
@@ -116,12 +119,14 @@ func cmdStateHandle(ctx context.Context, b *bot.Bot, u *models.Update) {
 	- %.2f USDT.Trc20
 	- %.2f USDT.Erc20
 	- %.2f USDT.Bep20
+	- %.2f USDT.Aptos
 	- %.2f USDT.Xlayer
 	- %.2f USDT.Solana
 	- %.2f USDT.Polygon
 🌟扫块成功数据
 	- Bsc %s
 	- Tron %s
+	- Aptos %s
 	- Xlayer %s
 	- Solana %s
 	- Polygon %s
@@ -146,11 +151,13 @@ func cmdStateHandle(ctx context.Context, b *bot.Bot, u *models.Update) {
 		uTrc20,
 		uErc20,
 		uBep20,
+		uAptos,
 		uXlayer,
 		uSolana,
 		uPol,
 		conf.GetBlockSuccRate(conf.Bsc),
 		conf.GetBlockSuccRate(conf.Tron),
+		conf.GetBlockSuccRate(conf.Aptos),
 		conf.GetBlockSuccRate(conf.Xlayer),
 		conf.GetBlockSuccRate(conf.Solana),
 		conf.GetBlockSuccRate(conf.Polygon),
