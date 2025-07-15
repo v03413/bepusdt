@@ -23,31 +23,41 @@ import (
 	"time"
 )
 
-// Tron区块确认偏移量
-const tronBlockConfirmedOffset = 30
-const tronBlockInitStartOffset = -400 // 大概为过去20分钟的区块高度
-
-// usdt trc20 contract address 41a614f803b6fd780986a42c78ec9c7f77e6ded13c TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t
+var gasFreeUsdtTokenAddress = []byte{0xa6, 0x14, 0xf8, 0x03, 0xb6, 0xfd, 0x78, 0x09, 0x86, 0xa4, 0x2c, 0x78, 0xec, 0x9c, 0x7f, 0x77, 0xe6, 0xde, 0xd1, 0x3c}
+var gasFreeOwnerAddress = []byte{0x41, 0x3b, 0x41, 0x50, 0x50, 0xb1, 0xe7, 0x9e, 0x38, 0x50, 0x7c, 0xb6, 0xe4, 0x8d, 0xac, 0xc2, 0x27, 0xaf, 0xfd, 0xd5, 0x0c}
+var gasFreeContractAddress = []byte{0x41, 0x39, 0xdd, 0x12, 0xa5, 0x4e, 0x2b, 0xab, 0x7c, 0x82, 0xaa, 0x14, 0xa1, 0xe1, 0x58, 0xb3, 0x42, 0x63, 0xd2, 0xd5, 0x10}
 var usdtTrc20ContractAddress = []byte{0x41, 0xa6, 0x14, 0xf8, 0x03, 0xb6, 0xfd, 0x78, 0x09, 0x86, 0xa4, 0x2c, 0x78, 0xec, 0x9c, 0x7f, 0x77, 0xe6, 0xde, 0xd1, 0x3c}
-var tronLastBlockNum int64
-var tronBlockScanQueue = chanx.NewUnboundedChan[int64](context.Background(), 30)
-var params = grpc.ConnectParams{
+var grpcParams = grpc.ConnectParams{
 	Backoff:           backoff.Config{BaseDelay: 1 * time.Second, MaxDelay: 30 * time.Second, Multiplier: 1.5},
 	MinConnectTimeout: 1 * time.Minute,
 }
 
-type usdtTrc20TransferRaw struct {
-	RecvAddress string
-	Amount      int64
+type tron struct {
+	blockConfirmedOffset int64
+	blockInitStartOffset int64
+	lastBlockNum         int64
+	blockScanQueue       *chanx.UnboundedChan[int64]
 }
+
+var tr tron
 
 func init() {
-	register(task{duration: time.Second * 3, callback: tronBlockRoll}) // 大概3秒产生一个区块
-	register(task{duration: time.Second, callback: tronBlockDispatch})
+	tr = newTron()
+	register(task{duration: time.Second * 3, callback: tr.blockRoll}) // 大概3秒产生一个区块
+	register(task{duration: time.Second, callback: tr.blockDispatch})
 }
 
-func tronBlockDispatch(context.Context) {
-	p, err := ants.NewPoolWithFunc(8, tronBlockParse)
+func newTron() tron {
+	return tron{
+		blockConfirmedOffset: 30,   // 区块确认偏移量
+		blockInitStartOffset: -400, // 大概为过去20分钟的区块高度
+		lastBlockNum:         0,
+		blockScanQueue:       chanx.NewUnboundedChan[int64](context.Background(), 30),
+	}
+}
+
+func (t *tron) blockDispatch(context.Context) {
+	p, err := ants.NewPoolWithFunc(8, t.blockParse)
 	if err != nil {
 		panic(err)
 
@@ -56,19 +66,19 @@ func tronBlockDispatch(context.Context) {
 
 	defer p.Release()
 
-	for n := range tronBlockScanQueue.Out {
+	for n := range t.blockScanQueue.Out {
 		if err := p.Invoke(n); err != nil {
-			tronBlockScanQueue.In <- n
+			t.blockScanQueue.In <- n
 
 			log.Warn("Tron Error invoking process block:", err)
 		}
 	}
 }
 
-func tronBlockRoll(context.Context) {
+func (t *tron) blockRoll(context.Context) {
 	var node = conf.GetTronGrpcNode()
 
-	conn, err := grpc.NewClient(node, grpc.WithConnectParams(params), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(node, grpc.WithConnectParams(grpcParams), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 
 		log.Error("grpc.NewClient", err)
@@ -91,36 +101,36 @@ func tronBlockRoll(context.Context) {
 	var now = block.BlockHeader.RawData.Number
 	if conf.GetTradeIsConfirmed() {
 
-		now = now - tronBlockConfirmedOffset
+		now = now - t.blockConfirmedOffset
 	}
 
 	// 首次启动
-	if tronLastBlockNum == 0 {
+	if t.lastBlockNum == 0 {
 
-		tronLastBlockNum = now + tronBlockInitStartOffset
+		t.lastBlockNum = now + t.blockInitStartOffset
 	}
 
 	// 区块高度没有变化
-	if now <= tronLastBlockNum {
+	if now <= t.lastBlockNum {
 
 		return
 	}
 
 	// 待扫描区块入列
-	for n := tronLastBlockNum + 1; n <= now; n++ {
+	for n := t.lastBlockNum + 1; n <= now; n++ {
 
-		tronBlockScanQueue.In <- n
+		t.blockScanQueue.In <- n
 	}
 
-	tronLastBlockNum = now
+	t.lastBlockNum = now
 }
 
-func tronBlockParse(n any) {
+func (t *tron) blockParse(n any) {
 	var num = n.(int64)
 	var node = conf.GetTronGrpcNode()
 	var conn *grpc.ClientConn
 	var err error
-	if conn, err = grpc.NewClient(node, grpc.WithConnectParams(params), grpc.WithTransportCredentials(insecure.NewCredentials())); err != nil {
+	if conn, err = grpc.NewClient(node, grpc.WithConnectParams(grpcParams), grpc.WithTransportCredentials(insecure.NewCredentials())); err != nil {
 
 		log.Error("grpc.NewClient", err)
 	}
@@ -131,27 +141,27 @@ func tronBlockParse(n any) {
 	conf.SetBlockTotal(conf.Tron)
 
 	var ctx, cancel = context.WithTimeout(context.Background(), time.Second*3)
-	block, err1 := client.GetBlockByNum2(ctx, &api.NumberMessage{Num: num})
+	bok, err2 := client.GetBlockByNum2(ctx, &api.NumberMessage{Num: num})
 	cancel()
-	if err1 != nil {
+	if err2 != nil {
 		conf.SetBlockFail(conf.Tron)
-		tronBlockScanQueue.In <- num
-		log.Warn("GetBlockByNum Error", err1)
+		t.blockScanQueue.In <- num
+		log.Warn("GetBlockByNum2 Error", err2)
 
 		return
 	}
 
 	var resources = make([]resource, 0)
 	var transfers = make([]transfer, 0)
-	var timestamp = time.UnixMilli(block.GetBlockHeader().GetRawData().GetTimestamp())
-	for _, v := range block.GetTransactions() {
-		if !v.Result.Result {
+	var timestamp = time.UnixMilli(bok.GetBlockHeader().GetRawData().GetTimestamp())
+	for _, trans := range bok.GetTransactions() {
+		if !trans.Result.Result {
 
 			continue
 		}
 
-		var itm = v.GetTransaction()
-		var id = hex.EncodeToString(v.Txid)
+		var itm = trans.GetTransaction()
+		var id = hex.EncodeToString(trans.Txid)
 		for _, contract := range itm.GetRawData().GetContract() {
 			// 资源代理 DelegateResourceContract
 			if contract.GetType() == core.Transaction_Contract_DelegateResourceContract {
@@ -167,8 +177,8 @@ func tronBlockParse(n any) {
 					Type:         core.Transaction_Contract_DelegateResourceContract,
 					Balance:      foo.Balance,
 					ResourceCode: foo.Resource,
-					FromAddress:  base58CheckEncode(foo.OwnerAddress),
-					RecvAddress:  base58CheckEncode(foo.ReceiverAddress),
+					FromAddress:  t.base58CheckEncode(foo.OwnerAddress),
+					RecvAddress:  t.base58CheckEncode(foo.ReceiverAddress),
 					Timestamp:    timestamp,
 				})
 			}
@@ -187,8 +197,8 @@ func tronBlockParse(n any) {
 					Type:         core.Transaction_Contract_UnDelegateResourceContract,
 					Balance:      foo.Balance,
 					ResourceCode: foo.Resource,
-					FromAddress:  base58CheckEncode(foo.OwnerAddress),
-					RecvAddress:  base58CheckEncode(foo.ReceiverAddress),
+					FromAddress:  t.base58CheckEncode(foo.OwnerAddress),
+					RecvAddress:  t.base58CheckEncode(foo.ReceiverAddress),
 					Timestamp:    timestamp,
 				})
 			}
@@ -206,8 +216,8 @@ func tronBlockParse(n any) {
 					Network:     conf.Tron,
 					TxHash:      id,
 					Amount:      decimal.NewFromBigInt(new(big.Int).SetInt64(foo.Amount), -6),
-					FromAddress: base58CheckEncode(foo.OwnerAddress),
-					RecvAddress: base58CheckEncode(foo.ToAddress),
+					FromAddress: t.base58CheckEncode(foo.OwnerAddress),
+					RecvAddress: t.base58CheckEncode(foo.ToAddress),
 					Timestamp:   timestamp,
 					TradeType:   model.OrderTradeTypeTronTrx,
 					BlockNum:    cast.ToInt64(num),
@@ -219,33 +229,58 @@ func tronBlockParse(n any) {
 			// 触发智能合约
 			if contract.GetType() == core.Transaction_Contract_TriggerSmartContract {
 				var foo = &core.TriggerSmartContract{}
-				err := contract.GetParameter().UnmarshalTo(foo)
-				if err != nil {
+				if err := contract.GetParameter().UnmarshalTo(foo); err != nil {
 
 					continue
 				}
 
-				var transItem = transfer{Timestamp: timestamp, TxHash: id, FromAddress: base58CheckEncode(foo.OwnerAddress)}
-				var reader = bytes.NewReader(foo.GetData())
-				if !bytes.Equal(foo.GetContractAddress(), usdtTrc20ContractAddress) { // usdt trc20 contract
+				// Gas Free 钱包 合约授权转账
+				if bytes.Equal(foo.OwnerAddress, gasFreeOwnerAddress) && bytes.Equal(foo.ContractAddress, gasFreeContractAddress) {
+					from, receiver, amount := t.gasFreePermitTransfer(foo.GetData())
+					if from == "" || receiver == "" || amount == nil {
+
+						continue
+					}
+
+					transfers = append(transfers, transfer{
+						Network:     conf.Tron,
+						TxHash:      id,
+						Amount:      decimal.NewFromBigInt(new(big.Int).SetInt64(amount.Int64()), -6),
+						FromAddress: from,
+						RecvAddress: receiver,
+						Timestamp:   timestamp,
+						TradeType:   model.OrderTradeTypeUsdtTrc20,
+						BlockNum:    cast.ToInt64(num),
+					})
 
 					continue
 				}
 
-				// 解析合约数据
-				var trc20Contract = parseUsdtTrc20Contract(reader)
-				if trc20Contract.Amount == 0 {
+				{
+					var reader = bytes.NewReader(foo.GetData())
+					if !bytes.Equal(foo.GetContractAddress(), usdtTrc20ContractAddress) { // usdt trc20 contract
 
-					continue
+						continue
+					}
+
+					// 解析合约数据
+					var recvAddress, amount = t.parseUsdtTrc20Contract(reader)
+					if amount == 0 {
+
+						continue
+					}
+
+					transfers = append(transfers, transfer{
+						Network:     conf.Tron,
+						TxHash:      id,
+						Amount:      decimal.NewFromBigInt(new(big.Int).SetInt64(amount), -6),
+						FromAddress: t.base58CheckEncode(foo.OwnerAddress),
+						RecvAddress: recvAddress,
+						Timestamp:   timestamp,
+						TradeType:   model.OrderTradeTypeUsdtTrc20,
+						BlockNum:    cast.ToInt64(num),
+					})
 				}
-
-				transItem.Network = conf.Tron
-				transItem.TradeType = model.OrderTradeTypeUsdtTrc20
-				transItem.Amount = decimal.NewFromBigInt(new(big.Int).SetInt64(trc20Contract.Amount), -6)
-				transItem.RecvAddress = trc20Contract.RecvAddress
-				transItem.BlockNum = cast.ToInt64(num)
-
-				transfers = append(transfers, transItem)
 			}
 		}
 	}
@@ -261,18 +296,18 @@ func tronBlockParse(n any) {
 	log.Info("区块扫描完成", num, conf.GetBlockSuccRate(conf.Tron), conf.Tron)
 }
 
-func parseUsdtTrc20Contract(reader *bytes.Reader) usdtTrc20TransferRaw {
+func (t *tron) parseUsdtTrc20Contract(reader *bytes.Reader) (string, int64) {
 	var funcName = make([]byte, 4)
 	_, err = reader.Read(funcName)
 	if err != nil {
 		// 读取funcName失败
 
-		return usdtTrc20TransferRaw{}
+		return "", 0
 	}
 	if !bytes.Equal(funcName, []byte{0xa9, 0x05, 0x9c, 0xbb}) { // a9059cbb transfer(address,uint256)
 		// funcName不匹配transfer
 
-		return usdtTrc20TransferRaw{}
+		return "", 0
 	}
 
 	var addressBytes = make([]byte, 20)
@@ -280,24 +315,50 @@ func parseUsdtTrc20Contract(reader *bytes.Reader) usdtTrc20TransferRaw {
 	if err != nil {
 		// 读取toAddress失败
 
-		return usdtTrc20TransferRaw{}
+		return "", 0
 	}
 
-	var toAddress = base58CheckEncode(append([]byte{0x41}, addressBytes...))
+	var toAddress = t.base58CheckEncode(append([]byte{0x41}, addressBytes...))
 	var value = make([]byte, 32)
 	_, err = reader.ReadAt(value, 36)
 	if err != nil {
 		// 读取value失败
 
-		return usdtTrc20TransferRaw{}
+		return "", 0
 	}
 
 	var amount, _ = strconv.ParseInt(hex.EncodeToString(value), 16, 64)
 
-	return usdtTrc20TransferRaw{RecvAddress: toAddress, Amount: amount}
+	return toAddress, amount
 }
 
-func base58CheckEncode(input []byte) string {
+func (t *tron) gasFreePermitTransfer(data []byte) (string, string, *big.Int) {
+	// https://tronscan.org/#/contract/TFFAMQLZybALaLb4uxHA9RBE7pxhUAjF3U/code?func=Tab-proxywrite-F3proxyNonePayable
+	if len(data) != 420 {
+
+		return "", "", nil
+	}
+
+	if !bytes.Equal(data[:4], []byte{0x6f, 0x21, 0xb8, 0x98}) {
+		// not permitTransfer (6f21b898) function
+
+		return "", "", nil
+	}
+
+	if !bytes.Equal(data[16:36], gasFreeUsdtTokenAddress) {
+		// not gas free usdt token address
+
+		return "", "", nil
+	}
+
+	user := t.base58CheckEncode(append([]byte{0x41}, data[48:68]...))
+	receiver := t.base58CheckEncode(append([]byte{0x41}, data[80:100]...))
+	amount := big.NewInt(0).SetBytes(data[100:132])
+
+	return user, receiver, amount
+}
+
+func (t *tron) base58CheckEncode(input []byte) string {
 	checksum := chainhash.DoubleHashB(input)
 	checksum = checksum[:4]
 
