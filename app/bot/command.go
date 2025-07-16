@@ -214,8 +214,12 @@ func buildOrderButtons(page, size int) ([][]models.InlineKeyboardButton, int) {
 
 	buttons := make([][]models.InlineKeyboardButton, 0, len(orders))
 	for _, o := range orders {
+		orderId := o.OrderId
+		if len(orderId) > 8 {
+			orderId = orderId[len(orderId)-8:]
+		}
 		buttons = append(buttons, []models.InlineKeyboardButton{{
-			Text:         fmt.Sprintf("%s〚%s〛%s 💰%.2f", o.GetStatusEmoji(), o.CreatedAt.Format("1/2 15:04"), o.OrderId[len(o.OrderId)-8:], o.Money),
+			Text:         fmt.Sprintf("%s〚%s〛%s 💰%.2f", o.GetStatusEmoji(), o.CreatedAt.Format("1/2 15:04"), orderId, o.Money),
 			CallbackData: fmt.Sprintf("%s|%v|%d", cbOrderDetail, o.TradeId, page),
 		}})
 	}
