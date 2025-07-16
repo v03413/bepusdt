@@ -23,7 +23,10 @@
 
 ## 🎉 新特性
 
-**🌟 目前支持收款类型：trx usdt.trc20 usdt.bep20(币安) usdt.erc20(以太) usdt.polygon usdt.xlayer(OKX)**
+### 🌟 目前支持收款类型
+
+**🔥主流网络：** TRON(`trx` `usdt.trc20`) Ethereum(`usdt.erc20`) BSC(`usdt.bep20`)   
+**⚡其他网络：** Polygon(`usdt.polygon`) X-Layer(`usdt.xlayer`) Solana(`usdt.solana`) Aptos(`usdt.aptos`)
 
 - ✅ 完全兼容 `Epusdt`，插件可无缝替换
 - ✅ 实时同步 USDT 汇率，支持自定义浮动
@@ -39,17 +42,11 @@
 
 ## 🚀 安装部署
 
-- [Docker 安装教程（推荐🔥）](./docs/docker.md)
-- [异次元发卡对接教程 🌟](./docs/acg-faka.md)
-- [萌次元商城系统对接 🌟](./docs/mcy-shop.md)
-- [独角数卡对接教程 🌟](./docs/dujiaoka.md)
-- [彩虹易支付对接教程](https://github.com/v03413/Epay-BEpusdt)
+- 安装：[Docker](./docs/docker.md)・[Linux](./docs/systemd.md)・1Panel・宝塔
+- 对接：[独角数卡](./docs/dujiaoka.md)・[异次元](./docs/acg-faka.md)・[萌次元](./docs/mcy-shop.md)・[彩虹易支付](https://github.com/v03413/Epay-BEpusdt)  
+- 开发：[API对接](./docs/api.md)・[订单回调](./docs/notify-epusdt.md)・[Webhook 事件](./docs/webhook.md)
 - [https 配置教程](./docs/ssl.md)
-- [Linux 手动安装教程](./docs/systemd.md)
 - [Linux 时钟同步配置](./docs/systemd-timesyncd.md)
-- [API 对接开发签名算法](./docs/sign.md)
-- [对接 回调通知说明](./docs/notify-epusdt.md)
-- [Webhook 事件回调](./docs/webhook.md)
 
 ## 🖼 功能截图
 
@@ -65,108 +62,6 @@ Telegram 搜索加入群`@BEpusdtChat`，随后发送命令`/info`，返回的`I
 
 - 订单交易强依赖时间，请确保服务器时间准确性，否则可能导致订单异常！
 - 部分功能依赖网络，请确保服务器网络纯洁性，否则可能导致功能异常！
-
-## 📚 接口文档
-
-<details>
-<summary>创建订单</summary>  
-
-### 请求地址
-
-```http
-POST /api/v1/order/create-transaction
-```
-
-### 请求数据
-
-```json
-{
-  "address": "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t",  // 可根据实际情况传入收款地址，亦可留空
-  "trade_type": "usdt.trc20",  // usdt.trc20(默认) tron.trx 可选列表 https://github.com/v03413/bepusdt/blob/16d8df2cc5acc3d41c1c014ecb5370bd97f7e955/app/model/orders.go#L25:L30
-  "order_id": "787240927112940881",   // 商户订单编号
-  "amount": 28.88,   // 请求支付金额，CNY
-  "signature":"123456abcd", // 签名
-  "notify_url": "https://example.com/callback",   // 回调地址
-  "redirect_url": "https://example.com/callback", // 支付成功跳转地址
-  "timeout": 1200, // 超时时间(秒) 最低60；留空则取配置文件 expire_time，还是没有取默认600
-  "rate": 7.4 // 强制指定汇率，留空则取配置汇率；支持多种写法，如：7.4表示固定7.4、～1.02表示最新汇率上浮2%、～0.97表示最新汇率下浮3%、+0.3表示最新加0.3、-0.2表示最新减0.2
-}
-```
-
-### 响应内容
-
-```json
-{
-  "status_code": 200,
-  "message": "success",
-  "data": {
-    "trade_id": "b3d2477c-d945-41da-96b7-f925bbd1b415", // 本地交易ID
-    "order_id": "787240927112940881", // 商户订单编号
-    "amount": "28.88", // 请求支付金额，CNY
-    "actual_amount": "10", // 实际支付数额 usdt or trx
-    "token": "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t", // 收款地址
-    "expiration_time": 1200, // 订单有效期，秒
-    "payment_url": "https://example.com//pay/checkout-counter/b3d2477c-d945-41da-96b7-f925bbd1b415"  // 收银台地址
-  },
-  "request_id": ""
-}
-
-```
-
-</details>
-
-<details>
-<summary>取消订单</summary>  
-
-商户端系统可以通过此接口取消订单，取消后，系统将不再监控此订单，同时释放对应金额占用。
-
-### 请求地址
-
-```http
-POST /api/v1/order/cancel-transaction
-```
-
-### 请求数据
-
-```json
-{
-  "trade_id": "0TJV0br98YbNTQe7nQ",   // 交易ID
-  "signature":"123456abcd" // 签名内容
-}
-```
-
-### 响应内容
-
-```json
-{
-  "data": {
-    "trade_id": "0TJV0br98YbNTQe7nQ"
-  },
-  "message": "success",
-  "request_id": "",
-  "status_code": 200
-}
-```
-
-</details>
-
-<details>
-<summary>回调通知</summary>
-
-```json
-{
-  "trade_id": "b3d2477c-d945-41da-96b7-f925bbd1b415",
-  "order_id": "787240927112940881",
-  "amount": 28.88,
-  "actual_amount": 10,
-  "token": "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t",
-  "block_transaction_id": "12ef6267b42e43959795cf31808d0cc72b3d0a48953ed19c61d4b6665a341d10",
-  "signature": "123456abcd",
-  "status": 2   //  1:等待支付  2:支付成功  3:支付超时
-}
-```
-
-</details>
 
 ## 🏝️ 交流反馈
 
