@@ -16,9 +16,7 @@ import (
 )
 
 const (
-	aptosPayloadFunction      = "0x1::primary_fungible_store::transfer"
-	aptosPayloadType          = "entry_function_payload"
-	aptosPayloadTypeArguments = "0x1::fungible_asset::Metadata"
+	aptosPayloadType = "entry_function_payload"
 )
 
 type aptos struct {
@@ -215,40 +213,111 @@ func (a *aptos) versionParse(n any) {
 		return
 	}
 
-	var result = make([]transfer, 0)
 	for _, trans := range gjson.ParseBytes(body).Array() {
 		tsNano := trans.Get("timestamp").Int() * 1000
 		timestamp := time.Unix(tsNano/1e9, tsNano%1e9)
 		function := trans.Get("payload.function").String()
 		typeName := trans.Get("payload.type").String()
-		typeArgs := trans.Get("payload.type_arguments.0").String()
-		if function != aptosPayloadFunction || typeName != aptosPayloadType || typeArgs != aptosPayloadTypeArguments {
+		if typeName != aptosPayloadType {
 
 			continue
 		}
+
+		hash := trans.Get("hash").String()
+		sender := trans.Get("sender").String()
+		ver := trans.Get("version").Int()
 		args := trans.Get("payload.arguments").Array()
-		if args[0].Get("inner").String() != conf.UsdtAptos {
+
+		switch function {
+		case "0x1::primary_fungible_store::transfer":
+			a.parsePrimaryFungibleStoreTransfer(network, hash, sender, ver, timestamp, args)
+		case "0x1::aptos_account::batch_transfer_fungible_assets":
+			a.parseAptosAccountBatchTransferFungibleAssets(network, hash, sender, ver, timestamp, args)
+		case "0x1::aptos_account::transfer_fungible_assets":
+			a.parseAptosAccountTransferFungibleAssets(network, hash, sender, ver, timestamp, args)
+		case "0x1::fungible_asset::transfer":
+			// 待定
+		case "0x1::coin::transfer":
+			// 待定
+		}
+	}
+
+	log.Info("区块扫描完成", fmt.Sprintf("%d.%d", p.Start, p.Limit), conf.GetBlockSuccRate(network), network)
+}
+
+func (a *aptos) parsePrimaryFungibleStoreTransfer(net, hash, sender string, ver int64, t time.Time, args []gjson.Result) {
+	if args[0].Get("inner").String() != conf.UsdtAptos {
+
+		return
+	}
+
+	rawAmount := new(big.Int)
+	rawAmount.SetString(args[2].String(), 10)
+
+	transferQueue.In <- []transfer{{
+		Network:     net,
+		TxHash:      hash,
+		Amount:      decimal.NewFromBigInt(rawAmount, conf.UsdtAptosDecimals),
+		FromAddress: sender,
+		RecvAddress: args[1].String(),
+		Timestamp:   t,
+		TradeType:   model.OrderTradeTypeUsdtAptos,
+		BlockNum:    ver,
+	}}
+}
+
+func (a *aptos) parseAptosAccountBatchTransferFungibleAssets(net, hash, sender string, ver int64, t time.Time, args []gjson.Result) {
+	if args[0].Get("inner").String() != conf.UsdtAptos {
+
+		return
+	}
+
+	var result = make([]transfer, 0)
+	for i, recv := range args[1].Array() {
+		rawAmount := new(big.Int)
+		rawAmount.SetString(args[2].Get(fmt.Sprintf("%d", i)).String(), 10)
+		if rawAmount == nil || rawAmount.Sign() <= 0 {
+			log.Warn("parseAptosAccountBatchTransferFungibleAssets Error: invalid amount for receiver", recv.String(), "in transaction", hash)
 
 			continue
 		}
 
-		rawAmount := new(big.Int)
-		rawAmount.SetString(args[2].String(), 10)
 		result = append(result, transfer{
-			Network:     network,
-			TxHash:      trans.Get("hash").String(),
+			Network:     net,
+			TxHash:      hash,
 			Amount:      decimal.NewFromBigInt(rawAmount, conf.UsdtAptosDecimals),
-			FromAddress: trans.Get("sender").String(),
-			RecvAddress: args[1].String(),
-			Timestamp:   timestamp,
+			FromAddress: sender,
+			RecvAddress: recv.String(),
+			Timestamp:   t,
 			TradeType:   model.OrderTradeTypeUsdtAptos,
-			BlockNum:    trans.Get("version").Int(),
+			BlockNum:    ver,
 		})
 	}
 
 	if len(result) > 0 {
 		transferQueue.In <- result
 	}
+}
 
-	log.Info("区块扫描完成", fmt.Sprintf("%d.%d", p.Start, p.Limit), conf.GetBlockSuccRate(network), network)
+func (a *aptos) parseAptosAccountTransferFungibleAssets(net, hash, sender string, ver int64, t time.Time, args []gjson.Result) {
+	if args[0].Get("inner").String() != conf.UsdtAptos {
+
+		return
+	}
+
+	rawAmount := new(big.Int)
+	rawAmount.SetString(args[2].String(), 10)
+
+	transferQueue.In <- []transfer{
+		{
+			Network:     net,
+			TxHash:      hash,
+			Amount:      decimal.NewFromBigInt(rawAmount, conf.UsdtAptosDecimals),
+			FromAddress: sender,
+			RecvAddress: args[1].String(),
+			Timestamp:   t,
+			TradeType:   model.OrderTradeTypeUsdtAptos,
+			BlockNum:    ver,
+		},
+	}
 }
