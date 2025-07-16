@@ -1,0 +1,42 @@
+version: 2
+project_name: BEpusdt
+env:
+  - GO111MODULE=on
+builds:
+  - env:
+      - CGO_ENABLED=0
+    main: ./main
+    binary: bepusdt
+    ldflags:
+      - s -w -buildid=
+    goos:
+      - windows
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+archives:
+  - formats: [ tar.gz ]
+    name_template: "{{.Os}}-{{.Arch}}{{if .Arm}}v{{.Arm}}{{end}}-{{ .ProjectName }}"
+    format_overrides:
+      - goos: windows
+        formats: [ zip ]
+    files:
+      - conf.example.toml
+      - conf.simple.toml
+      - src: docs/bepusdt.service
+        dst: .
+        strip_parent: true
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+release:
+  footer: >-
+
+    ---
+
+    Released by [GoReleaser](https://github.com/goreleaser/goreleaser).

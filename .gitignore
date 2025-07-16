@@ -3,4 +3,5 @@ tmp
 .DS_Store
 .idea
 conf.toml
-.air.toml
+# Added by goreleaser init:
+dist/
