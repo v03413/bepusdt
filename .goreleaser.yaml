@@ -29,11 +29,12 @@ archives:
         dst: .
         strip_parent: true
 changelog:
-  sort: asc
+  sort: desc
   filters:
     exclude:
       - "^docs:"
       - "^test:"
+      - "^chore:"
 release:
   footer: >-
 
