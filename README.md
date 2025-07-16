@@ -25,8 +25,8 @@
 
 ### 🌟 目前支持收款类型
 
-**🔥主流网络：** TRON(`trx` `usdt.trc20`) Ethereum(`usdt.erc20`) BSC(`usdt.bep20`)   
-**⚡其他网络：** Polygon(`usdt.polygon`) X-Layer(`usdt.xlayer`) Solana(`usdt.solana`) Aptos(`usdt.aptos`)
+🔥 主流网络：TRON(`trx` `usdt.trc20`) Ethereum(`usdt.erc20`) BSC(`usdt.bep20`)   
+⚡ 其他网络：Polygon(`usdt.polygon`) X-Layer(`usdt.xlayer`) Solana(`usdt.solana`) Aptos(`usdt.aptos`)
 
 - ✅ 完全兼容 `Epusdt`，插件可无缝替换
 - ✅ 实时同步 USDT 汇率，支持自定义浮动
@@ -45,8 +45,7 @@
 - 安装：[Docker](./docs/docker.md)・[Linux](./docs/systemd.md)・1Panel・宝塔
 - 对接：[独角数卡](./docs/dujiaoka.md)・[异次元](./docs/acg-faka.md)・[萌次元](./docs/mcy-shop.md)・[彩虹易支付](https://github.com/v03413/Epay-BEpusdt)  
 - 开发：[API对接](./docs/api.md)・[订单回调](./docs/notify-epusdt.md)・[Webhook 事件](./docs/webhook.md)
-- [https 配置教程](./docs/ssl.md)
-- [Linux 时钟同步配置](./docs/systemd-timesyncd.md)
+- 其它：[https 配置](./docs/ssl.md)・[Linux 时钟同步](./docs/systemd-timesyncd.md)
 
 ## 🖼 功能截图
 
