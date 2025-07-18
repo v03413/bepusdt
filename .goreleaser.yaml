@@ -29,7 +29,7 @@ archives:
         dst: .
         strip_parent: true
 changelog:
-  sort: desc
+  sort: asc
   filters:
     exclude:
       - "^docs:"

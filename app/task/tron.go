@@ -242,7 +242,7 @@ func (t *tron) blockParse(n any) {
 						transfers = append(transfers, transfer{
 							Network:     conf.Tron,
 							TxHash:      id,
-							Amount:      decimal.NewFromBigInt(new(big.Int).SetInt64(amount.Int64()), conf.UsdtTronDecimals),
+							Amount:      decimal.NewFromBigInt(amount, conf.UsdtTronDecimals),
 							FromAddress: from,
 							RecvAddress: receiver,
 							Timestamp:   timestamp,
@@ -260,7 +260,7 @@ func (t *tron) blockParse(n any) {
 							transfers = append(transfers, transfer{
 								Network:     conf.Tron,
 								TxHash:      id,
-								Amount:      decimal.NewFromBigInt(new(big.Int).SetInt64(amount.Int64()), conf.UsdtTronDecimals),
+								Amount:      decimal.NewFromBigInt(amount, conf.UsdtTronDecimals),
 								FromAddress: t.base58CheckEncode(foo.OwnerAddress),
 								RecvAddress: receiver,
 								Timestamp:   timestamp,
@@ -276,7 +276,7 @@ func (t *tron) blockParse(n any) {
 							transfers = append(transfers, transfer{
 								Network:     conf.Tron,
 								TxHash:      id,
-								Amount:      decimal.NewFromBigInt(new(big.Int).SetInt64(amount.Int64()), conf.UsdtTronDecimals),
+								Amount:      decimal.NewFromBigInt(amount, conf.UsdtTronDecimals),
 								FromAddress: from,
 								RecvAddress: to,
 								Timestamp:   timestamp,
