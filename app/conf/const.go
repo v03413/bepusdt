@@ -34,6 +34,7 @@ const (
 
 // UsdtDecimals USDT合约小数位数
 const (
+	UsdtTronDecimals    = -6  // USDT Tron小数位数
 	UsdtBscDecimals     = -18 // USDT BEP20小数位数
 	UsdtEthDecimals     = -6  // USDT ERC20小数位数
 	UsdtXlayerDecimals  = -6  // USDT Xlayer小数位数

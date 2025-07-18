@@ -19,7 +19,6 @@ import (
 	"google.golang.org/grpc/backoff"
 	"google.golang.org/grpc/credentials/insecure"
 	"math/big"
-	"strconv"
 	"time"
 )
 
@@ -56,29 +55,13 @@ func newTron() tron {
 	}
 }
 
-func (t *tron) blockDispatch(context.Context) {
-	p, err := ants.NewPoolWithFunc(8, t.blockParse)
-	if err != nil {
-		panic(err)
+func (t *tron) blockRoll(context.Context) {
+	if t.rollBreak() {
 
 		return
 	}
 
-	defer p.Release()
-
-	for n := range t.blockScanQueue.Out {
-		if err := p.Invoke(n); err != nil {
-			t.blockScanQueue.In <- n
-
-			log.Warn("Tron Error invoking process block:", err)
-		}
-	}
-}
-
-func (t *tron) blockRoll(context.Context) {
-	var node = conf.GetTronGrpcNode()
-
-	conn, err := grpc.NewClient(node, grpc.WithConnectParams(grpcParams), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(conf.GetTronGrpcNode(), grpc.WithConnectParams(grpcParams), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 
 		log.Error("grpc.NewClient", err)
@@ -100,18 +83,17 @@ func (t *tron) blockRoll(context.Context) {
 
 	var now = block.BlockHeader.RawData.Number
 	if conf.GetTradeIsConfirmed() {
-
 		now = now - t.blockConfirmedOffset
 	}
 
-	// 首次启动
-	if t.lastBlockNum == 0 {
-
-		t.lastBlockNum = now + t.blockInitStartOffset
+	// 区块高度变化过大，强制丢块重扫
+	if now-t.lastBlockNum > conf.BlockHeightMaxDiff {
+		t.blockInitOffset(now)
+		t.lastBlockNum = now - 1
 	}
 
 	// 区块高度没有变化
-	if now <= t.lastBlockNum {
+	if now == t.lastBlockNum {
 
 		return
 	}
@@ -123,6 +105,25 @@ func (t *tron) blockRoll(context.Context) {
 	}
 
 	t.lastBlockNum = now
+}
+
+func (t *tron) blockDispatch(context.Context) {
+	p, err := ants.NewPoolWithFunc(8, t.blockParse)
+	if err != nil {
+		panic(err)
+
+		return
+	}
+
+	defer p.Release()
+
+	for n := range t.blockScanQueue.Out {
+		if err := p.Invoke(n); err != nil {
+			t.blockScanQueue.In <- n
+
+			log.Warn("Tron Error invoking process block:", err)
+		}
+	}
 }
 
 func (t *tron) blockParse(n any) {
@@ -222,8 +223,6 @@ func (t *tron) blockParse(n any) {
 					TradeType:   model.OrderTradeTypeTronTrx,
 					BlockNum:    cast.ToInt64(num),
 				})
-
-				continue
 			}
 
 			// 触发智能合约
@@ -234,52 +233,58 @@ func (t *tron) blockParse(n any) {
 					continue
 				}
 
+				data := foo.GetData()
+
 				// Gas Free 钱包 合约授权转账
 				if bytes.Equal(foo.OwnerAddress, gasFreeOwnerAddress) && bytes.Equal(foo.ContractAddress, gasFreeContractAddress) {
-					from, receiver, amount := t.gasFreePermitTransfer(foo.GetData())
-					if from == "" || receiver == "" || amount == nil {
-
-						continue
+					from, receiver, amount := t.gasFreePermitTransfer(data)
+					if amount != nil {
+						transfers = append(transfers, transfer{
+							Network:     conf.Tron,
+							TxHash:      id,
+							Amount:      decimal.NewFromBigInt(new(big.Int).SetInt64(amount.Int64()), conf.UsdtTronDecimals),
+							FromAddress: from,
+							RecvAddress: receiver,
+							Timestamp:   timestamp,
+							TradeType:   model.OrderTradeTypeUsdtTrc20,
+							BlockNum:    cast.ToInt64(num),
+						})
 					}
-
-					transfers = append(transfers, transfer{
-						Network:     conf.Tron,
-						TxHash:      id,
-						Amount:      decimal.NewFromBigInt(new(big.Int).SetInt64(amount.Int64()), -6),
-						FromAddress: from,
-						RecvAddress: receiver,
-						Timestamp:   timestamp,
-						TradeType:   model.OrderTradeTypeUsdtTrc20,
-						BlockNum:    cast.ToInt64(num),
-					})
-
-					continue
 				}
 
-				{
-					var reader = bytes.NewReader(foo.GetData())
-					if !bytes.Equal(foo.GetContractAddress(), usdtTrc20ContractAddress) { // usdt trc20 contract
-
-						continue
+				// usdt trc20 contract
+				if bytes.Equal(foo.GetContractAddress(), usdtTrc20ContractAddress) {
+					if bytes.Equal(data[:4], []byte{0xa9, 0x05, 0x9c, 0xbb}) { //  a9059cbb transfer
+						receiver, amount := t.parseUsdtContractTransfer(data)
+						if amount != nil {
+							transfers = append(transfers, transfer{
+								Network:     conf.Tron,
+								TxHash:      id,
+								Amount:      decimal.NewFromBigInt(new(big.Int).SetInt64(amount.Int64()), conf.UsdtTronDecimals),
+								FromAddress: t.base58CheckEncode(foo.OwnerAddress),
+								RecvAddress: receiver,
+								Timestamp:   timestamp,
+								TradeType:   model.OrderTradeTypeUsdtTrc20,
+								BlockNum:    cast.ToInt64(num),
+							})
+						}
 					}
 
-					// 解析合约数据
-					var recvAddress, amount = t.parseUsdtTrc20Contract(reader)
-					if amount == 0 {
-
-						continue
+					if bytes.Equal(data[:4], []byte{0x23, 0xb8, 0x72, 0xdd}) { //  transferFrom (23b872dd)
+						from, to, amount := t.parseUsdtContractTransferFrom(data)
+						if amount != nil {
+							transfers = append(transfers, transfer{
+								Network:     conf.Tron,
+								TxHash:      id,
+								Amount:      decimal.NewFromBigInt(new(big.Int).SetInt64(amount.Int64()), conf.UsdtTronDecimals),
+								FromAddress: from,
+								RecvAddress: to,
+								Timestamp:   timestamp,
+								TradeType:   model.OrderTradeTypeUsdtTrc20,
+								BlockNum:    cast.ToInt64(num),
+							})
+						}
 					}
-
-					transfers = append(transfers, transfer{
-						Network:     conf.Tron,
-						TxHash:      id,
-						Amount:      decimal.NewFromBigInt(new(big.Int).SetInt64(amount), -6),
-						FromAddress: t.base58CheckEncode(foo.OwnerAddress),
-						RecvAddress: recvAddress,
-						Timestamp:   timestamp,
-						TradeType:   model.OrderTradeTypeUsdtTrc20,
-						BlockNum:    cast.ToInt64(num),
-					})
 				}
 			}
 		}
@@ -296,40 +301,56 @@ func (t *tron) blockParse(n any) {
 	log.Info("区块扫描完成", num, conf.GetBlockSuccRate(conf.Tron), conf.Tron)
 }
 
-func (t *tron) parseUsdtTrc20Contract(reader *bytes.Reader) (string, int64) {
-	var funcName = make([]byte, 4)
-	_, err = reader.Read(funcName)
-	if err != nil {
-		// 读取funcName失败
+func (t *tron) blockInitOffset(now int64) {
+	if now == 0 || t.lastBlockNum != 0 {
 
-		return "", 0
-	}
-	if !bytes.Equal(funcName, []byte{0xa9, 0x05, 0x9c, 0xbb}) { // a9059cbb transfer(address,uint256)
-		// funcName不匹配transfer
-
-		return "", 0
+		return
 	}
 
-	var addressBytes = make([]byte, 20)
-	_, err = reader.ReadAt(addressBytes, 4+12)
-	if err != nil {
-		// 读取toAddress失败
+	go func() {
+		ticker := time.NewTicker(time.Second)
+		endOffset := now + t.blockInitStartOffset
+		defer ticker.Stop()
 
-		return "", 0
+		for num := now; num >= endOffset; {
+			if t.rollBreak() {
+
+				return
+			}
+
+			for i := 0; i < 10 && num >= endOffset; i++ {
+				t.blockScanQueue.In <- num
+				num--
+			}
+
+			<-ticker.C
+		}
+	}()
+}
+
+func (t *tron) parseUsdtContractTransfer(data []byte) (string, *big.Int) {
+	if len(data) != 68 {
+
+		return "", nil
 	}
 
-	var toAddress = t.base58CheckEncode(append([]byte{0x41}, addressBytes...))
-	var value = make([]byte, 32)
-	_, err = reader.ReadAt(value, 36)
-	if err != nil {
-		// 读取value失败
+	receiver := t.base58CheckEncode(append([]byte{0x41}, data[16:36]...))
+	amount := big.NewInt(0).SetBytes(data[36:68])
 
-		return "", 0
+	return receiver, amount
+}
+
+func (t *tron) parseUsdtContractTransferFrom(data []byte) (string, string, *big.Int) {
+	if len(data) != 100 {
+
+		return "", "", nil
 	}
 
-	var amount, _ = strconv.ParseInt(hex.EncodeToString(value), 16, 64)
+	from := t.base58CheckEncode(append([]byte{0x41}, data[16:36]...))
+	to := t.base58CheckEncode(append([]byte{0x41}, data[48:68]...))
+	amount := big.NewInt(0).SetBytes(data[68:100])
 
-	return toAddress, amount
+	return from, to, amount
 }
 
 func (t *tron) gasFreePermitTransfer(data []byte) (string, string, *big.Int) {
@@ -365,4 +386,22 @@ func (t *tron) base58CheckEncode(input []byte) string {
 	input = append(input, checksum...)
 
 	return base58.Encode(input)
+}
+
+func (t *tron) rollBreak() bool {
+	var count int64 = 0
+	trade := []string{model.OrderTradeTypeTronTrx, model.OrderTradeTypeUsdtTrc20}
+	model.DB.Model(&model.TradeOrders{}).Where("status = ? and trade_type in (?)", model.OrderStatusWaiting, trade).Count(&count)
+	if count > 0 {
+
+		return false
+	}
+
+	model.DB.Model(&model.WalletAddress{}).Where("other_notify = ? and trade_type in (?)", model.OtherNotifyEnable, trade).Count(&count)
+	if count > 0 {
+
+		return false
+	}
+
+	return true
 }
