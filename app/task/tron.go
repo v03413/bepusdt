@@ -63,8 +63,9 @@ func (t *tron) blockRoll(context.Context) {
 
 	conn, err := grpc.NewClient(conf.GetTronGrpcNode(), grpc.WithConnectParams(grpcParams), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-
 		log.Error("grpc.NewClient", err)
+
+		return
 	}
 
 	defer conn.Close()
@@ -132,8 +133,9 @@ func (t *tron) blockParse(n any) {
 	var conn *grpc.ClientConn
 	var err error
 	if conn, err = grpc.NewClient(node, grpc.WithConnectParams(grpcParams), grpc.WithTransportCredentials(insecure.NewCredentials())); err != nil {
-
 		log.Error("grpc.NewClient", err)
+
+		return
 	}
 
 	defer conn.Close()
