@@ -16,6 +16,7 @@ import (
 	"github.com/v03413/go-cache"
 	"gorm.io/gorm"
 	"io"
+	"math/big"
 	"net/http"
 	"net/url"
 	"strings"
@@ -120,12 +121,18 @@ func cbAddressAction(ctx context.Context, b *bot.Bot, u *models.Update) {
 			otherTextLabel = "🔴已禁用 非订单交易监控通知"
 		}
 
-		var text = fmt.Sprintf("> %s", wa.Address)
+		var text = fmt.Sprintf(">`%s`", wa.Address)
 		if help.IsValidTronAddress(wa.Address) {
 			text = getTronWalletInfo(wa.Address)
 		}
 		if help.IsValidEvmAddress(wa.Address) {
 			text = getEvmWalletInfo(wa)
+		}
+		if help.IsValidAptosAddress(wa.Address) {
+			text = getAptosWalletInfo(wa.Address)
+		}
+		if help.IsValidSolanaAddress(wa.Address) {
+			text = getSolanaWalletInfo(wa.Address)
 		}
 
 		EditMessageText(ctx, b, &bot.EditMessageTextParams{
@@ -388,6 +395,74 @@ func getTronWalletInfo(address string) string {
 		}
 		if v.Get("tokenName").String() == "Tether USD" {
 			text = strings.Replace(text, "0.00 USDT", help.Ec(fmt.Sprintf("%.2f USDT", v.Get("balance").Float()/1000000)), 1)
+		}
+	}
+
+	return text
+}
+
+func getAptosWalletInfo(address string) string {
+	var text = fmt.Sprintf(">`%s`", address)
+	var client = http.Client{Timeout: time.Second * 5}
+	resp, err := client.Get(fmt.Sprintf("%sv1/accounts/%s/balance/%s", conf.GetAptosRpcNode(), address, conf.UsdtAptos))
+	if err != nil {
+		log.Error("getAptosWalletInfo client.Get(url)", err)
+
+		return text
+	}
+
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		log.Error("getAptosWalletInfo resp.StatusCode != 200", resp.StatusCode, err)
+
+		return text
+	}
+
+	all, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Error("getAptosWalletInfo io.ReadAll(resp.Body)", err)
+
+		return text
+	}
+
+	result, _ := new(big.Int).SetString(string(all), 10)
+	balance := decimal.NewFromBigInt(result, conf.UsdtAptosDecimals)
+
+	return fmt.Sprintf(">💲余额：%s\\(%s\\)\n>☘️地址：`%s`", help.Ec(balance.String()), help.Ec(model.OrderTradeTypeUsdtAptos), address)
+}
+
+func getSolanaWalletInfo(address string) string {
+	var text = fmt.Sprintf(">`%s`", address)
+	var jsonData = []byte(fmt.Sprintf(`{"jsonrpc":"2.0","id":1,"method":"getTokenAccountsByOwner","params":["%s",{"programId":"%s"},{"commitment":"finalized","encoding":"jsonParsed"}]}`,
+		address, conf.SolSplToken))
+	var client = &http.Client{Timeout: time.Second * 5}
+	resp, err := client.Post(conf.GetSolanaRpcEndpoint(), "application/json", bytes.NewBuffer(jsonData))
+	if err != nil {
+		log.Warn("Error Post response:", err)
+
+		return text
+	}
+
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		log.Error("getAptosWalletInfo resp.StatusCode != 200", resp.StatusCode, err)
+
+		return text
+	}
+
+	all, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Error("getAptosWalletInfo io.ReadAll(resp.Body)", err)
+
+		return text
+	}
+
+	for _, v := range gjson.GetBytes(all, "result.value").Array() {
+		if v.Get("account.data.parsed.info.mint").String() == conf.UsdtSolana {
+			return fmt.Sprintf(">💲余额：%s\\(%s\\)\n>☘️地址：`%s`",
+				help.Ec(v.Get("account.data.parsed.info.tokenAmount.uiAmountString").String()),
+				help.Ec(model.OrderTradeTypeUsdtAptos),
+				address)
 		}
 	}
 
