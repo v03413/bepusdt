@@ -25,11 +25,6 @@ func init() {
 			panic(fmt.Sprintf("初始化失败: %v", err))
 		}
 	}
-
-	if conf.BotToken() == "" || conf.BotAdminID() == 0 {
-
-		panic("请配置参数 BOT_TOKEN 和 BOT_ADMIN_ID")
-	}
 }
 
 func main() {

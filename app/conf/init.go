@@ -1,6 +1,7 @@
 package conf
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"github.com/pelletier/go-toml/v2"
@@ -40,6 +41,11 @@ func Init() error {
 	if err = toml.Unmarshal(data, &cfg); err != nil {
 
 		return fmt.Errorf("配置数据解析失败：%w", err)
+	}
+
+	if BotToken() == "" || BotAdminID() == 0 {
+
+		return errors.New("telegram bot 参数 admin_id 或 token 均不能为空")
 	}
 
 	return nil
