@@ -54,7 +54,7 @@ func (s *solana) slotRoll(context.Context) {
 
 	post := []byte(`{"jsonrpc":"2.0","id":1,"method":"getSlot"}`)
 
-	resp, err := client.Post(conf.GetSolanaRpcEndpoint(), contentType, bytes.NewBuffer(post))
+	resp, err := client.Post(conf.GetSolanaRpcEndpoint(), "application/json", bytes.NewBuffer(post))
 	if err != nil {
 		log.Warn("slotRoll Error sending request:", err)
 
@@ -164,7 +164,7 @@ func (s *solana) slotParse(n any) {
 	network := conf.Solana
 
 	conf.SetBlockTotal(network)
-	resp, err := client.Post(conf.GetSolanaRpcEndpoint(), contentType, bytes.NewBuffer(post))
+	resp, err := client.Post(conf.GetSolanaRpcEndpoint(), "application/json", bytes.NewBuffer(post))
 	if err != nil {
 		conf.SetBlockFail(network)
 		log.Warn("slotParse Error sending request:", err)

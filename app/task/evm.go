@@ -23,7 +23,6 @@ import (
 
 const (
 	blockParseMaxNum = 10 // 每次解析区块的最大数量
-	contentType      = "application/json"
 )
 
 var chainBlockNum sync.Map
@@ -41,9 +40,7 @@ var chainUsdtMap = map[string]string{
 	conf.Solana:   model.OrderTradeTypeUsdtSolana,
 	conf.Aptos:    model.OrderTradeTypeUsdtAptos,
 }
-
 var client = &http.Client{Timeout: time.Second * 30}
-var chainScanQueue = chanx.NewUnboundedChan[[]evmBlock](context.Background(), 30)
 
 type decimals struct {
 	Usdt   int32 // USDT小数位数
@@ -56,44 +53,34 @@ type block struct {
 	ConfirmedOffset int64 // 确认偏移量，开启交易确认后，区块高度需要减去此值认为交易已确认
 }
 
-type evmCfg struct {
-	Type     string
-	Endpoint string
-	Decimals decimals
-	Block    block
-}
-
-type evmBlock struct {
-	Network evmCfg
-	Num     int64
+type evm struct {
+	Type           string
+	Endpoint       string
+	Decimals       decimals
+	Block          block
+	blockScanQueue *chanx.UnboundedChan[[]int64]
 }
 
 func init() {
-	register(task{callback: evmBlockDispatch})
+	//register(task{callback: evmBlockDispatch})
 }
 
-func evmBlockRoll(ctx context.Context) {
-	val := ctx.Value("cfg")
-	if val == nil {
-		log.Warn("evmBlockRoll: context value 'cfg' is nil")
-
-		return
-	}
-
-	cfg, ok := val.(evmCfg)
-	if !ok {
-		log.Warn("evmBlockRoll: context value 'cfg' is not of type evmCfg")
-
-		return
-	}
-
-	if rollBreak(cfg.Type) {
+func (e *evm) blockRoll(ctx context.Context) {
+	if rollBreak(e.Type) {
 
 		return
 	}
 
 	post := []byte(`{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}`)
-	resp, err := client.Post(cfg.Endpoint, contentType, bytes.NewBuffer(post))
+	req, err := http.NewRequestWithContext(ctx, "POST", e.Endpoint, bytes.NewBuffer(post))
+	if err != nil {
+		log.Warn("Error creating request:", err)
+
+		return
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := client.Do(req)
 	if err != nil {
 		log.Warn("Error sending request:", err)
 
@@ -110,7 +97,7 @@ func evmBlockRoll(ctx context.Context) {
 	}
 
 	var res = gjson.ParseBytes(body)
-	var now = help.HexStr2Int(res.Get("result").String()).Int64() - cfg.Block.RollDelayOffset
+	var now = help.HexStr2Int(res.Get("result").String()).Int64() - e.Block.RollDelayOffset
 	if now <= 0 {
 
 		return
@@ -118,70 +105,70 @@ func evmBlockRoll(ctx context.Context) {
 
 	if conf.GetTradeIsConfirmed() {
 
-		now = now - cfg.Block.ConfirmedOffset
+		now = now - e.Block.ConfirmedOffset
 	}
 
 	var lastBlockNumber int64
-	if v, ok := chainBlockNum.Load(cfg.Type); ok {
+	if v, ok := chainBlockNum.Load(e.Type); ok {
 
 		lastBlockNumber = v.(int64)
 	}
 
 	if now-lastBlockNumber > conf.BlockHeightMaxDiff {
 
-		lastBlockNumber = evmBlockInitOffset(now, cfg.Block.InitStartOffset, cfg) - 1
+		lastBlockNumber = e.blockInitOffset(now, e.Block.InitStartOffset) - 1
 	}
 
-	chainBlockNum.Store(cfg.Type, now)
+	chainBlockNum.Store(e.Type, now)
 	if now <= lastBlockNumber { // 区块高度没有变化
 
 		return
 	}
 
-	blocks := make([]evmBlock, 0)
+	blocks := make([]int64, 0)
 	for n := lastBlockNumber + 1; n <= now; n++ {
-		blocks = append(blocks, evmBlock{Num: n, Network: cfg})
+		blocks = append(blocks, n)
 		if len(blocks) >= blockParseMaxNum {
-			chainScanQueue.In <- blocks
-			blocks = make([]evmBlock, 0)
+			e.blockScanQueue.In <- blocks
+			blocks = make([]int64, 0)
 		}
 	}
 
 	if len(blocks) > 0 {
-		chainScanQueue.In <- blocks
+		e.blockScanQueue.In <- blocks
 	}
 }
 
-func evmBlockInitOffset(now, offset int64, cfg evmCfg) int64 {
+func (e *evm) blockInitOffset(now, offset int64) int64 {
 	go func() {
-		var blocks []evmBlock
+		var blocks []int64
 		ticker := time.NewTicker(time.Second)
 		defer ticker.Stop()
 
 		for b := now; b >= now+offset; b-- {
-			if rollBreak(cfg.Type) {
+			if rollBreak(e.Type) {
 
 				return
 			}
 
-			blocks = append(blocks, evmBlock{Num: b, Network: cfg})
+			blocks = append(blocks, b)
 			if len(blocks) >= blockParseMaxNum {
-				chainScanQueue.In <- blocks
+				e.blockScanQueue.In <- blocks
 				blocks = blocks[:0]
 			}
 
 			<-ticker.C
 		}
 		if len(blocks) > 0 {
-			chainScanQueue.In <- blocks
+			e.blockScanQueue.In <- blocks
 		}
 	}()
 
 	return now
 }
 
-func evmBlockDispatch(context.Context) {
-	p, err := ants.NewPoolWithFunc(8, evmBlockParse)
+func (e *evm) blockDispatch(ctx context.Context) {
+	p, err := ants.NewPoolWithFunc(2, e.blockParse)
 	if err != nil {
 		panic(err)
 
@@ -190,35 +177,39 @@ func evmBlockDispatch(context.Context) {
 
 	defer p.Release()
 
-	for n := range chainScanQueue.Out {
-		if err := p.Invoke(n); err != nil {
-			chainScanQueue.In <- n
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case n := <-e.blockScanQueue.Out:
+			if err := p.Invoke(n); err != nil {
+				e.blockScanQueue.In <- n
 
-			log.Warn("evmBlockDispatch Error invoking process block:", err)
+				log.Warn("evmBlockDispatch Error invoking process block:", err)
+			}
 		}
 	}
 }
 
-func evmBlockParse(b any) {
-	var blocks, ok = b.([]evmBlock)
+func (e *evm) blockParse(a any) {
+	blocks, ok := a.([]int64)
 	if !ok {
-		log.Warn("evmBlockParse: received non-evmBlock type")
+		log.Warn("evmBlockParse Error: expected []int64, got", a)
 
 		return
 	}
 
-	first := blocks[0]
 	items := make([]string, 0)
 	for _, v := range blocks {
-		conf.SetBlockTotal(v.Network.Type)
-		items = append(items, fmt.Sprintf(`{"jsonrpc":"2.0","method":"eth_getBlockByNumber","params":["0x%x",true],"id":%d}`, v.Num, v.Num))
+		conf.SetBlockTotal(e.Type)
+		items = append(items, fmt.Sprintf(`{"jsonrpc":"2.0","method":"eth_getBlockByNumber","params":["0x%x",true],"id":%d}`, v, v))
 	}
 
 	post := []byte(fmt.Sprintf(`[%s]`, strings.Join(items, ",")))
-	resp, err := client.Post(first.Network.Endpoint, contentType, bytes.NewBuffer(post))
+	resp, err := client.Post(e.Endpoint, "application/json", bytes.NewBuffer(post))
 	if err != nil {
-		conf.SetBlockFail(first.Network.Type)
-		chainScanQueue.In <- blocks
+		conf.SetBlockFail(e.Type)
+		e.blockScanQueue.In <- blocks
 		log.Warn("Error sending request:", err)
 
 		return
@@ -228,8 +219,8 @@ func evmBlockParse(b any) {
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		conf.SetBlockFail(first.Network.Type)
-		chainScanQueue.In <- blocks
+		conf.SetBlockFail(e.Type)
+		e.blockScanQueue.In <- blocks
 		log.Warn("Error reading response body:", err)
 
 		return
@@ -238,9 +229,9 @@ func evmBlockParse(b any) {
 	var list = gjson.ParseBytes(body).Array()
 	for _, data := range list {
 		if !data.Get("result").Exists() {
-			conf.SetBlockFail(first.Network.Type)
-			chainScanQueue.In <- []evmBlock{{Network: first.Network, Num: data.Get("id").Int()}}
-			log.Warn(fmt.Sprintf("%s getBlockByNumber response error %s", first.Network.Type, data.String()))
+			conf.SetBlockFail(e.Type)
+			e.blockScanQueue.In <- []int64{data.Get("id").Int()}
+			log.Warn(fmt.Sprintf("%s getBlockByNumber response error %s", e.Type, data.String()))
 
 			continue
 		}
@@ -253,7 +244,8 @@ func evmBlockParse(b any) {
 			to := v.Get("to").String()
 			input, err := hex.DecodeString(strings.TrimPrefix(v.Get("input").String(), "0x"))
 			if err != nil {
-				fmt.Println("解码错误:", err)
+				log.Warn("evmBlockParse Error:", err)
+
 				return
 			}
 
@@ -267,11 +259,11 @@ func evmBlockParse(b any) {
 			var from = v.Get("from").String()
 			var amount *big.Int
 			if bytes.Equal(input[0:4], []byte{0xa9, 0x05, 0x9c, 0xbb}) { // transfer function ID
-				recv, amount = parseUsdtContractTransfer(input)
+				recv, amount = e.parseUsdtContractTransfer(input)
 			}
 
 			if bytes.Equal(input[0:4], []byte{0x23, 0xb8, 0x72, 0xdd}) { // transfer from function ID
-				from, recv, amount = parseUsdtContractTransferFrom(input)
+				from, recv, amount = e.parseUsdtContractTransferFrom(input)
 			}
 
 			if amount == nil {
@@ -280,10 +272,10 @@ func evmBlockParse(b any) {
 			}
 
 			transfers = append(transfers, transfer{
-				Network:     first.Network.Type,
+				Network:     e.Type,
 				FromAddress: from,
 				RecvAddress: recv,
-				Amount:      decimal.NewFromBigInt(amount, first.Network.Decimals.Usdt),
+				Amount:      decimal.NewFromBigInt(amount, e.Decimals.Usdt),
 				TxHash:      v.Get("hash").String(),
 				BlockNum:    num,
 				Timestamp:   timestamp,
@@ -296,11 +288,12 @@ func evmBlockParse(b any) {
 			transferQueue.In <- transfers
 		}
 
-		log.Info("区块扫描完成", num, conf.GetBlockSuccRate(first.Network.Type), first.Network.Type)
+		log.Info("区块扫描完成", num, conf.GetBlockSuccRate(e.Type), e.Type)
 	}
+
 }
 
-func parseUsdtContractTransfer(data []byte) (string, *big.Int) {
+func (e *evm) parseUsdtContractTransfer(data []byte) (string, *big.Int) {
 	if len(data) < 68 {
 
 		return "", nil
@@ -312,7 +305,7 @@ func parseUsdtContractTransfer(data []byte) (string, *big.Int) {
 	return "0x" + receiver, amount
 }
 
-func parseUsdtContractTransferFrom(data []byte) (string, string, *big.Int) {
+func (e *evm) parseUsdtContractTransferFrom(data []byte) (string, string, *big.Int) {
 	if len(data) < 100 {
 
 		return "", "", nil

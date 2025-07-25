@@ -2,25 +2,27 @@ package task
 
 import (
 	"context"
+	"github.com/smallnest/chanx"
 	"github.com/v03413/bepusdt/app/conf"
 	"time"
 )
 
 func ethInit() {
-	register(task{
-		ctx: context.WithValue(context.Background(), "cfg", evmCfg{
-			Endpoint: conf.GetEthereumRpcEndpoint(),
-			Type:     conf.Ethereum,
-			Decimals: decimals{
-				Usdt:   conf.UsdtEthDecimals,
-				Native: -18, // ethereum.eth 小数位数
-			},
-			Block: block{
-				InitStartOffset: -100,
-				ConfirmedOffset: 12,
-			},
-		}),
-		duration: time.Second * 12,
-		callback: evmBlockRoll,
-	})
+	ctx := context.Background()
+	eth := evm{
+		Type:     conf.Ethereum,
+		Endpoint: conf.GetEthereumRpcEndpoint(),
+		Decimals: decimals{
+			Usdt:   conf.UsdtEthDecimals,
+			Native: -18,
+		},
+		Block: block{
+			InitStartOffset: -100,
+			ConfirmedOffset: 12,
+		},
+		blockScanQueue: chanx.NewUnboundedChan[[]int64](context.Background(), 30),
+	}
+
+	register(task{ctx: ctx, callback: eth.blockDispatch})
+	register(task{ctx: ctx, callback: eth.blockRoll, duration: time.Second * 12})
 }
