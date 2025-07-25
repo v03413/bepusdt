@@ -53,6 +53,15 @@ func GetPolygonRpcEndpoint() string {
 	return defaultPolygonRpcEndpoint
 }
 
+func GetArbitrumRpcEndpoint() string {
+	if cfg.EvmRpc.Arbitrum != "" {
+
+		return cfg.EvmRpc.Arbitrum
+	}
+
+	return defaultArbitrumRpcEndpoint
+}
+
 func GetEthereumRpcEndpoint() string {
 	if cfg.EvmRpc.Ethereum != "" {
 

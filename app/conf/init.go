@@ -20,6 +20,7 @@ const (
 	Solana   = "solana"
 	Xlayer   = "xlayer"
 	Polygon  = "polygon"
+	Arbitrum = "arbitrum"
 	Ethereum = "ethereum"
 )
 

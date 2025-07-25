@@ -25,6 +25,7 @@ var SupportTradeTypes = []string{
 	OrderTradeTypeUsdtXlayer,
 	OrderTradeTypeUsdtSolana,
 	OrderTradeTypeUsdtPolygon,
+	OrderTradeTypeUsdtArbitrum,
 }
 
 type WalletAddress struct {
@@ -102,6 +103,8 @@ func (wa *WalletAddress) GetUsdtContract() string {
 	switch wa.TradeType {
 	case OrderTradeTypeUsdtPolygon:
 		return conf.UsdtPolygon
+	case OrderTradeTypeUsdtArbitrum:
+		return conf.UsdtArbitrum
 	case OrderTradeTypeUsdtErc20:
 		return conf.UsdtErc20
 	case OrderTradeTypeUsdtBep20:
@@ -117,6 +120,8 @@ func (wa *WalletAddress) GetUsdtDecimals() int32 {
 	switch wa.TradeType {
 	case OrderTradeTypeUsdtPolygon:
 		return conf.UsdtPolygonDecimals
+	case OrderTradeTypeUsdtArbitrum:
+		return conf.UsdtArbitrumDecimals
 	case OrderTradeTypeUsdtErc20:
 		return conf.UsdtEthDecimals
 	case OrderTradeTypeUsdtBep20:
@@ -132,6 +137,8 @@ func (wa *WalletAddress) GetEvmRpcEndpoint() string {
 	switch wa.TradeType {
 	case OrderTradeTypeUsdtPolygon:
 		return conf.GetPolygonRpcEndpoint()
+	case OrderTradeTypeUsdtArbitrum:
+		return conf.GetArbitrumRpcEndpoint()
 	case OrderTradeTypeUsdtErc20:
 		return conf.GetEthereumRpcEndpoint()
 	case OrderTradeTypeUsdtBep20:
