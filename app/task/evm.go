@@ -3,6 +3,7 @@ package task
 import (
 	"bytes"
 	"context"
+	"encoding/hex"
 	"fmt"
 	"github.com/panjf2000/ants/v2"
 	"github.com/shopspring/decimal"
@@ -22,22 +23,10 @@ import (
 
 const (
 	blockParseMaxNum = 10 // 每次解析区块的最大数量
-
-	usdtTransfer = "0xa9059cbb" // Tether transfer function ID
-	contentType  = "application/json"
-
-	inputAddressTotal = 138 // USDT转账 input 正确总长度
-	inputAddressStart = 34  // USDT转账 接收地址在input中的起始位置
-	inputAddressEnd   = 74  // USDT转账 接收地址在input中的结束位置 amount在input中的起始位置
+	contentType      = "application/json"
 )
 
 var chainBlockNum sync.Map
-var nativeToken = map[string]string{
-	conf.Bsc:      model.OrderTradeTypeBscBnb,
-	conf.Xlayer:   model.OrderTradeTypeXlayerOkb,
-	conf.Polygon:  model.OrderTradeTypePolygonPol,
-	conf.Ethereum: model.OrderTradeTypeEthEth,
-}
 var contractMap = map[string]string{
 	conf.UsdtXlayer:  model.OrderTradeTypeUsdtXlayer,
 	conf.UsdtBep20:   model.OrderTradeTypeUsdtBep20,
@@ -261,44 +250,44 @@ func evmBlockParse(b any) {
 		timestamp := time.Unix(help.HexStr2Int(result.Get("timestamp").String()).Int64(), 0)
 		transfers := make([]transfer, 0)
 		for _, v := range result.Get("transactions").Array() {
-			recv := v.Get("to").String()
-			input := v.Get("input").String()
-			rawValue := v.Get("value").String()
-			rawAmount, ok := new(big.Int).SetString(rawValue, 0)
-			if !ok {
-				log.Warn("Error converting value to integer:" + " " + rawValue)
+			to := v.Get("to").String()
+			input, err := hex.DecodeString(strings.TrimPrefix(v.Get("input").String(), "0x"))
+			if err != nil {
+				fmt.Println("解码错误:", err)
+				return
+			}
+
+			tradeType, ok := contractMap[to]
+			if !ok { // 暂时忽略掉EVM原生代币的转账，后续... 暂时也没计划
 
 				continue
 			}
 
-			amount := decimal.NewFromBigInt(rawAmount, first.Network.Decimals.Native)
-			tradeType := evmParseTradeType(first.Network.Type, recv, input, rawAmount)
-			if tradeType == nil {
-
-				continue
+			var recv string
+			var from = v.Get("from").String()
+			var amount *big.Int
+			if bytes.Equal(input[0:4], []byte{0xa9, 0x05, 0x9c, 0xbb}) { // transfer function ID
+				recv, amount = parseUsdtContractTransfer(input)
 			}
 
-			if !tradeType.Native && len(input) == inputAddressTotal { // usdt transfer
-				rawAmount, ok = new(big.Int).SetString(input[inputAddressEnd:], 16)
-				if !ok {
-					log.Warn("Error converting amount(value)：" + input[inputAddressEnd:])
+			if bytes.Equal(input[0:4], []byte{0x23, 0xb8, 0x72, 0xdd}) { // transfer from function ID
+				from, recv, amount = parseUsdtContractTransferFrom(input)
+			}
 
-					continue
-				}
+			if amount == nil {
 
-				amount = decimal.NewFromBigInt(rawAmount, first.Network.Decimals.Usdt)
-				recv = "0x" + input[inputAddressStart:inputAddressEnd] // USDT转账接收地址
+				continue
 			}
 
 			transfers = append(transfers, transfer{
 				Network:     first.Network.Type,
-				FromAddress: v.Get("from").String(),
+				FromAddress: from,
 				RecvAddress: recv,
-				Amount:      amount,
+				Amount:      decimal.NewFromBigInt(amount, first.Network.Decimals.Usdt),
 				TxHash:      v.Get("hash").String(),
 				BlockNum:    num,
 				Timestamp:   timestamp,
-				TradeType:   tradeType.Type,
+				TradeType:   tradeType,
 			})
 		}
 
@@ -311,22 +300,29 @@ func evmBlockParse(b any) {
 	}
 }
 
-func evmParseTradeType(net, to, input string, value *big.Int) *model.TradeType {
-	var tradeType, ok = nativeToken[net]
-	if ok && input == "0x" && value.Sign() == 1 { // 原生代币
+func parseUsdtContractTransfer(data []byte) (string, *big.Int) {
+	if len(data) < 68 {
 
-		return &model.TradeType{Type: tradeType, Native: true}
+		return "", nil
 	}
 
-	// 触发合约
-	tradeType, ok = contractMap[to]
-	if ok && strings.HasPrefix(input, usdtTransfer) { // USDT转账
+	receiver := hex.EncodeToString(data[16:36])
+	amount := big.NewInt(0).SetBytes(data[36:68])
 
-		return &model.TradeType{Type: tradeType, Native: false}
+	return "0x" + receiver, amount
+}
+
+func parseUsdtContractTransferFrom(data []byte) (string, string, *big.Int) {
+	if len(data) < 100 {
+
+		return "", "", nil
 	}
 
-	// 其他合约数据
-	return nil
+	from := hex.EncodeToString(data[16:36])
+	to := hex.EncodeToString(data[48:68])
+	amount := big.NewInt(0).SetBytes(data[68:100])
+
+	return "0x" + from, "0x" + to, amount
 }
 
 func rollBreak(network string) bool {

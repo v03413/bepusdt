@@ -18,11 +18,6 @@ const (
 	OrderStatusSuccess  = 2 // 订单成功
 	OrderStatusWaiting  = 1 // 等待支付
 
-	OrderTradeTypeBscBnb     = "bsc.bnb"
-	OrderTradeTypeEthEth     = "ethereum.eth"
-	OrderTradeTypeXlayerOkb  = "xlayer.okb"
-	OrderTradeTypePolygonPol = "polygon.pol"
-
 	OrderTradeTypeTronTrx     = "tron.trx"
 	OrderTradeTypeUsdtTrc20   = "usdt.trc20"
 	OrderTradeTypeUsdtPolygon = "usdt.polygon"

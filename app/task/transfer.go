@@ -55,8 +55,8 @@ func orderTransferHandle(context.Context) {
 		var orders = getAllWaitingOrders()
 		for _, t := range transfers {
 			// debug
-			//if t.Network == conf.Aptos {
-			//	fmt.Println(t.Network, t.TradeType, t.TxHash, t.Amount.String(), t.RecvAddress)
+			//if t.Network == conf.Polygon {
+			//	fmt.Println(t.TradeType, t.TxHash, t.FromAddress, "=>", t.RecvAddress, t.Amount.String())
 			//}
 
 			// 判断金额是否在允许范围内
