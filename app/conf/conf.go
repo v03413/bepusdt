@@ -26,6 +26,7 @@ type Conf struct {
 		Solana   string `toml:"solana"`
 		Xlayer   string `toml:"xlayer"`
 		Polygon  string `toml:"polygon"`
+		Arbitrum string `toml:"arbitrum"`
 		Ethereum string `toml:"ethereum"`
 	} `toml:"evm_rpc"`
 	Bot struct {

@@ -73,7 +73,7 @@ func cmdStateHandle(ctx context.Context, b *bot.Bot, u *models.Update) {
 	var rows []model.TradeOrders
 	model.DB.Where("created_at > ?", time.Now().Format(time.DateOnly)).Find(&rows)
 	var succ uint64
-	var money, trx, uTrc20, uErc20, uBep20, uXlayer, uSolana, uPol, uAptos float64
+	var money, trx, uTrc20, uErc20, uBep20, uXlayer, uSolana, uPol, uArb, uAptos float64
 	for _, o := range rows {
 		if o.Status != model.OrderStatusSuccess {
 
@@ -99,6 +99,9 @@ func cmdStateHandle(ctx context.Context, b *bot.Bot, u *models.Update) {
 		if o.TradeType == model.OrderTradeTypeUsdtPolygon {
 			uPol += amount
 		}
+		if o.TradeType == model.OrderTradeTypeUsdtArbitrum {
+			uArb += amount
+		}
 		if o.TradeType == model.OrderTradeTypeUsdtXlayer {
 			uXlayer += amount
 		}
@@ -123,6 +126,7 @@ func cmdStateHandle(ctx context.Context, b *bot.Bot, u *models.Update) {
 	- %.2f USDT.Xlayer
 	- %.2f USDT.Solana
 	- %.2f USDT.Polygon
+	- %.2f USDT.Arbitrum
 🌟扫块成功数据
 	- Bsc %s
 	- Tron %s
@@ -130,6 +134,7 @@ func cmdStateHandle(ctx context.Context, b *bot.Bot, u *models.Update) {
 	- Xlayer %s
 	- Solana %s
 	- Polygon %s
+	- Arbitrum %s
 	- Ethereum %s
 -----------------------
 🪧基准汇率(TRX)：%v
@@ -155,12 +160,14 @@ func cmdStateHandle(ctx context.Context, b *bot.Bot, u *models.Update) {
 		uXlayer,
 		uSolana,
 		uPol,
+		uArb,
 		conf.GetBlockSuccRate(conf.Bsc),
 		conf.GetBlockSuccRate(conf.Tron),
 		conf.GetBlockSuccRate(conf.Aptos),
 		conf.GetBlockSuccRate(conf.Xlayer),
 		conf.GetBlockSuccRate(conf.Solana),
 		conf.GetBlockSuccRate(conf.Polygon),
+		conf.GetBlockSuccRate(conf.Arbitrum),
 		conf.GetBlockSuccRate(conf.Ethereum),
 		cast.ToString(rate.GetOkxTrxRawRate()),
 		cast.ToString(rate.GetOkxUsdtRawRate()),

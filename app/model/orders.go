@@ -18,14 +18,15 @@ const (
 	OrderStatusSuccess  = 2 // 订单成功
 	OrderStatusWaiting  = 1 // 等待支付
 
-	OrderTradeTypeTronTrx     = "tron.trx"
-	OrderTradeTypeUsdtTrc20   = "usdt.trc20"
-	OrderTradeTypeUsdtPolygon = "usdt.polygon"
-	OrderTradeTypeUsdtErc20   = "usdt.erc20"
-	OrderTradeTypeUsdtBep20   = "usdt.bep20"
-	OrderTradeTypeUsdtXlayer  = "usdt.xlayer"
-	OrderTradeTypeUsdtSolana  = "usdt.solana"
-	OrderTradeTypeUsdtAptos   = "usdt.aptos"
+	OrderTradeTypeTronTrx      = "tron.trx"
+	OrderTradeTypeUsdtTrc20    = "usdt.trc20"
+	OrderTradeTypeUsdtPolygon  = "usdt.polygon"
+	OrderTradeTypeUsdtArbitrum = "usdt.arbitrum"
+	OrderTradeTypeUsdtErc20    = "usdt.erc20"
+	OrderTradeTypeUsdtBep20    = "usdt.bep20"
+	OrderTradeTypeUsdtXlayer   = "usdt.xlayer"
+	OrderTradeTypeUsdtSolana   = "usdt.solana"
+	OrderTradeTypeUsdtAptos    = "usdt.aptos"
 )
 
 const (
@@ -147,6 +148,9 @@ func GetDetailUrl(tradeType, hash string) string {
 	}
 	if tradeType == OrderTradeTypeUsdtPolygon {
 		return "https://polygonscan.com/tx/" + hash
+	}
+	if tradeType == OrderTradeTypeUsdtArbitrum {
+		return "https://arbiscan.io/tx/" + hash
 	}
 	if tradeType == OrderTradeTypeUsdtSolana {
 		return "https://solscan.io/tx/" + hash

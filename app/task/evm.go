@@ -27,15 +27,17 @@ const (
 
 var chainBlockNum sync.Map
 var contractMap = map[string]string{
-	conf.UsdtXlayer:  model.OrderTradeTypeUsdtXlayer,
-	conf.UsdtBep20:   model.OrderTradeTypeUsdtBep20,
-	conf.UsdtPolygon: model.OrderTradeTypeUsdtPolygon,
-	conf.UsdtErc20:   model.OrderTradeTypeUsdtErc20,
+	conf.UsdtXlayer:   model.OrderTradeTypeUsdtXlayer,
+	conf.UsdtBep20:    model.OrderTradeTypeUsdtBep20,
+	conf.UsdtPolygon:  model.OrderTradeTypeUsdtPolygon,
+	conf.UsdtArbitrum: model.OrderTradeTypeUsdtArbitrum,
+	conf.UsdtErc20:    model.OrderTradeTypeUsdtErc20,
 }
 var chainUsdtMap = map[string]string{
 	conf.Bsc:      model.OrderTradeTypeUsdtBep20,
 	conf.Xlayer:   model.OrderTradeTypeUsdtXlayer,
 	conf.Polygon:  model.OrderTradeTypeUsdtPolygon,
+	conf.Arbitrum:  model.OrderTradeTypeUsdtArbitrum,
 	conf.Ethereum: model.OrderTradeTypeUsdtErc20,
 	conf.Solana:   model.OrderTradeTypeUsdtSolana,
 	conf.Aptos:    model.OrderTradeTypeUsdtAptos,

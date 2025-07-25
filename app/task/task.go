@@ -25,6 +25,7 @@ func Init() error {
 	bscInit()
 	ethInit()
 	polygonInit()
+	arbitrumInit()
 	xlayerInit()
 
 	return nil

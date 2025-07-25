@@ -43,6 +43,7 @@ payment_amount_max = 99999
 bsc = "https://bsc-dataseed.bnbchain.org/"
 xlayer = "https://xlayerrpc.okx.com/"
 polygon = "https://polygon-rpc.com/"
+arbitrum = "https://arb1.arbitrum.io/rpc"
 ethereum = "https://ethereum.publicnode.com/"
 
 [bot]
