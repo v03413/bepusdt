@@ -41,6 +41,7 @@ payment_amount_max = 99999
 
 [evm_rpc]
 bsc = "https://bsc-dataseed.bnbchain.org/"
+aptos = "https://aptos-rest.publicnode.com/"
 xlayer = "https://xlayerrpc.okx.com/"
 polygon = "https://polygon-rpc.com/"
 arbitrum = "https://arb1.arbitrum.io/rpc"
