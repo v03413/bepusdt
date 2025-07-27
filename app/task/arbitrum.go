@@ -9,7 +9,7 @@ import (
 
 func arbitrumInit() {
 	ctx := context.Background()
-	pol := evm{
+	arb := evm{
 		Type:     conf.Arbitrum,
 		Endpoint: conf.GetArbitrumRpcEndpoint(),
 		Decimals: decimals{
@@ -23,6 +23,6 @@ func arbitrumInit() {
 		blockScanQueue: chanx.NewUnboundedChan[[]int64](context.Background(), 30),
 	}
 
-	register(task{ctx: ctx, callback: pol.blockDispatch})
-	register(task{ctx: ctx, callback: pol.blockRoll, duration: time.Second * 3})
+	register(task{ctx: ctx, callback: arb.blockDispatch})
+	register(task{ctx: ctx, callback: arb.blockRoll, duration: time.Second * 3})
 }

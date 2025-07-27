@@ -28,7 +28,7 @@ const (
 	UsdtBep20    = "0x55d398326f99059ff775485246999027b3197955"                         // BSC USDT合约地址
 	UsdtXlayer   = "0x1e4a5963abfd975d8c9021ce480b42188849d41d"                         // Xlayer USDT合约地址
 	UsdtPolygon  = "0xc2132d05d31c914a87c6611c10748aeb04b58e8f"                         // Polygon USDT合约地址
-	UsdtArbitrum = "0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9"							// Arbitum One USD合约地址
+	UsdtArbitrum = "0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9"							// Arbitum One USDT合约地址
 	UsdtSolana   = "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB"                       // Solana USDT合约地址
 	SolSplToken  = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"                        // Solana SPL Token合约地址
 	UsdtAptos    = "0x357b0b74bc833e95a115ad22604854d6b0fca151cecd94111770e5d6ffc9dc2b" // Aptos USDT合约地址
