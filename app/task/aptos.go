@@ -12,6 +12,7 @@ import (
 	"github.com/v03413/bepusdt/app/model"
 	"io"
 	"math/big"
+	"strings"
 	"time"
 )
 
@@ -259,7 +260,7 @@ func (a *aptos) parsePrimaryFungibleStoreTransfer(net, hash, sender string, ver 
 		TxHash:      hash,
 		Amount:      decimal.NewFromBigInt(rawAmount, conf.UsdtAptosDecimals),
 		FromAddress: sender,
-		RecvAddress: args[1].String(),
+		RecvAddress: a.padAddressLeadingZeros(args[1].String()),
 		Timestamp:   t,
 		TradeType:   model.OrderTradeTypeUsdtAptos,
 		BlockNum:    ver,
@@ -287,7 +288,7 @@ func (a *aptos) parseAptosAccountBatchTransferFungibleAssets(net, hash, sender s
 			TxHash:      hash,
 			Amount:      decimal.NewFromBigInt(rawAmount, conf.UsdtAptosDecimals),
 			FromAddress: sender,
-			RecvAddress: recv.String(),
+			RecvAddress: a.padAddressLeadingZeros(recv.String()),
 			Timestamp:   t,
 			TradeType:   model.OrderTradeTypeUsdtAptos,
 			BlockNum:    ver,
@@ -314,10 +315,17 @@ func (a *aptos) parseAptosAccountTransferFungibleAssets(net, hash, sender string
 			TxHash:      hash,
 			Amount:      decimal.NewFromBigInt(rawAmount, conf.UsdtAptosDecimals),
 			FromAddress: sender,
-			RecvAddress: args[1].String(),
+			RecvAddress: a.padAddressLeadingZeros(args[1].String()),
 			Timestamp:   t,
 			TradeType:   model.OrderTradeTypeUsdtAptos,
 			BlockNum:    ver,
 		},
 	}
+}
+
+func (a *aptos) padAddressLeadingZeros(addr string) string {
+	addr = strings.TrimPrefix(addr, "0x")
+	addr = strings.Repeat("0", 64-len(addr)) + addr
+
+	return "0x" + addr
 }
