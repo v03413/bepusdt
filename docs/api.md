@@ -102,6 +102,8 @@ POST /api/v1/order/cancel-transaction
 
 ## 签名算法
 
+**这里给出一个PHP参考签名函数 [点击查看](https://github.com/v03413/Epay-BEpusdt/blob/b7fa8fd608d71ce50e0f8eabb1717783c96761ac/bepusdt_plugin.php#L108:L127)，其它语言大家统一参考，避免各种奇怪问题。**  
+
 签名生成的通用步骤如下：
 
 第一步，将所有非空参数值的参数按照参数名ASCII码从小到大排序（字典序），使用URL键值对的格式（即key1=value1&key2=value2…）拼接成
