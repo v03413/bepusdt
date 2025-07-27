@@ -73,107 +73,122 @@ func cmdStateHandle(ctx context.Context, b *bot.Bot, u *models.Update) {
 	var rows []model.TradeOrders
 	model.DB.Where("created_at > ?", time.Now().Format(time.DateOnly)).Find(&rows)
 	var succ uint64
-	var money, trx, uTrc20, uErc20, uBep20, uXlayer, uSolana, uPol, uArb, uAptos float64
+	var money float64
+
+	var types []string
+	model.DB.Model(&model.WalletAddress{}).Distinct("trade_type").Where("status = ?", model.StatusEnable).Pluck("trade_type", &types)
+
+	// 动态统计各类型金额
+	typeAmounts := make(map[string]float64)
+	for _, t := range types {
+		typeAmounts[t] = 0
+	}
+
 	for _, o := range rows {
 		if o.Status != model.OrderStatusSuccess {
 
 			continue
 		}
-
 		succ++
 		money += o.Money
 
-		var amount = cast.ToFloat64(o.Amount)
-		if o.TradeType == model.OrderTradeTypeTronTrx {
-			trx += amount
-		}
-		if o.TradeType == model.OrderTradeTypeUsdtBep20 {
-			uBep20 += amount
-		}
-		if o.TradeType == model.OrderTradeTypeUsdtTrc20 {
-			uTrc20 += amount
-		}
-		if o.TradeType == model.OrderTradeTypeUsdtErc20 {
-			uErc20 += amount
-		}
-		if o.TradeType == model.OrderTradeTypeUsdtPolygon {
-			uPol += amount
-		}
-		if o.TradeType == model.OrderTradeTypeUsdtArbitrum {
-			uArb += amount
-		}
-		if o.TradeType == model.OrderTradeTypeUsdtXlayer {
-			uXlayer += amount
-		}
-		if o.TradeType == model.OrderTradeTypeUsdtSolana {
-			uSolana += amount
-		}
-		if o.TradeType == model.OrderTradeTypeUsdtAptos {
-			uAptos += amount
+		// 只统计启用类型的金额
+		if _, exists := typeAmounts[o.TradeType]; exists {
+			typeAmounts[o.TradeType] += cast.ToFloat64(o.Amount)
 		}
 	}
 
-	var base = "```" + `
-🎁今日成功订单：%d
-💎今日总数订单：%d
-💰今日收款汇总
-	- %.2f CNY
-	- %.2f TRX
-	- %.2f USDT.Trc20
-	- %.2f USDT.Erc20
-	- %.2f USDT.Bep20
-	- %.2f USDT.Aptos
-	- %.2f USDT.Xlayer
-	- %.2f USDT.Solana
-	- %.2f USDT.Polygon
-	- %.2f USDT.Arbitrum
-🌟扫块成功数据
-	- Bsc %s
-	- Tron %s
-	- Aptos %s
-	- Xlayer %s
-	- Solana %s
-	- Polygon %s
-	- Arbitrum %s
-	- Ethereum %s
------------------------
-🪧基准汇率(TRX)：%v
-🪧基准汇率(USDT)：%v
-✅订单汇率(TRX)：%v
-✅订单汇率(USDT)：%v
------------------------
-` + "```" + `
->基准汇率：来源于交易所的原始数据。
->订单汇率：订单创建过程中实际使用的汇率。
->扫块成功数据：如果该值过低，说明您的服务器与区块链网络连接不稳定，请尝试更换区块节点。
-`
+	// 构建基础统计信息
+	var text = "```\n"
+	text += fmt.Sprintf("🎁今日成功订单：%d\n", succ)
+	text += fmt.Sprintf("💎今日总数订单：%d\n", len(rows))
+	text += "💰今日收款汇总\n"
+	text += fmt.Sprintf(" - %.2f CNY\n", money)
 
-	var text = fmt.Sprintf(base,
-		succ,
-		len(rows),
-		money,
-		trx,
-		uTrc20,
-		uErc20,
-		uBep20,
-		uAptos,
-		uXlayer,
-		uSolana,
-		uPol,
-		uArb,
-		conf.GetBlockSuccRate(conf.Bsc),
-		conf.GetBlockSuccRate(conf.Tron),
-		conf.GetBlockSuccRate(conf.Aptos),
-		conf.GetBlockSuccRate(conf.Xlayer),
-		conf.GetBlockSuccRate(conf.Solana),
-		conf.GetBlockSuccRate(conf.Polygon),
-		conf.GetBlockSuccRate(conf.Arbitrum),
-		conf.GetBlockSuccRate(conf.Ethereum),
-		cast.ToString(rate.GetOkxTrxRawRate()),
-		cast.ToString(rate.GetOkxUsdtRawRate()),
-		cast.ToString(rate.GetTrxCalcRate()),
-		cast.ToString(rate.GetUsdtCalcRate()),
-	)
+	// 动态显示启用类型的收款汇总
+	typeDisplayNames := map[string]string{
+		model.OrderTradeTypeTronTrx:      "TRX",
+		model.OrderTradeTypeUsdtTrc20:    "USDT.Trc20",
+		model.OrderTradeTypeUsdtErc20:    "USDT.Erc20",
+		model.OrderTradeTypeUsdtBep20:    "USDT.Bep20",
+		model.OrderTradeTypeUsdtAptos:    "USDT.Aptos",
+		model.OrderTradeTypeUsdtXlayer:   "USDT.Xlayer",
+		model.OrderTradeTypeUsdtSolana:   "USDT.Solana",
+		model.OrderTradeTypeUsdtPolygon:  "USDT.Polygon",
+		model.OrderTradeTypeUsdtArbitrum: "USDT.Arbitrum",
+	}
+
+	for _, t := range types {
+		if displayName, exists := typeDisplayNames[t]; exists {
+			text += fmt.Sprintf(" - %.2f %s\n", typeAmounts[t], displayName)
+		}
+	}
+
+	// 动态显示扫块成功数据
+	text += "🌟扫块成功数据\n"
+	blockchainMap := map[string]string{
+		model.OrderTradeTypeUsdtBep20:    conf.Bsc,
+		model.OrderTradeTypeTronTrx:      conf.Tron,
+		model.OrderTradeTypeUsdtTrc20:    conf.Tron,
+		model.OrderTradeTypeUsdtAptos:    conf.Aptos,
+		model.OrderTradeTypeUsdtXlayer:   conf.Xlayer,
+		model.OrderTradeTypeUsdtSolana:   conf.Solana,
+		model.OrderTradeTypeUsdtPolygon:  conf.Polygon,
+		model.OrderTradeTypeUsdtArbitrum: conf.Arbitrum,
+		model.OrderTradeTypeUsdtErc20:    conf.Ethereum,
+	}
+
+	blockchainNames := map[string]string{
+		conf.Bsc:      "Bsc",
+		conf.Tron:     "Tron",
+		conf.Aptos:    "Aptos",
+		conf.Xlayer:   "Xlayer",
+		conf.Solana:   "Solana",
+		conf.Polygon:  "Polygon",
+		conf.Arbitrum: "Arbitrum",
+		conf.Ethereum: "Ethereum",
+	}
+
+	// 收集需要显示的区块链
+	blockchainSet := make(map[string]bool)
+	for _, t := range types {
+		if blockchain, exists := blockchainMap[t]; exists {
+			blockchainSet[blockchain] = true
+		}
+	}
+
+	// 将区块链转换为切片并按名字长度排序
+	var blockchains []string
+	for blockchain := range blockchainSet {
+		blockchains = append(blockchains, blockchain)
+	}
+
+	// 按区块链名字长度排序，名字越长排越后
+	for i := 0; i < len(blockchains)-1; i++ {
+		for j := 0; j < len(blockchains)-1-i; j++ {
+			name1 := blockchainNames[blockchains[j]]
+			name2 := blockchainNames[blockchains[j+1]]
+			if len(name1) > len(name2) {
+				blockchains[j], blockchains[j+1] = blockchains[j+1], blockchains[j]
+			}
+		}
+	}
+
+	// 按排序后的顺序显示区块链数据
+	for _, blockchain := range blockchains {
+		text += fmt.Sprintf(" - %s %s\n", blockchainNames[blockchain], conf.GetBlockSuccRate(blockchain))
+	}
+
+	text += "-----------------------\n"
+	text += fmt.Sprintf("🪧基准汇率(TRX)：%v\n", cast.ToString(rate.GetOkxTrxRawRate()))
+	text += fmt.Sprintf("🪧基准汇率(USDT)：%v\n", cast.ToString(rate.GetOkxUsdtRawRate()))
+	text += fmt.Sprintf("✅订单汇率(TRX)：%v\n", cast.ToString(rate.GetTrxCalcRate()))
+	text += fmt.Sprintf("✅订单汇率(USDT)：%v\n", cast.ToString(rate.GetUsdtCalcRate()))
+	text += "-----------------------\n"
+	text += "```\n"
+	text += ">基准汇率：来源于交易所的原始数据。\n"
+	text += ">订单汇率：订单创建过程中实际使用的汇率。\n"
+	text += ">扫块成功数据：如果该值过低，说明您的服务器与区块链网络连接不稳定，请尝试更换区块节点。"
 
 	SendMessage(&bot.SendMessageParams{
 		ChatID:    u.Message.Chat.ID,
