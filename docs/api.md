@@ -14,7 +14,7 @@ POST /api/v1/order/create-transaction
 ```json
 {
   "address": "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t",  // 可根据实际情况传入收款地址，亦可留空
-  "trade_type": "usdt.trc20",  // usdt.trc20(默认) tron.trx 可选列表 https://github.com/v03413/bepusdt/blob/16d8df2cc5acc3d41c1c014ecb5370bd97f7e955/app/model/orders.go#L25:L30
+  "trade_type": "usdt.trc20",  // usdt.trc20(默认) 可选完整列表 https://github.com/v03413/BEpusdt/blob/main/docs/trade-type.md
   "order_id": "787240927112940881",   // 商户订单编号
   "amount": 28.88,   // 请求支付金额，CNY
   "signature":"123456abcd", // 签名

@@ -12,7 +12,7 @@ sqlite_path = "/var/lib/bepusdt/sqlite.db"
 tron_grpc_node = "18.141.79.38:50051"
 # 日志输出路径
 output_log = "/var/log/bepusdt.log"
-# Webhook地址，留空则不弃用
+# Webhook地址，留空则不启用
 webhook_url = ""
 
 [pay]
@@ -48,9 +48,9 @@ arbitrum = "https://arb1.arbitrum.io/rpc"
 ethereum = "https://ethereum.publicnode.com/"
 
 [bot]
-# Telegram Bot 管理员ID，必须设置，否则无法使用
+# Telegram Bot 管理员ID，必须设置，否则无法使用；群里 @BEpusdtChat 发送命令 /info 获取
 admin_id = 123456
 # Telegram 群组ID，设置之后机器人会将交易消息会推送到此群
 group_id = ""
-# Telegram Bot Token，必须设置，否则无法使用
+# Telegram Bot Token，必须设置，否则无法使用；通过 @BotFather 创建机器人获取
 token = ""
