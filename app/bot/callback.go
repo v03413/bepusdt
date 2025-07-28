@@ -36,6 +36,7 @@ const cbOrderDetail = "order_detail"
 const cbOrderList = "order_list"
 const cbMarkNotifySucc = "mark_notify_succ"
 const cbOrderNotifyRetry = "order_notify_retry"
+const cbMarkOrderSucc = "mark_order_succ"
 
 func cbWalletAction(ctx context.Context, b *bot.Bot, u *models.Update) {
 	var address = ctx.Value("args").([]string)[1]
@@ -271,6 +272,12 @@ func cbOrderDetailAction(ctx context.Context, b *bot.Bot, u *models.Update) {
 		})
 	}
 
+	if order.Status == model.OrderStatusExpired && order.NotifyState == model.OrderNotifyStateFail {
+		markup.InlineKeyboard = append(markup.InlineKeyboard, []models.InlineKeyboardButton{
+			{Text: "⚠️直接标记已支付（即使未收到款）", CallbackData: cbMarkOrderSucc + "|" + order.TradeId},
+		})
+	}
+
 	if len(args) == 3 {
 		markup.InlineKeyboard = append(markup.InlineKeyboard, []models.InlineKeyboardButton{
 			{Text: "📦返回订单列表", CallbackData: fmt.Sprintf("%s|%s", cbOrderList, args[2])},
@@ -350,6 +357,17 @@ func dbOrderNotifyRetryAction(ctx context.Context, b *bot.Bot, u *models.Update)
 	})
 }
 
+func dbMarkOrderSuccAction(ctx context.Context, b *bot.Bot, u *models.Update) {
+	var tradeId = ctx.Value("args").([]string)[1]
+
+	model.DB.Model(&model.TradeOrders{}).Where("trade_id = ?", tradeId).UpdateColumn("status", model.OrderStatusSuccess)
+
+	SendMessage(&bot.SendMessageParams{
+		Text:      fmt.Sprintf("🪧订单（`%s`）已经标记为收款成功，稍后可再次查询。", tradeId),
+		ParseMode: models.ParseModeMarkdown,
+	})
+}
+
 func getTronWalletInfo(address string) string {
 	var client = http.Client{Timeout: time.Second * 5}
 	resp, err := client.Get("https://apilist.tronscanapi.com/api/accountv2?address=" + address)
@@ -383,7 +401,7 @@ func getTronWalletInfo(address string) string {
 >💲 USDT余额：0.00 USDT
 >📬 交易数量：` + result.Get("totalTransactionCount").String() + `
 >📈 转账数量：↑ ` + result.Get("transactions_out").String() + ` ↓ ` + result.Get("transactions_in").String() + `
->📡 宽带资源：` + fmt.Sprintf("%v", netRemaining) + ` / ` + fmt.Sprintf("%v", netLimit) + ` 
+>📡 宽带资源：` + fmt.Sprintf("%v", netRemaining) + ` / ` + fmt.Sprintf("%v", netLimit) + `
 >🔋 能量资源：` + result.Get("bandwidth.energyRemaining").String() + ` / ` + result.Get("bandwidth.energyLimit").String() + `
 >⏰ 创建时间：` + help.Ec(dateCreated.Format(time.DateTime)) + `
 >⏰ 最后活动：` + help.Ec(latestOperationTime.Format(time.DateTime)) + `
