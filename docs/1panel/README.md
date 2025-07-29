@@ -1,46 +1,49 @@
 # 1Panel部署BEpusdt教程
 
-首先说下核心，其本质上其实还是Docker部署，随后再通过1Panel的OpenResty反向代理；教程图片居多，自己操作的时候注意路径以及参数配置。
+部署有两种方式，本文采用`1Panel`配合`进程守护`进行部署，另一种方式是[配合Docker容器部署](./docker.md)，自行选择。
 
-## 建立文件夹，准备配置文件
+PS：默认认为你已经安装好`1Panel`，并且能够正常使用。
 
-![图片描述](./img/1.1.png)
-![图片描述](./img/1.2.png)
+## 配置文件准备
 
-建立路径`/opt/BEpusdt`文件夹，注意权限。
+最新发行版文件：https://github.com/v03413/BEpusdt/releases/latest/download/linux-amd64-BEpusdt.tar.gz  
+下载文件后解压，全部内容上传到服务器的 `/opt/BEpusdt` 目录下(没有则自行创建)，确保你的目录结构和权限和下图一致：
 
-![图片描述](./img/1.3.png)
+![上传文件](./img/daemon/1.1.png)
 
-准备配置文件 https://github.com/v03413/BEpusdt/raw/main/conf.simple.toml 将此文件下载后重命名为 `conf.toml`，随后上传到
-`/opt/BEpusdt` 文件夹中；图中方框特别标记的内容必须修改，其它内容按需调整。
+打开配置文件`conf.simple.toml`进行调整，红框所示内容为必改项，其他内容按需调整：
 
-## 创建启动 BEpusdt 容器
+![配置文件](./img/daemon/1.2.png)
 
-![图片描述](./img/2.1.png)
-![图片描述](./img/2.2.png)
+日志和数据路径配置：
 
-按流程进入Docker容器创建页面，镜像和端口务必按图修改，`v03413/bepusdt:latest`，其它勾选按图操作。
+```toml
+output_log = "/opt/BEpusdt/bepusdt.log"
+sqlite_path = "/opt/BEpusdt/sqlite.db"
+```
 
-![图片描述](./img/2.3.png)  
-容器挂载：本机目录 `/opt/BEpusdt` 权限：读写 `/data`
+填写信息无误后确认保存。
 
-![图片描述](./img/2.4.png)  
-命令：Command `-conf /data/conf.toml` 其它不填。
+## 创建进程守护
 
-![图片描述](./img/2.5.png)  
-重启规则：按图勾选第四个，**未手动停止则重启**
+返回`1Panel`首页，依次点击左侧`工具箱` -> `进程守护`(如果提示未安装`Supervisor`，请按照提示执行安装并完成初始化) ->
+`创建守护进程`
+，按照下图填写信息：
 
-仔细检查，保证填写无误之后点击确认，正式创建容器；稍等片刻，等待容器部署完成。
---- 
+![创建守护进程](./img/daemon/2.1.png)
 
-![图片描述](./img/2.6.png)
-![图片描述](./img/2.7.png)
+运行目录：`/opt/BEpusdt`  
+启动命令：`/opt/BEpusdt/bepusdt -conf /opt/BEpusdt/conf.simple.toml`
 
-如果没发生什么错误，随后查看容器日志，如果Telegram Bot 同样收到启动消息，则说明BEpusdt部署成功。
+填写完成确认添加，稍等几秒即可看到进程启动，观察日志启动成功：
 
-## 建立网站 配置反代
+![进程启动成功](./img/daemon/2.2.png)
 
-![图片描述](./img/3.1.png)
+## 配置方向代理
 
-按图一步一步对应操作，如果提示没有安装`OpenResty`请自行安装；确保填写域名和代理地址正确无误，最后点击确认创建网站；
-如果域名已经解析到服务器IP地址，这个时候访问你的域名能正确打开即代表反向代理成功；如果有必要推荐启用HTTPS，步骤这里不再阐述。
+返回`1Panel`首页，依次点击左侧`网站`(务必已安装`OpenResty`) -> `创建网站` -> `反向代理`，按提示内容进行配置：
+
+![创建反向代理](./img/daemon/3.1.png)
+
+重点在于`代理地址`，正常没特别修改的情况下，应该都会填写：`127.0.0.1:8080`，其它信息按需填写，
+配置好之后保存，完成域名解析，访问你的域名即可访问到BEpusdt；同时推荐最好完成HTTPS配置，具体步骤不再赘述。
