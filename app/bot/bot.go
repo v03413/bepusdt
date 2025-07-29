@@ -56,6 +56,7 @@ func Start() {
 		api.RegisterHandler(bot.HandlerTypeCallbackQueryData, cbAddressOtherNotify, bot.MatchTypePrefix, cbAddressOtherNotifyAction)
 		api.RegisterHandler(bot.HandlerTypeCallbackQueryData, cbMarkNotifySucc, bot.MatchTypePrefix, cbMarkNotifySuccAction)
 		api.RegisterHandler(bot.HandlerTypeCallbackQueryData, cbOrderNotifyRetry, bot.MatchTypePrefix, dbOrderNotifyRetryAction)
+		api.RegisterHandler(bot.HandlerTypeCallbackQueryData, cbMarkOrderSucc, bot.MatchTypePrefix, dbMarkOrderSuccAction)
 		api.RegisterHandler(bot.HandlerTypeCallbackQueryData, cbOrderList, bot.MatchTypePrefix, cbOrderListAction)
 	}
 
