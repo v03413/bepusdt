@@ -35,7 +35,7 @@ func epaySubmit(ctx *gin.Context) {
 	}
 
 	if data["pid"] != epay.Pid {
-		ctx.String(200, "Bepusdt 易支付兼容模式，商户号【PID】必须固定为"+epay.Pid)
+		ctx.String(200, "BEpusdt 易支付兼容模式，商户号【PID】必须固定为"+epay.Pid)
 
 		return
 	}

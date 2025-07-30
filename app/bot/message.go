@@ -101,7 +101,7 @@ func SendNotifyFailed(o model.TradeOrders, reason string) {
 
 func Welcome() string {
 	return `
-👋 欢迎使用 Bepusdt，一款更好用的个人USDT收款网关，如果您看到此消息，说明机器人已经启动成功！
+👋 欢迎使用 BEpusdt，一款更好用的个人USDT收款网关，如果您看到此消息，说明机器人已经启动成功！
 
 📌当前版本：` + app.Version + `
 📝发送命令 /start 可以开始使用

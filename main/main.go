@@ -32,7 +32,7 @@ func main() {
 
 	web.Start()
 
-	fmt.Println("Bepusdt 启动成功，当前版本：" + app.Version)
+	fmt.Println("BEpusdt 启动成功，当前版本：" + app.Version)
 
 	{
 		var signals = make(chan os.Signal, 1)

@@ -247,7 +247,7 @@ func Bepusdt(order model.TradeOrders) {
 	}
 	go func() {
 		if err := todo(); err != nil {
-			log.Warn("notify Bepusdt Error:", err.Error())
+			log.Warn("notify BEpusdt Error:", err.Error())
 		}
 	}()
 }
