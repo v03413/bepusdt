@@ -55,7 +55,7 @@ func orderTransferHandle(context.Context) {
 		var orders = getAllWaitingOrders()
 		for _, t := range transfers {
 			// debug
-			//if t.Network == conf.Polygon {
+			//if t.TradeType == model.OrderTradeTypeUsdcBep20 {
 			//	fmt.Println(t.TradeType, t.TxHash, t.FromAddress, "=>", t.RecvAddress, t.Amount.String())
 			//}
 

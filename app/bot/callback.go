@@ -77,13 +77,33 @@ func cbAddressAddAction(ctx context.Context, b *bot.Bot, u *models.Update) {
 
 func cbAddressTypeAction(ctx context.Context, b *bot.Bot, u *models.Update) {
 	var btn [][]models.InlineKeyboardButton
-	for _, v := range model.SupportTradeTypes {
-		btn = append(btn, []models.InlineKeyboardButton{
-			{
-				Text:         fmt.Sprintf("💎 %s", strings.ToUpper(v)),
-				CallbackData: fmt.Sprintf("%s|%s", cbAddressAdd, v),
-			},
+	var row []models.InlineKeyboardButton
+	var format = func(v string) string {
+		var text = fmt.Sprintf("💎 %s", strings.ToUpper(v))
+		if strings.Contains(v, "usdt") {
+			text = fmt.Sprintf("💚 %s", strings.ToUpper(v))
+		}
+		if strings.Contains(v, "usdc") {
+			text = fmt.Sprintf("💙 %s", strings.ToUpper(v))
+		}
+
+		arr := strings.Split(text, ".")
+		if len(arr) != 2 {
+
+			return text
+		}
+
+		return fmt.Sprintf("%s.%s", arr[0], help.Capitalize(arr[1]))
+	}
+	for i, v := range model.SupportTradeTypes {
+		row = append(row, models.InlineKeyboardButton{
+			Text:         format(v),
+			CallbackData: fmt.Sprintf("%s|%s", cbAddressAdd, v),
 		})
+		if (i+1)%2 == 0 || i == len(model.SupportTradeTypes)-1 {
+			btn = append(btn, row)
+			row = []models.InlineKeyboardButton{}
+		}
 	}
 
 	SendMessage(&bot.SendMessageParams{

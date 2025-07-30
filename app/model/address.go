@@ -26,6 +26,11 @@ var SupportTradeTypes = []string{
 	OrderTradeTypeUsdtSolana,
 	OrderTradeTypeUsdtPolygon,
 	OrderTradeTypeUsdtArbitrum,
+	OrderTradeTypeUsdcErc20,
+	OrderTradeTypeUsdcBep20,
+	OrderTradeTypeUsdcXlayer,
+	OrderTradeTypeUsdcPolygon,
+	OrderTradeTypeUsdcArbitrum,
 }
 
 type WalletAddress struct {
