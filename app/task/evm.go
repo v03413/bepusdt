@@ -37,7 +37,7 @@ var chainUsdtMap = map[string]string{
 	conf.Bsc:      model.OrderTradeTypeUsdtBep20,
 	conf.Xlayer:   model.OrderTradeTypeUsdtXlayer,
 	conf.Polygon:  model.OrderTradeTypeUsdtPolygon,
-	conf.Arbitrum:  model.OrderTradeTypeUsdtArbitrum,
+	conf.Arbitrum: model.OrderTradeTypeUsdtArbitrum,
 	conf.Ethereum: model.OrderTradeTypeUsdtErc20,
 	conf.Solana:   model.OrderTradeTypeUsdtSolana,
 	conf.Aptos:    model.OrderTradeTypeUsdtAptos,
@@ -249,6 +249,10 @@ func (e *evm) blockParse(a any) {
 				log.Warn("evmBlockParse Error:", err)
 
 				return
+			}
+			if len(input) < 4 { // 观察到某些交易的input长度小于4字节，先无脑丢到
+
+				continue
 			}
 
 			tradeType, ok := contractMap[to]
