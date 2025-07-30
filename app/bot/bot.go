@@ -73,7 +73,6 @@ func Start() {
 
 		return
 	}
-
 	_, err = api.DeleteWebhook(ctx, &bot.DeleteWebhookParams{DropPendingUpdates: true})
 	if err != nil {
 		panic("DeleteWebhook Error: " + err.Error())
@@ -81,7 +80,18 @@ func Start() {
 		return
 	}
 
-	SendMessage(&bot.SendMessageParams{ChatID: conf.BotNotifyTarget(), Text: Welcome()})
+	SendMessage(&bot.SendMessageParams{
+		ChatID: conf.BotNotifyTarget(),
+		Text:   Welcome(),
+		ReplyMarkup: models.InlineKeyboardMarkup{
+			InlineKeyboard: [][]models.InlineKeyboardButton{
+				{
+					{Text: "📢 关注频道", URL: "https://t.me/BEpusdtChannel"},
+					{Text: "💬 社区交流", URL: "https://t.me/BEpusdtChat"},
+				},
+			},
+		},
+	})
 
 	fmt.Println(fmt.Sprintf("Bot UserName: %s %s%s", me.Username, me.FirstName, me.LastName))
 
