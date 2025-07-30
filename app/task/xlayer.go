@@ -12,16 +12,12 @@ func xlayerInit() {
 	xlayer := evm{
 		Type:     conf.Xlayer,
 		Endpoint: conf.GetXlayerRpcEndpoint(),
-		Decimals: decimals{
-			Usdt:   conf.UsdtXlayerDecimals,
-			Native: -18, // xlayer.okb 小数位数
-		},
 		Block: block{
 			InitStartOffset: -600,
 			RollDelayOffset: 3,
 			ConfirmedOffset: 12,
 		},
-		blockScanQueue: chanx.NewUnboundedChan[[]int64](context.Background(), 30),
+		blockScanQueue: chanx.NewUnboundedChan[[]int64](ctx, 30),
 	}
 
 	register(task{ctx: ctx, callback: xlayer.blockDispatch})

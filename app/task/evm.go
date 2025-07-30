@@ -32,6 +32,11 @@ var contractMap = map[string]string{
 	conf.UsdtPolygon:  model.OrderTradeTypeUsdtPolygon,
 	conf.UsdtArbitrum: model.OrderTradeTypeUsdtArbitrum,
 	conf.UsdtErc20:    model.OrderTradeTypeUsdtErc20,
+	conf.UsdcErc20:    model.OrderTradeTypeUsdcErc20,
+	conf.UsdcPolygon:  model.OrderTradeTypeUsdcPolygon,
+	conf.UsdcXlayer:   model.OrderTradeTypeUsdcXlayer,
+	conf.UsdcArbitrum: model.OrderTradeTypeUsdcArbitrum,
+	conf.UsdcBep20:    model.OrderTradeTypeUsdcBep20,
 }
 var chainUsdtMap = map[string]string{
 	conf.Bsc:      model.OrderTradeTypeUsdtBep20,
@@ -43,10 +48,17 @@ var chainUsdtMap = map[string]string{
 	conf.Aptos:    model.OrderTradeTypeUsdtAptos,
 }
 var client = &http.Client{Timeout: time.Second * 30}
-
-type decimals struct {
-	Usdt   int32 // USDT小数位数
-	Native int32 // 原生代币小数位数
+var decimals = map[string]int32{
+	conf.UsdtXlayer:   conf.UsdtXlayerDecimals,
+	conf.UsdtBep20:    conf.UsdtBscDecimals,
+	conf.UsdtPolygon:  conf.UsdtPolygonDecimals,
+	conf.UsdtArbitrum: conf.UsdtArbitrumDecimals,
+	conf.UsdtErc20:    conf.UsdtEthDecimals,
+	conf.UsdcErc20:    conf.UsdcEthDecimals,
+	conf.UsdcPolygon:  conf.UsdcPolygonDecimals,
+	conf.UsdcXlayer:   conf.UsdcXlayerDecimals,
+	conf.UsdcArbitrum: conf.UsdcArbitrumDecimals,
+	conf.UsdcBep20:    conf.UsdcBscDecimals,
 }
 
 type block struct {
@@ -58,7 +70,6 @@ type block struct {
 type evm struct {
 	Type           string
 	Endpoint       string
-	Decimals       decimals
 	Block          block
 	blockScanQueue *chanx.UnboundedChan[[]int64]
 }
@@ -265,11 +276,10 @@ func (e *evm) blockParse(a any) {
 			var from = v.Get("from").String()
 			var amount *big.Int
 			if bytes.Equal(input[0:4], []byte{0xa9, 0x05, 0x9c, 0xbb}) { // transfer function ID
-				recv, amount = e.parseUsdtContractTransfer(input)
+				recv, amount = e.parseErc20ContractTransfer(input)
 			}
-
 			if bytes.Equal(input[0:4], []byte{0x23, 0xb8, 0x72, 0xdd}) { // transfer from function ID
-				from, recv, amount = e.parseUsdtContractTransferFrom(input)
+				from, recv, amount = e.parseErc20ContractTransferFrom(input)
 			}
 
 			if amount == nil {
@@ -281,7 +291,7 @@ func (e *evm) blockParse(a any) {
 				Network:     e.Type,
 				FromAddress: from,
 				RecvAddress: recv,
-				Amount:      decimal.NewFromBigInt(amount, e.Decimals.Usdt),
+				Amount:      decimal.NewFromBigInt(amount, decimals[to]),
 				TxHash:      v.Get("hash").String(),
 				BlockNum:    num,
 				Timestamp:   timestamp,
@@ -296,10 +306,9 @@ func (e *evm) blockParse(a any) {
 
 		log.Info("区块扫描完成", num, conf.GetBlockSuccRate(e.Type), e.Type)
 	}
-
 }
 
-func (e *evm) parseUsdtContractTransfer(data []byte) (string, *big.Int) {
+func (e *evm) parseErc20ContractTransfer(data []byte) (string, *big.Int) {
 	if len(data) < 68 {
 
 		return "", nil
@@ -311,7 +320,7 @@ func (e *evm) parseUsdtContractTransfer(data []byte) (string, *big.Int) {
 	return "0x" + receiver, amount
 }
 
-func (e *evm) parseUsdtContractTransferFrom(data []byte) (string, string, *big.Int) {
+func (e *evm) parseErc20ContractTransferFrom(data []byte) (string, string, *big.Int) {
 	if len(data) < 100 {
 
 		return "", "", nil

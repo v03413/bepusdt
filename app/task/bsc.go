@@ -12,15 +12,11 @@ func bscInit() {
 	bsc := evm{
 		Type:     conf.Bsc,
 		Endpoint: conf.GetBscRpcEndpoint(),
-		Decimals: decimals{
-			Usdt:   conf.UsdtBscDecimals,
-			Native: -18, // bsc.bnb 小数位数
-		},
 		Block: block{
 			InitStartOffset: -400,
 			ConfirmedOffset: 15,
 		},
-		blockScanQueue: chanx.NewUnboundedChan[[]int64](context.Background(), 30),
+		blockScanQueue: chanx.NewUnboundedChan[[]int64](ctx, 30),
 	}
 
 	register(task{ctx: ctx, callback: bsc.blockDispatch})
