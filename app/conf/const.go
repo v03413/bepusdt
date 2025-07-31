@@ -38,6 +38,7 @@ const (
 	UsdcXlayer   = "0x74b7f16337b8972027f6196a17a631ac6de26d22"
 	UsdcArbitrum = "0xaf88d065e77c8cc2239327c5edb3a432268e5831"
 	UsdcBep20    = "0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d"
+	UsdcSolana   = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
 )
 
 const (

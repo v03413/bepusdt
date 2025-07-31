@@ -29,7 +29,17 @@ type solana struct {
 	slotQueue           *chanx.UnboundedChan[int64]
 }
 
+type solanaTokenOwner struct {
+	TradeType string
+	Address   string
+}
+
 var sol solana
+
+var solSplToken = map[string]string{
+	conf.UsdtSolana: model.OrderTradeTypeUsdtSolana,
+	conf.UsdcSolana: model.OrderTradeTypeUsdcSolana,
+}
 
 func init() {
 	sol = newSolana()
@@ -134,7 +144,6 @@ func (s *solana) slotDispatch(ctx context.Context) {
 	}
 }
 
-// slotInitOffset 初始化区块高度偏移，往回扫一定数量的区块
 func (s *solana) slotInitOffset(now int64) {
 	if now == 0 || s.lastSlotNum != 0 {
 
@@ -201,7 +210,6 @@ func (s *solana) slotParse(n any) {
 		}
 		for _, v := range []string{"readonly", "writable"} {
 			for _, key := range trans.Get("meta.loadedAddresses." + v).Array() {
-
 				accountKeys = append(accountKeys, key.String())
 			}
 		}
@@ -216,22 +224,26 @@ func (s *solana) slotParse(n any) {
 			}
 		}
 
-		// SPL Token的Mint地址，即不包含USDT交易信息
+		// SPL Token的Mint地址，即不包含 Token 交易信息
 		if splTokenIndex == -1 {
 
 			continue
 		}
 
-		// 解析 USDT Token 账户 【Token Address => Owner Address】
-		usdtTokenAccountMap := make(map[string]string)
+		// 解析 Token 账户 【Token Address => Owner Address】
+		tokenAccountMap := make(map[string]solanaTokenOwner)
 		for _, v := range []string{"postTokenBalances", "preTokenBalances"} {
 			for _, itm := range trans.Get("meta." + v).Array() {
-				if itm.Get("mint").String() != conf.UsdtSolana || itm.Get("programId").String() != conf.SolSplToken {
+				tradeType, ok := solSplToken[itm.Get("mint").String()]
+				if !ok || itm.Get("programId").String() != conf.SolSplToken {
 
 					continue
 				}
 
-				usdtTokenAccountMap[accountKeys[itm.Get("accountIndex").Int()]] = itm.Get("owner").String()
+				tokenAccountMap[accountKeys[itm.Get("accountIndex").Int()]] = solanaTokenOwner{
+					TradeType: tradeType,
+					Address:   itm.Get("owner").String(),
+				}
 			}
 		}
 
@@ -244,7 +256,7 @@ func (s *solana) slotParse(n any) {
 				continue
 			}
 
-			transArr = append(transArr, s.parseTransfer(instr, accountKeys, usdtTokenAccountMap))
+			transArr = append(transArr, s.parseTransfer(instr, accountKeys, tokenAccountMap))
 		}
 
 		// 解析内部指令
@@ -257,12 +269,11 @@ func (s *solana) slotParse(n any) {
 		for _, itm := range innerInstructions {
 			for _, instr := range itm.Get("instructions").Array() {
 				if instr.Get("programIdIndex").Int() != splTokenIndex {
-					// 不是SPL Token的指令，即不会包含合约代表 transfer 的指令
 
 					continue
 				}
 
-				transArr = append(transArr, s.parseTransfer(instr, accountKeys, usdtTokenAccountMap))
+				transArr = append(transArr, s.parseTransfer(instr, accountKeys, tokenAccountMap))
 			}
 		}
 
@@ -278,7 +289,6 @@ func (s *solana) slotParse(n any) {
 			t.Network = conf.Solana
 			t.BlockNum = slot
 			t.Timestamp = timestamp
-			t.TradeType = model.OrderTradeTypeUsdtSolana
 
 			result = append(result, t)
 		}
@@ -291,7 +301,7 @@ func (s *solana) slotParse(n any) {
 	log.Info("区块扫描完成", slot, conf.GetBlockSuccRate(network), network)
 }
 
-func (s *solana) parseTransfer(instr gjson.Result, accountKeys []string, usdtTokenAccountMap map[string]string) transfer {
+func (s *solana) parseTransfer(instr gjson.Result, accountKeys []string, tokenAccountMap map[string]solanaTokenOwner) transfer {
 	accounts := instr.Get("accounts").Array()
 	trans := transfer{}
 	if len(accounts) < 3 { // from to singer，至少存在3个账户索引，如果是多签则 > 3
@@ -313,16 +323,16 @@ func (s *solana) parseTransfer(instr gjson.Result, accountKeys []string, usdtTok
 		exp = int32(data[9]) * -1
 	}
 
-	from, ok := usdtTokenAccountMap[accountKeys[accounts[0].Int()]]
+	from, ok := tokenAccountMap[accountKeys[accounts[0].Int()]]
 	if !ok {
 
 		return trans
 	}
 
-	trans.FromAddress = from
-	trans.RecvAddress = usdtTokenAccountMap[accountKeys[accounts[1].Int()]]
+	trans.FromAddress = from.Address
+	trans.RecvAddress = tokenAccountMap[accountKeys[accounts[1].Int()]].Address
 	if isTransferChecked {
-		trans.RecvAddress = usdtTokenAccountMap[accountKeys[accounts[2].Int()]]
+		trans.RecvAddress = tokenAccountMap[accountKeys[accounts[2].Int()]].Address
 	}
 
 	buf := make([]byte, 8)
@@ -330,7 +340,8 @@ func (s *solana) parseTransfer(instr gjson.Result, accountKeys []string, usdtTok
 	number := binary.LittleEndian.Uint64(buf)
 	b := new(big.Int)
 	b.SetUint64(number)
-	trans.Amount = decimal.NewFromBigInt(b, exp) // USDT的精度是6位小数
+	trans.TradeType = from.TradeType
+	trans.Amount = decimal.NewFromBigInt(b, exp)
 
 	return trans
 }
