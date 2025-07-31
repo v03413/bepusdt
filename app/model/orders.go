@@ -20,6 +20,7 @@ const (
 
 	OrderTradeTypeTronTrx      = "tron.trx"
 	OrderTradeTypeUsdtTrc20    = "usdt.trc20"
+	OrderTradeTypeUsdcTrc20    = "usdc.trc20"
 	OrderTradeTypeUsdtPolygon  = "usdt.polygon"
 	OrderTradeTypeUsdcPolygon  = "usdc.polygon"
 	OrderTradeTypeUsdtArbitrum = "usdt.arbitrum"

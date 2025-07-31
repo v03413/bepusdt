@@ -26,6 +26,11 @@ var gasFreeUsdtTokenAddress = []byte{0xa6, 0x14, 0xf8, 0x03, 0xb6, 0xfd, 0x78, 0
 var gasFreeOwnerAddress = []byte{0x41, 0x3b, 0x41, 0x50, 0x50, 0xb1, 0xe7, 0x9e, 0x38, 0x50, 0x7c, 0xb6, 0xe4, 0x8d, 0xac, 0xc2, 0x27, 0xaf, 0xfd, 0xd5, 0x0c}
 var gasFreeContractAddress = []byte{0x41, 0x39, 0xdd, 0x12, 0xa5, 0x4e, 0x2b, 0xab, 0x7c, 0x82, 0xaa, 0x14, 0xa1, 0xe1, 0x58, 0xb3, 0x42, 0x63, 0xd2, 0xd5, 0x10}
 var usdtTrc20ContractAddress = []byte{0x41, 0xa6, 0x14, 0xf8, 0x03, 0xb6, 0xfd, 0x78, 0x09, 0x86, 0xa4, 0x2c, 0x78, 0xec, 0x9c, 0x7f, 0x77, 0xe6, 0xde, 0xd1, 0x3c}
+var usdcTrc20ContractAddress = []byte{0x41, 0x34, 0x87, 0xb6, 0x3d, 0x30, 0xb5, 0xb2, 0xc8, 0x7f, 0xb7, 0xff, 0xa8, 0xbc, 0xfa, 0xde, 0x38, 0xea, 0xac, 0x1a, 0xbe}
+var trc20TokenDecimals = map[string]int32{
+	model.OrderTradeTypeUsdtTrc20: conf.UsdtTronDecimals,
+	model.OrderTradeTypeUsdcTrc20: conf.UsdcTronDecimals,
+}
 var grpcParams = grpc.ConnectParams{
 	Backoff:           backoff.Config{BaseDelay: 1 * time.Second, MaxDelay: 30 * time.Second, Multiplier: 1.5},
 	MinConnectTimeout: 1 * time.Minute,
@@ -72,7 +77,7 @@ func (t *tron) blockRoll(context.Context) {
 
 	var client = api.NewWalletClient(conn)
 
-	var ctx, cancel = context.WithTimeout(context.Background(), time.Second*3)
+	var ctx, cancel = context.WithTimeout(context.Background(), time.Second*5)
 	block, err1 := client.GetNowBlock2(ctx, nil)
 	defer cancel()
 
@@ -109,7 +114,7 @@ func (t *tron) blockRoll(context.Context) {
 }
 
 func (t *tron) blockDispatch(context.Context) {
-	p, err := ants.NewPoolWithFunc(8, t.blockParse)
+	p, err := ants.NewPoolWithFunc(3, t.blockParse)
 	if err != nil {
 		panic(err)
 
@@ -143,7 +148,7 @@ func (t *tron) blockParse(n any) {
 
 	conf.SetBlockTotal(conf.Tron)
 
-	var ctx, cancel = context.WithTimeout(context.Background(), time.Second*3)
+	var ctx, cancel = context.WithTimeout(context.Background(), time.Second*5)
 	bok, err2 := client.GetBlockByNum2(ctx, &api.NumberMessage{Num: num})
 	cancel()
 	if err2 != nil {
@@ -254,38 +259,48 @@ func (t *tron) blockParse(n any) {
 					}
 				}
 
-				// usdt trc20 contract
+				// trc20 合约解析
+				var tradeType = "None"
 				if bytes.Equal(foo.GetContractAddress(), usdtTrc20ContractAddress) {
-					if bytes.Equal(data[:4], []byte{0xa9, 0x05, 0x9c, 0xbb}) { //  a9059cbb transfer
-						receiver, amount := t.parseUsdtContractTransfer(data)
-						if amount != nil {
-							transfers = append(transfers, transfer{
-								Network:     conf.Tron,
-								TxHash:      id,
-								Amount:      decimal.NewFromBigInt(amount, conf.UsdtTronDecimals),
-								FromAddress: t.base58CheckEncode(foo.OwnerAddress),
-								RecvAddress: receiver,
-								Timestamp:   timestamp,
-								TradeType:   model.OrderTradeTypeUsdtTrc20,
-								BlockNum:    cast.ToInt64(num),
-							})
-						}
-					}
+					tradeType = model.OrderTradeTypeUsdtTrc20
+				} else if bytes.Equal(foo.GetContractAddress(), usdcTrc20ContractAddress) {
+					tradeType = model.OrderTradeTypeUsdcTrc20
+				}
 
-					if bytes.Equal(data[:4], []byte{0x23, 0xb8, 0x72, 0xdd}) { //  transferFrom (23b872dd)
-						from, to, amount := t.parseUsdtContractTransferFrom(data)
-						if amount != nil {
-							transfers = append(transfers, transfer{
-								Network:     conf.Tron,
-								TxHash:      id,
-								Amount:      decimal.NewFromBigInt(amount, conf.UsdtTronDecimals),
-								FromAddress: from,
-								RecvAddress: to,
-								Timestamp:   timestamp,
-								TradeType:   model.OrderTradeTypeUsdtTrc20,
-								BlockNum:    cast.ToInt64(num),
-							})
-						}
+				exp, ok := trc20TokenDecimals[tradeType]
+				if !ok {
+
+					continue
+				}
+
+				if bytes.Equal(data[:4], []byte{0xa9, 0x05, 0x9c, 0xbb}) { //  a9059cbb transfer
+					receiver, amount := t.parseTrc20ContractTransfer(data)
+					if amount != nil {
+						transfers = append(transfers, transfer{
+							Network:     conf.Tron,
+							TxHash:      id,
+							Amount:      decimal.NewFromBigInt(amount, exp),
+							FromAddress: t.base58CheckEncode(foo.OwnerAddress),
+							RecvAddress: receiver,
+							Timestamp:   timestamp,
+							TradeType:   tradeType,
+							BlockNum:    cast.ToInt64(num),
+						})
+					}
+				}
+				if bytes.Equal(data[:4], []byte{0x23, 0xb8, 0x72, 0xdd}) { //  transferFrom (23b872dd)
+					from, to, amount := t.parseTrc20ContractTransferFrom(data)
+					if amount != nil {
+						transfers = append(transfers, transfer{
+							Network:     conf.Tron,
+							TxHash:      id,
+							Amount:      decimal.NewFromBigInt(amount, exp),
+							FromAddress: from,
+							RecvAddress: to,
+							Timestamp:   timestamp,
+							TradeType:   tradeType,
+							BlockNum:    cast.ToInt64(num),
+						})
 					}
 				}
 			}
@@ -330,7 +345,7 @@ func (t *tron) blockInitOffset(now int64) {
 	}()
 }
 
-func (t *tron) parseUsdtContractTransfer(data []byte) (string, *big.Int) {
+func (t *tron) parseTrc20ContractTransfer(data []byte) (string, *big.Int) {
 	if len(data) != 68 {
 
 		return "", nil
@@ -342,7 +357,7 @@ func (t *tron) parseUsdtContractTransfer(data []byte) (string, *big.Int) {
 	return receiver, amount
 }
 
-func (t *tron) parseUsdtContractTransferFrom(data []byte) (string, string, *big.Int) {
+func (t *tron) parseTrc20ContractTransferFrom(data []byte) (string, string, *big.Int) {
 	if len(data) != 100 {
 
 		return "", "", nil

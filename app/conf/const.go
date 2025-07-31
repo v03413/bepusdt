@@ -54,6 +54,7 @@ const (
 	UsdcXlayerDecimals   = -6
 	UsdcArbitrumDecimals = -6
 	UsdcBscDecimals      = -18
+	UsdcTronDecimals     = -6
 )
 
 const (
