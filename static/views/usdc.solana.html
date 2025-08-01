@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>USDT・TRC20 一款更好用的个人USDT收款网关 BEpusdt</title>
+    <title>USDC・Solana 一款更好用的个人USDC收款网关 BEpusdt</title>
     <link rel="shortcut icon" href="/img/tether.svg">
     <link rel="stylesheet" href="/css/usdt.min.css">
     <script src="/js/jquery.min.js"></script>
@@ -14,17 +14,17 @@
 
 <body>
     <div class="payment-container">
-        <div class="crypto-icon">USDT</div>
-        <h1 class="payment-title">USDT 支付</h1>
+        <div class="crypto-icon">USDC</div>
+        <h1 class="payment-title">USDC 支付</h1>
         <p class="payment-subtitle">
             <span class="status-indicator"></span>
-            请使用 <strong>波场 (TRON)</strong> TRC20 网络进行转账
-            <span class="network-badge">TRC20</span>
+            请使用 <strong>Solana</strong> 网络进行转账
+            <span class="network-badge">Solana</span>
         </p>
         <div class="order-info">
             <div class="order-item">
                 <span class="order-label">转账金额:</span>
-                <span class="order-value amount-highlight" id="payAmount">{{.amount}} USDT</span>
+                <span class="order-value amount-highlight" id="payAmount">{{.amount}} USDC</span>
             </div>
             <div class="order-item">
                 <span class="order-label">商户订单:</span>
@@ -53,7 +53,7 @@
         <div class="qr-section">
             <div class="qr-code" id="qrcode"></div>
             <div class="address-section">
-                <div class="address-label">收款地址 (TRC20 网络)</div>
+                <div class="address-label">收款地址 (Solana 网络)</div>
                 <div class="address-text" id="walletAddress">{{.address}}</div>
                 <button class="copy-btn" onclick="copyAddress()">复制地址</button>
             </div>
@@ -61,7 +61,7 @@
         <div class="instructions">
             <h4>📋 转账说明</h4>
             <ol>
-                <li>必须使用 <strong>TRC20 网络</strong> 进行转账，请勿转入 TRX！</li>
+                <li>必须使用 <strong>Solana 网络</strong> 进行转账，请勿转入 SOL！</li>
                 <li>转账完成后系统会自动确认到账</li>
                 <li>转账金额必须与显示金额完全一致</li>
                 <li>如果有其它疑问，请联系客服处理</li>
