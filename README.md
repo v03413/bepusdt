@@ -3,7 +3,7 @@
 
 ---  
 
-# BEpusdt (Better Easy Payment Usdt)
+# BEpusdt (Better Easy Payment USDT)
 
 <p align="center">
 <img src="./static/img/tether.svg" width="15%" alt="tether">
@@ -18,7 +18,7 @@
 
 ## 🪧 介绍
 
-基本就是对`Epusdt`重新造了一次轮子，移除一些非必要依赖(`Redis MySQL`)，同时加入一些新特性，让个人`USDT`
+基本就是对`Epusdt`重新造了一次轮子，移除一些非必要依赖(`Redis MySQL`)，同时加入一些新特性，让个人`USDT USDC`
 收款更好用、部署更便捷！
 
 ## 🎉 新特性
@@ -26,21 +26,21 @@
 ### 🌟 目前支持收款网络
 
 🔥 主流网络：TRON Ethereum BSC Polygon  
-⚡ 其他网络： X-Layer Solana Aptos Arbitrum-One [完整列表](./docs/trade-type.md)  
+⚡ 其他网络： X-Layer Solana Aptos Arbitrum-One [完整列表](./docs/trade-type.md)
 
-- ✅ 完全兼容 `Epusdt`，插件可无缝替换
-- ✅ 实时同步 USDT 汇率，支持自定义浮动
+- ✅ 完全兼容 `Epusdt`，插件无缝替换
+- ️✅ 区块网络支持`USDT USDC`收款监控
+- ✅ 实时同步`USDT`汇率，支持自定义浮动
 - ✅ 无`MySQL Redis`依赖，支持`Docker`部署
 - ✅ 支持非订单交易监控，钱包余额变动通知
-- ✅ 支持自定义 USDT 支付精度与递增颗粒度
-- ✅ 底层区块扫描，无第三方 API，秒级响应
-- ✅ 支持波场能量代理与能量回收监控通知
-- ✅ 原生支持易支付对接，无三方插件依赖
-- ✅ 支持创建订单时 自定义超时 钱包地址
+- ✅ 支持自定义`USDT`支付精度与递增颗粒度
+- ✅ 底层区块扫描，无`API`依赖，秒级响应
+- ✅ 支持波场能量代理与能量回收监控
+- ✅ 原生兼容`易支付`收单接口，快捷接入
+- ✅ 支持创建订单 自定义钱包地址 超时
 - ✅ 完整支持`等待支付 支付超时`回调
 - ✅ 支持事件`WebHook` 方便多方协同
-- 🏖️ 增加稳定币`USDC`支付交易 待实现  
-- 🏖️ 摆脱TG依赖 完整WEB后台管理 待实现  
+- 🏖️ 摆脱TG依赖 完整WEB后台管理 待实现
 
 ## 🚀 安装部署
 
