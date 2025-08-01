@@ -407,7 +407,7 @@ func (t *tron) base58CheckEncode(input []byte) string {
 
 func (t *tron) rollBreak() bool {
 	var count int64 = 0
-	trade := []string{model.OrderTradeTypeTronTrx, model.OrderTradeTypeUsdtTrc20}
+	trade := []string{model.OrderTradeTypeTronTrx, model.OrderTradeTypeUsdtTrc20, model.OrderTradeTypeUsdcTrc20}
 	model.DB.Model(&model.TradeOrders{}).Where("status = ? and trade_type in (?)", model.OrderStatusWaiting, trade).Count(&count)
 	if count > 0 {
 

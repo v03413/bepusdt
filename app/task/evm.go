@@ -38,14 +38,14 @@ var contractMap = map[string]string{
 	conf.UsdcArbitrum: model.OrderTradeTypeUsdcArbitrum,
 	conf.UsdcBep20:    model.OrderTradeTypeUsdcBep20,
 }
-var chainUsdtMap = map[string]string{
-	conf.Bsc:      model.OrderTradeTypeUsdtBep20,
-	conf.Xlayer:   model.OrderTradeTypeUsdtXlayer,
-	conf.Polygon:  model.OrderTradeTypeUsdtPolygon,
-	conf.Arbitrum: model.OrderTradeTypeUsdtArbitrum,
-	conf.Ethereum: model.OrderTradeTypeUsdtErc20,
-	conf.Solana:   model.OrderTradeTypeUsdtSolana,
-	conf.Aptos:    model.OrderTradeTypeUsdtAptos,
+var chainTokenMap = map[string][]string{
+	conf.Bsc:      {model.OrderTradeTypeUsdtBep20, model.OrderTradeTypeUsdcBep20},
+	conf.Xlayer:   {model.OrderTradeTypeUsdtXlayer, model.OrderTradeTypeUsdcXlayer},
+	conf.Polygon:  {model.OrderTradeTypeUsdtPolygon, model.OrderTradeTypeUsdcPolygon},
+	conf.Arbitrum: {model.OrderTradeTypeUsdtArbitrum, model.OrderTradeTypeUsdcArbitrum},
+	conf.Ethereum: {model.OrderTradeTypeUsdtErc20, model.OrderTradeTypeUsdcErc20},
+	conf.Solana:   {model.OrderTradeTypeUsdtSolana, model.OrderTradeTypeUsdcSolana},
+	conf.Aptos:    {model.OrderTradeTypeUsdtAptos, model.OrderTradeTypeUsdcAptos},
 }
 var client = &http.Client{Timeout: time.Second * 30}
 var decimals = map[string]int32{
@@ -336,20 +336,20 @@ func (e *evm) parseErc20ContractTransferFrom(data []byte) (string, string, *big.
 }
 
 func rollBreak(network string) bool {
-	usdt, ok := chainUsdtMap[network]
+	token, ok := chainTokenMap[network]
 	if !ok {
 
 		return true
 	}
 
 	var count int64 = 0
-	model.DB.Model(&model.TradeOrders{}).Where("status = ? and trade_type = ?", model.OrderStatusWaiting, usdt).Count(&count)
+	model.DB.Model(&model.TradeOrders{}).Where("status = ? and trade_type in (?)", model.OrderStatusWaiting, token).Count(&count)
 	if count > 0 {
 
 		return false
 	}
 
-	model.DB.Model(&model.WalletAddress{}).Where("other_notify = ? and trade_type = ?", model.OtherNotifyEnable, usdt).Count(&count)
+	model.DB.Model(&model.WalletAddress{}).Where("other_notify = ? and trade_type in (?)", model.OtherNotifyEnable, token).Count(&count)
 	if count > 0 {
 
 		return false
