@@ -16,10 +16,6 @@ import (
 	"time"
 )
 
-const (
-	aptosPayloadType = "entry_function_payload"
-)
-
 type aptos struct {
 	versionChunkSize       int64
 	versionConfirmedOffset int64
@@ -34,6 +30,23 @@ type version struct {
 }
 
 var apt aptos
+
+var aptDecimals = map[string]int32{
+	model.OrderTradeTypeUsdtAptos: conf.UsdtAptosDecimals,
+	model.OrderTradeTypeUsdcAptos: conf.UsdcAptosDecimals,
+}
+
+type aptEvent struct {
+	Type    string
+	Action  string
+	Amount  decimal.Decimal
+	Address string
+}
+
+type aptAmount struct {
+	Amount string
+	Type   string
+}
 
 func init() {
 	apt = newAptos()
@@ -174,16 +187,18 @@ func (a *aptos) versionInitOffset(now int64) {
 	}()
 }
 
+// 由于 aptos 网络特性，交易数据中不会显示存在交易转账 from => to 的对应关系，
+// 所以目前此解析函数存在大量循环嵌套解析，逻辑较为复杂，希望未来有更好的方式进行解析 慢慢优化
 func (a *aptos) versionParse(n any) {
 	p := n.(version)
 
-	var network = conf.Aptos
+	var net = conf.Aptos
 	var url = fmt.Sprintf("%sv1/transactions?start=%d&limit=%d", conf.GetAptosRpcNode(), p.Start, p.Limit)
 
-	conf.SetBlockTotal(network)
+	conf.SetBlockTotal(net)
 	resp, err := client.Get(url)
 	if err != nil {
-		conf.SetBlockFail(network)
+		conf.SetBlockFail(net)
 		log.Warn("versionParse Error sending request:", err)
 
 		return
@@ -191,7 +206,7 @@ func (a *aptos) versionParse(n any) {
 
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		conf.SetBlockFail(network)
+		conf.SetBlockFail(net)
 		log.Warn("versionParse Error response status code:", resp.StatusCode)
 
 		return
@@ -199,7 +214,7 @@ func (a *aptos) versionParse(n any) {
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		conf.SetBlockFail(network)
+		conf.SetBlockFail(net)
 		a.versionQueue.In <- p
 		log.Warn("versionParse Error reading response body:", err)
 
@@ -207,120 +222,163 @@ func (a *aptos) versionParse(n any) {
 	}
 
 	if !gjson.ValidBytes(body) {
-		conf.SetBlockFail(network)
+		conf.SetBlockFail(net)
 		a.versionQueue.In <- p
 		log.Warn("versionParse Error: invalid JSON response body")
 
 		return
 	}
 
+	transfers := make([]transfer, 0)
 	for _, trans := range gjson.ParseBytes(body).Array() {
 		tsNano := trans.Get("timestamp").Int() * 1000
-		timestamp := time.Unix(tsNano/1e9, tsNano%1e9)
-		function := trans.Get("payload.function").String()
-		typeName := trans.Get("payload.type").String()
-		if typeName != aptosPayloadType {
-
-			continue
-		}
-
-		hash := trans.Get("hash").String()
-		sender := trans.Get("sender").String()
 		ver := trans.Get("version").Int()
-		args := trans.Get("payload.arguments").Array()
+		hash := trans.Get("hash").String()
+		addrOwner := make(map[string]string)                                         // [address] => owner address
+		addrType := make(map[string]string)                                          // [address] => tradeType
+		amtAddrMap := map[string]map[aptAmount]string{"deposit": {}, "withdraw": {}} // [amount] => address
+		aptEvents := make([]aptEvent, 0)
+		trans.Get("changes").ForEach(func(_, v gjson.Result) bool {
+			if v.Get("type").String() != "write_resource" {
 
-		switch function {
-		case "0x1::primary_fungible_store::transfer":
-			a.parsePrimaryFungibleStoreTransfer(network, hash, sender, ver, timestamp, args)
-		case "0x1::aptos_account::batch_transfer_fungible_assets":
-			a.parseAptosAccountBatchTransferFungibleAssets(network, hash, sender, ver, timestamp, args)
-		case "0x1::aptos_account::transfer_fungible_assets":
-			a.parseAptosAccountTransferFungibleAssets(network, hash, sender, ver, timestamp, args)
-		case "0x1::fungible_asset::transfer":
-			// 待定
-		case "0x1::coin::transfer":
-			// 待定
-		}
-	}
+				return true
+			}
 
-	log.Info("区块扫描完成", fmt.Sprintf("%d.%d", p.Start, p.Limit), conf.GetBlockSuccRate(network), network)
-}
+			data := v.Get("data")
+			if data.Get("type").String() == "0x1::fungible_asset::FungibleStore" {
+				addr := v.Get("address").String()
+				switch data.Get("data.metadata.inner").String() {
+				case conf.UsdtAptos:
+					addrType[addr] = model.OrderTradeTypeUsdtAptos
+				case conf.UsdcAptos:
+					addrType[addr] = model.OrderTradeTypeUsdcAptos
+				}
+			}
+			if data.Get("type").String() == "0x1::object::ObjectCore" {
+				addrOwner[v.Get("address").String()] = data.Get("data.owner").String()
+			}
 
-func (a *aptos) parsePrimaryFungibleStoreTransfer(net, hash, sender string, ver int64, t time.Time, args []gjson.Result) {
-	if args[0].Get("inner").String() != conf.UsdtAptos {
-
-		return
-	}
-
-	rawAmount := new(big.Int)
-	rawAmount.SetString(args[2].String(), 10)
-
-	transferQueue.In <- []transfer{{
-		Network:     net,
-		TxHash:      hash,
-		Amount:      decimal.NewFromBigInt(rawAmount, conf.UsdtAptosDecimals),
-		FromAddress: sender,
-		RecvAddress: a.padAddressLeadingZeros(args[1].String()),
-		Timestamp:   t,
-		TradeType:   model.OrderTradeTypeUsdtAptos,
-		BlockNum:    ver,
-	}}
-}
-
-func (a *aptos) parseAptosAccountBatchTransferFungibleAssets(net, hash, sender string, ver int64, t time.Time, args []gjson.Result) {
-	if args[0].Get("inner").String() != conf.UsdtAptos {
-
-		return
-	}
-
-	var result = make([]transfer, 0)
-	for i, recv := range args[1].Array() {
-		rawAmount := new(big.Int)
-		rawAmount.SetString(args[2].Get(fmt.Sprintf("%d", i)).String(), 10)
-		if rawAmount == nil || rawAmount.Sign() <= 0 {
-			log.Warn("parseAptosAccountBatchTransferFungibleAssets Error: invalid amount for receiver", recv.String(), "in transaction", hash)
-
-			continue
-		}
-
-		result = append(result, transfer{
-			Network:     net,
-			TxHash:      hash,
-			Amount:      decimal.NewFromBigInt(rawAmount, conf.UsdtAptosDecimals),
-			FromAddress: sender,
-			RecvAddress: a.padAddressLeadingZeros(recv.String()),
-			Timestamp:   t,
-			TradeType:   model.OrderTradeTypeUsdtAptos,
-			BlockNum:    ver,
+			return true
 		})
+		trans.Get("events").ForEach(func(_, v gjson.Result) bool {
+			amount := v.Get("data.amount").String()
+			amt, err := decimal.NewFromString(amount)
+			if err != nil {
+
+				return true
+			}
+
+			address := v.Get("data.store").String()
+			switch v.Get("type").String() {
+			case "0x1::fungible_asset::Deposit":
+				aptEvents = append(aptEvents, aptEvent{Amount: amt, Address: address, Action: "deposit"})
+				amtAddrMap["deposit"][aptAmount{Amount: amount, Type: addrType[address]}] = address
+			case "0x1::fungible_asset::Withdraw":
+				amtAddrMap["withdraw"][aptAmount{Amount: amount, Type: addrType[address]}] = address
+				aptEvents = append(aptEvents, aptEvent{Amount: amt, Address: address, Action: "withdraw"})
+			}
+			return true
+		})
+
+		// 针对 一个withdraw 对应 一个deposit 且数额相同的情况
+		for amt, to := range amtAddrMap["deposit"] {
+			from, ok := amtAddrMap["withdraw"][amt]
+			if !ok {
+
+				continue
+			}
+
+			amount, ok := new(big.Int).SetString(amt.Amount, 10)
+			if !ok {
+
+				continue
+			}
+
+			tradeType, ok := addrType[to]
+			if !ok {
+
+				continue
+			}
+
+			transfers = append(transfers, transfer{
+				Network:     net,
+				TxHash:      hash,
+				Amount:      decimal.NewFromBigInt(amount, aptDecimals[tradeType]),
+				FromAddress: a.padAddressLeadingZeros(addrOwner[from]),
+				RecvAddress: a.padAddressLeadingZeros(addrOwner[to]),
+				Timestamp:   time.Unix(tsNano/1000, (tsNano%1000)*1000000),
+				TradeType:   tradeType,
+				BlockNum:    ver,
+			})
+		}
+
+		// 针对 一个withdraw 对应 多个deposit(数额累计等于 withdraw) 的情况
+		processEvents := func(tradeType string, events []aptEvent) ([]aptEvent, map[string]string) {
+			deposits := make([]aptEvent, 0)
+			withdraws := make(map[decimal.Decimal]aptEvent)
+			fromMap := make(map[string]string)
+
+			// 分类事件
+			for _, e := range events {
+				if addrType[e.Address] == tradeType {
+					if e.Action == "deposit" {
+						deposits = append(deposits, e)
+					}
+					if e.Action == "withdraw" {
+						withdraws[e.Amount] = e
+					}
+				}
+			}
+
+			// 穷举计算匹配关系，只穷举 A + B = C 的情况，实际上还存在 A + B + C + ... = D
+			// 大部分这种情况都是合约 swap 等交易，非普通人1对1转账，所以选择忽视
+			for k1, e1 := range deposits {
+				for k2, e2 := range deposits {
+					if k1 == k2 {
+						continue
+					}
+					for sum, e3 := range withdraws {
+						if e1.Amount.Add(e2.Amount).Equal(sum) {
+							fromMap[e1.Address] = e3.Address
+						}
+					}
+				}
+			}
+
+			return deposits, fromMap
+		}
+		generateTransfers := func(deposits []aptEvent, fromMap map[string]string, tradeType string, decimals int32) {
+			for _, to := range deposits {
+				if from, ok := fromMap[to.Address]; ok {
+					transfers = append(transfers, transfer{
+						Network:     net,
+						TxHash:      hash,
+						Amount:      decimal.NewFromBigInt(to.Amount.BigInt(), decimals),
+						FromAddress: a.padAddressLeadingZeros(addrOwner[from]),
+						RecvAddress: a.padAddressLeadingZeros(addrOwner[to.Address]),
+						Timestamp:   time.Unix(tsNano/1000, (tsNano%1000)*1000000),
+						TradeType:   tradeType,
+						BlockNum:    ver,
+					})
+				}
+			}
+		}
+
+		// 处理 USDT
+		usdtDeposits, usdtFrom := processEvents(model.OrderTradeTypeUsdtAptos, aptEvents)
+		generateTransfers(usdtDeposits, usdtFrom, model.OrderTradeTypeUsdtAptos, aptDecimals[model.OrderTradeTypeUsdtAptos])
+
+		// 处理 USDC
+		usdcDeposits, usdcFrom := processEvents(model.OrderTradeTypeUsdcAptos, aptEvents)
+		generateTransfers(usdcDeposits, usdcFrom, model.OrderTradeTypeUsdcAptos, aptDecimals[model.OrderTradeTypeUsdcAptos])
 	}
 
-	if len(result) > 0 {
-		transferQueue.In <- result
-	}
-}
+	if len(transfers) > 0 {
 
-func (a *aptos) parseAptosAccountTransferFungibleAssets(net, hash, sender string, ver int64, t time.Time, args []gjson.Result) {
-	if args[0].Get("inner").String() != conf.UsdtAptos {
-
-		return
+		transferQueue.In <- transfers
 	}
 
-	rawAmount := new(big.Int)
-	rawAmount.SetString(args[2].String(), 10)
-
-	transferQueue.In <- []transfer{
-		{
-			Network:     net,
-			TxHash:      hash,
-			Amount:      decimal.NewFromBigInt(rawAmount, conf.UsdtAptosDecimals),
-			FromAddress: sender,
-			RecvAddress: a.padAddressLeadingZeros(args[1].String()),
-			Timestamp:   t,
-			TradeType:   model.OrderTradeTypeUsdtAptos,
-			BlockNum:    ver,
-		},
-	}
+	log.Info("区块扫描完成", fmt.Sprintf("%d.%d", p.Start, p.Limit), conf.GetBlockSuccRate(net), net)
 }
 
 func (a *aptos) padAddressLeadingZeros(addr string) string {

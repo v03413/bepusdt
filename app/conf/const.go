@@ -39,6 +39,7 @@ const (
 	UsdcArbitrum = "0xaf88d065e77c8cc2239327c5edb3a432268e5831"
 	UsdcBep20    = "0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d"
 	UsdcSolana   = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+	UsdcAptos    = "0xbae207659db88bea0cbead6da0ed00aac12edcdda169e591cd41c94180b46f3b"
 )
 
 const (
@@ -56,6 +57,7 @@ const (
 	UsdcArbitrumDecimals = -6
 	UsdcBscDecimals      = -18
 	UsdcTronDecimals     = -6
+	UsdcAptosDecimals    = -6
 )
 
 const (

@@ -59,6 +59,8 @@ var decimals = map[string]int32{
 	conf.UsdcXlayer:   conf.UsdcXlayerDecimals,
 	conf.UsdcArbitrum: conf.UsdcArbitrumDecimals,
 	conf.UsdcBep20:    conf.UsdcBscDecimals,
+	conf.UsdcAptos:    conf.UsdcAptosDecimals,
+	conf.UsdtAptos:    conf.UsdtAptosDecimals,
 }
 
 type block struct {

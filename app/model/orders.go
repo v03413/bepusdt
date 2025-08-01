@@ -34,6 +34,7 @@ const (
 	OrderTradeTypeUsdtSolana   = "usdt.solana"
 	OrderTradeTypeUsdcSolana   = "usdc.solana"
 	OrderTradeTypeUsdtAptos    = "usdt.aptos"
+	OrderTradeTypeUsdcAptos    = "usdc.aptos"
 )
 
 const (
