@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/shopspring/decimal"
 	"github.com/v03413/bepusdt/app/conf"
+	"github.com/v03413/bepusdt/app/help"
 	"strconv"
 	"sync"
 	"time"
@@ -145,25 +146,25 @@ func (o *TradeOrders) GetDetailUrl() string {
 }
 
 func GetDetailUrl(tradeType, hash string) string {
-	if tradeType == OrderTradeTypeUsdtErc20 {
+	if help.InStrings(tradeType, []string{OrderTradeTypeUsdtErc20, OrderTradeTypeUsdcErc20}) {
 		return "https://etherscan.io/tx/" + hash
 	}
-	if tradeType == OrderTradeTypeUsdtBep20 {
+	if help.InStrings(tradeType, []string{OrderTradeTypeUsdtBep20, OrderTradeTypeUsdcBep20}) {
 		return "https://bscscan.com/tx/" + hash
 	}
-	if tradeType == OrderTradeTypeUsdtXlayer {
+	if help.InStrings(tradeType, []string{OrderTradeTypeUsdtXlayer, OrderTradeTypeUsdcXlayer}) {
 		return "https://web3.okx.com/zh-hans/explorer/x-layer/tx/" + hash
 	}
-	if tradeType == OrderTradeTypeUsdtPolygon {
+	if help.InStrings(tradeType, []string{OrderTradeTypeUsdtPolygon, OrderTradeTypeUsdcPolygon}) {
 		return "https://polygonscan.com/tx/" + hash
 	}
-	if tradeType == OrderTradeTypeUsdtArbitrum {
+	if help.InStrings(tradeType, []string{OrderTradeTypeUsdtArbitrum, OrderTradeTypeUsdcArbitrum}) {
 		return "https://arbiscan.io/tx/" + hash
 	}
-	if tradeType == OrderTradeTypeUsdtSolana {
+	if help.InStrings(tradeType, []string{OrderTradeTypeUsdtSolana, OrderTradeTypeUsdcSolana}) {
 		return "https://solscan.io/tx/" + hash
 	}
-	if tradeType == OrderTradeTypeUsdtAptos {
+	if help.InStrings(tradeType, []string{OrderTradeTypeUsdtAptos, OrderTradeTypeUsdcAptos}) {
 		return fmt.Sprintf("https://explorer.aptoslabs.com/txn/%s?network=mainnet", hash)
 	}
 
