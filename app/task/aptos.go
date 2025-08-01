@@ -232,6 +232,7 @@ func (a *aptos) versionParse(n any) {
 	transfers := make([]transfer, 0)
 	for _, trans := range gjson.ParseBytes(body).Array() {
 		tsNano := trans.Get("timestamp").Int() * 1000
+		timestamp := time.Unix(tsNano/1e9, tsNano%1e9)
 		ver := trans.Get("version").Int()
 		hash := trans.Get("hash").String()
 		addrOwner := make(map[string]string)                                         // [address] => owner address
@@ -306,7 +307,7 @@ func (a *aptos) versionParse(n any) {
 				Amount:      decimal.NewFromBigInt(amount, aptDecimals[tradeType]),
 				FromAddress: a.padAddressLeadingZeros(addrOwner[from]),
 				RecvAddress: a.padAddressLeadingZeros(addrOwner[to]),
-				Timestamp:   time.Unix(tsNano/1000, (tsNano%1000)*1000000),
+				Timestamp:   timestamp,
 				TradeType:   tradeType,
 				BlockNum:    ver,
 			})
@@ -356,7 +357,7 @@ func (a *aptos) versionParse(n any) {
 						Amount:      decimal.NewFromBigInt(to.Amount.BigInt(), decimals),
 						FromAddress: a.padAddressLeadingZeros(addrOwner[from]),
 						RecvAddress: a.padAddressLeadingZeros(addrOwner[to.Address]),
-						Timestamp:   time.Unix(tsNano/1000, (tsNano%1000)*1000000),
+						Timestamp:   timestamp,
 						TradeType:   tradeType,
 						BlockNum:    ver,
 					})
