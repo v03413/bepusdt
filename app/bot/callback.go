@@ -509,12 +509,12 @@ func getSolanaWalletInfo(address string) string {
 
 func getEvmWalletInfo(wa model.WalletAddress) string {
 
-	return fmt.Sprintf(">💲余额：%s\\(%s\\)\n>☘️地址：`%s`", help.Ec(evmUSDTBalanceOf(wa)), help.Ec(wa.TradeType), wa.Address)
+	return fmt.Sprintf(">💲余额：%s\\(%s\\)\n>☘️地址：`%s`", help.Ec(evmTokenBalanceOf(wa)), help.Ec(wa.TradeType), wa.Address)
 }
 
-func evmUSDTBalanceOf(wa model.WalletAddress) string {
+func evmTokenBalanceOf(wa model.WalletAddress) string {
 	var jsonData = []byte(fmt.Sprintf(`{"jsonrpc":"2.0","id":%d,"method":"eth_call","params":[{"from":"0x0000000000000000000000000000000000000000","data":"0x70a08231000000000000000000000000%s","to":"%s"},"latest"]}`,
-		time.Now().Unix(), strings.ToLower(strings.Trim(wa.Address, "0x")), strings.ToLower(wa.GetUsdtContract())))
+		time.Now().Unix(), strings.ToLower(strings.Trim(wa.Address, "0x")), strings.ToLower(wa.GetTokenContract())))
 	var client = &http.Client{Timeout: time.Second * 5}
 	resp, err := client.Post(wa.GetEvmRpcEndpoint(), "application/json", bytes.NewBuffer(jsonData))
 	if err != nil {
@@ -535,5 +535,5 @@ func evmUSDTBalanceOf(wa model.WalletAddress) string {
 	var data = gjson.ParseBytes(body)
 	var result = data.Get("result").String()
 
-	return decimal.NewFromBigInt(help.HexStr2Int(result), wa.GetUsdtDecimals()).String()
+	return decimal.NewFromBigInt(help.HexStr2Int(result), wa.GetTokenDecimals()).String()
 }

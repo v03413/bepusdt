@@ -107,7 +107,7 @@ func (wa *WalletAddress) Delete() {
 	DB.Delete(wa)
 }
 
-func (wa *WalletAddress) GetUsdtContract() string {
+func (wa *WalletAddress) GetTokenContract() string {
 	switch wa.TradeType {
 	case OrderTradeTypeUsdtPolygon:
 		return conf.UsdtPolygon
@@ -119,12 +119,22 @@ func (wa *WalletAddress) GetUsdtContract() string {
 		return conf.UsdtBep20
 	case OrderTradeTypeUsdtXlayer:
 		return conf.UsdtXlayer
+	case OrderTradeTypeUsdcErc20:
+		return conf.UsdcErc20
+	case OrderTradeTypeUsdcBep20:
+		return conf.UsdcBep20
+	case OrderTradeTypeUsdcXlayer:
+		return conf.UsdcXlayer
+	case OrderTradeTypeUsdcPolygon:
+		return conf.UsdcPolygon
+	case OrderTradeTypeUsdcArbitrum:
+		return conf.UsdcArbitrum
 	default:
 		return ""
 	}
 }
 
-func (wa *WalletAddress) GetUsdtDecimals() int32 {
+func (wa *WalletAddress) GetTokenDecimals() int32 {
 	switch wa.TradeType {
 	case OrderTradeTypeUsdtPolygon:
 		return conf.UsdtPolygonDecimals
@@ -136,6 +146,16 @@ func (wa *WalletAddress) GetUsdtDecimals() int32 {
 		return conf.UsdtBscDecimals
 	case OrderTradeTypeUsdtXlayer:
 		return conf.UsdtXlayerDecimals
+	case OrderTradeTypeUsdcErc20:
+		return conf.UsdcEthDecimals
+	case OrderTradeTypeUsdcBep20:
+		return conf.UsdcBscDecimals
+	case OrderTradeTypeUsdcXlayer:
+		return conf.UsdcXlayerDecimals
+	case OrderTradeTypeUsdcPolygon:
+		return conf.UsdcPolygonDecimals
+	case OrderTradeTypeUsdcArbitrum:
+		return conf.UsdcArbitrumDecimals
 	default:
 		return -6
 	}
@@ -153,6 +173,16 @@ func (wa *WalletAddress) GetEvmRpcEndpoint() string {
 		return conf.GetBscRpcEndpoint()
 	case OrderTradeTypeUsdtXlayer:
 		return conf.GetXlayerRpcEndpoint()
+	case OrderTradeTypeUsdcErc20:
+		return conf.GetEthereumRpcEndpoint()
+	case OrderTradeTypeUsdcBep20:
+		return conf.GetBscRpcEndpoint()
+	case OrderTradeTypeUsdcXlayer:
+		return conf.GetXlayerRpcEndpoint()
+	case OrderTradeTypeUsdcPolygon:
+		return conf.GetPolygonRpcEndpoint()
+	case OrderTradeTypeUsdcArbitrum:
+		return conf.GetArbitrumRpcEndpoint()
 	default:
 		return ""
 	}
