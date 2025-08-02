@@ -116,6 +116,14 @@ func cmdStateHandle(ctx context.Context, b *bot.Bot, u *models.Update) {
 		model.OrderTradeTypeUsdtSolana:   "USDT.Solana",
 		model.OrderTradeTypeUsdtPolygon:  "USDT.Polygon",
 		model.OrderTradeTypeUsdtArbitrum: "USDT.Arbitrum",
+		model.OrderTradeTypeUsdcTrc20:    "USDC.Trc20",
+		model.OrderTradeTypeUsdcErc20:    "USDC.Erc20",
+		model.OrderTradeTypeUsdcBep20:    "USDC.Bep20",
+		model.OrderTradeTypeUsdcAptos:    "USDC.Aptos",
+		model.OrderTradeTypeUsdcXlayer:   "USDC.Xlayer",
+		model.OrderTradeTypeUsdcSolana:   "USDC.Solana",
+		model.OrderTradeTypeUsdcPolygon:  "USDC.Polygon",
+		model.OrderTradeTypeUsdcArbitrum: "USDC.Arbitrum",
 	}
 
 	for _, t := range types {
