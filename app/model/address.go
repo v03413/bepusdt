@@ -119,6 +119,8 @@ func (wa *WalletAddress) GetTokenContract() string {
 		return conf.UsdtBep20
 	case OrderTradeTypeUsdtXlayer:
 		return conf.UsdtXlayer
+	case OrderTradeTypeUsdtAptos:
+		return conf.UsdtAptos
 	case OrderTradeTypeUsdtSolana:
 		return conf.UsdtSolana
 	case OrderTradeTypeUsdcErc20:
@@ -131,6 +133,8 @@ func (wa *WalletAddress) GetTokenContract() string {
 		return conf.UsdcPolygon
 	case OrderTradeTypeUsdcArbitrum:
 		return conf.UsdcArbitrum
+	case OrderTradeTypeUsdcAptos:
+		return conf.UsdcAptos
 	case OrderTradeTypeUsdcSolana:
 		return conf.UsdcSolana
 	default:
@@ -148,6 +152,8 @@ func (wa *WalletAddress) GetTokenDecimals() int32 {
 		return conf.UsdtEthDecimals
 	case OrderTradeTypeUsdtBep20:
 		return conf.UsdtBscDecimals
+	case OrderTradeTypeUsdtAptos:
+		return conf.UsdtAptosDecimals
 	case OrderTradeTypeUsdtXlayer:
 		return conf.UsdtXlayerDecimals
 	case OrderTradeTypeUsdtSolana:
@@ -164,6 +170,8 @@ func (wa *WalletAddress) GetTokenDecimals() int32 {
 		return conf.UsdcArbitrumDecimals
 	case OrderTradeTypeUsdcSolana:
 		return conf.UsdcSolanaDecimals
+	case OrderTradeTypeUsdcAptos:
+		return conf.UsdcAptosDecimals
 	default:
 		return -6
 	}

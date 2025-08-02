@@ -150,7 +150,7 @@ func cbAddressAction(ctx context.Context, b *bot.Bot, u *models.Update) {
 			text = getEvmWalletInfo(wa)
 		}
 		if help.IsValidAptosAddress(wa.Address) {
-			text = getAptosWalletInfo(wa.Address)
+			text = getAptosWalletInfo(wa)
 		}
 		if help.IsValidSolanaAddress(wa.Address) {
 			text = getSolanaWalletInfo(wa)
@@ -439,34 +439,9 @@ func getTronWalletInfo(address string) string {
 	return text
 }
 
-func getAptosWalletInfo(address string) string {
-	var text = fmt.Sprintf(">`%s`", address)
-	var client = http.Client{Timeout: time.Second * 5}
-	resp, err := client.Get(fmt.Sprintf("%sv1/accounts/%s/balance/%s", conf.GetAptosRpcNode(), address, conf.UsdtAptos))
-	if err != nil {
-		log.Error("getAptosWalletInfo client.Get(url)", err)
+func getAptosWalletInfo(wa model.WalletAddress) string {
 
-		return text
-	}
-
-	defer resp.Body.Close()
-	if resp.StatusCode != 200 {
-		log.Error("getAptosWalletInfo resp.StatusCode != 200", resp.StatusCode, err)
-
-		return text
-	}
-
-	all, err := io.ReadAll(resp.Body)
-	if err != nil {
-		log.Error("getAptosWalletInfo io.ReadAll(resp.Body)", err)
-
-		return text
-	}
-
-	result, _ := new(big.Int).SetString(string(all), 10)
-	balance := decimal.NewFromBigInt(result, conf.UsdtAptosDecimals)
-
-	return fmt.Sprintf(">💲余额：%s\\(%s\\)\n>☘️地址：`%s`", help.Ec(balance.String()), help.Ec(model.OrderTradeTypeUsdtAptos), address)
+	return fmt.Sprintf(">💲余额：%s\\(%s\\)\n>☘️地址：`%s`", help.Ec(aptTokenBalanceOf(wa)), help.Ec(wa.TradeType), wa.Address)
 }
 
 func getSolanaWalletInfo(wa model.WalletAddress) string {
@@ -519,6 +494,34 @@ func solTokenBalanceOf(wa model.WalletAddress) string {
 	}
 
 	return decimal.NewFromBigInt(sum, wa.GetTokenDecimals()).String()
+}
+
+func aptTokenBalanceOf(wa model.WalletAddress) string {
+	var client = http.Client{Timeout: time.Second * 5}
+	resp, err := client.Get(fmt.Sprintf("%sv1/accounts/%s/balance/%s", conf.GetAptosRpcNode(), wa.Address, strings.ToLower(wa.GetTokenContract())))
+	if err != nil {
+		log.Error("getAptosWalletInfo client.Get(url)", err)
+
+		return "0.00"
+	}
+
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		log.Error("getAptosWalletInfo resp.StatusCode != 200", resp.StatusCode, err)
+
+		return "0.00"
+	}
+
+	all, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Error("getAptosWalletInfo io.ReadAll(resp.Body)", err)
+
+		return "0.00"
+	}
+
+	result, _ := new(big.Int).SetString(string(all), 10)
+
+	return decimal.NewFromBigInt(result, wa.GetTokenDecimals()).String()
 }
 
 func evmTokenBalanceOf(wa model.WalletAddress) string {
