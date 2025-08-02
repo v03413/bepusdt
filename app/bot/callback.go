@@ -153,7 +153,7 @@ func cbAddressAction(ctx context.Context, b *bot.Bot, u *models.Update) {
 			text = getAptosWalletInfo(wa.Address)
 		}
 		if help.IsValidSolanaAddress(wa.Address) {
-			text = getSolanaWalletInfo(wa.Address)
+			text = getSolanaWalletInfo(wa)
 		}
 
 		EditMessageText(ctx, b, &bot.EditMessageTextParams{
@@ -469,47 +469,56 @@ func getAptosWalletInfo(address string) string {
 	return fmt.Sprintf(">💲余额：%s\\(%s\\)\n>☘️地址：`%s`", help.Ec(balance.String()), help.Ec(model.OrderTradeTypeUsdtAptos), address)
 }
 
-func getSolanaWalletInfo(address string) string {
-	var text = fmt.Sprintf(">`%s`", address)
-	var jsonData = []byte(fmt.Sprintf(`{"jsonrpc":"2.0","id":1,"method":"getTokenAccountsByOwner","params":["%s",{"programId":"%s"},{"commitment":"finalized","encoding":"jsonParsed"}]}`,
-		address, conf.SolSplToken))
-	var client = &http.Client{Timeout: time.Second * 5}
-	resp, err := client.Post(conf.GetSolanaRpcEndpoint(), "application/json", bytes.NewBuffer(jsonData))
-	if err != nil {
-		log.Warn("Error Post response:", err)
+func getSolanaWalletInfo(wa model.WalletAddress) string {
 
-		return text
-	}
-
-	defer resp.Body.Close()
-	if resp.StatusCode != 200 {
-		log.Error("getAptosWalletInfo resp.StatusCode != 200", resp.StatusCode, err)
-
-		return text
-	}
-
-	all, err := io.ReadAll(resp.Body)
-	if err != nil {
-		log.Error("getAptosWalletInfo io.ReadAll(resp.Body)", err)
-
-		return text
-	}
-
-	for _, v := range gjson.GetBytes(all, "result.value").Array() {
-		if v.Get("account.data.parsed.info.mint").String() == conf.UsdtSolana {
-			return fmt.Sprintf(">💲余额：%s\\(%s\\)\n>☘️地址：`%s`",
-				help.Ec(v.Get("account.data.parsed.info.tokenAmount.uiAmountString").String()),
-				help.Ec(model.OrderTradeTypeUsdtAptos),
-				address)
-		}
-	}
-
-	return text
+	return fmt.Sprintf(">💲余额：%s\\(%s\\)\n>☘️地址：`%s`", help.Ec(solTokenBalanceOf(wa)), help.Ec(wa.TradeType), wa.Address)
 }
 
 func getEvmWalletInfo(wa model.WalletAddress) string {
 
 	return fmt.Sprintf(">💲余额：%s\\(%s\\)\n>☘️地址：`%s`", help.Ec(evmTokenBalanceOf(wa)), help.Ec(wa.TradeType), wa.Address)
+}
+
+func solTokenBalanceOf(wa model.WalletAddress) string {
+	var jsonData = []byte(fmt.Sprintf(`{"jsonrpc":"2.0","id":1,"method":"getTokenAccountsByOwner","params":["%s",{"mint": "%s"},{"commitment":"finalized","encoding":"jsonParsed"}]}`,
+		wa.Address, wa.GetTokenContract()))
+
+	var client = &http.Client{Timeout: time.Second * 5}
+	resp, err := client.Post(conf.GetSolanaRpcEndpoint(), "application/json", bytes.NewBuffer(jsonData))
+	if err != nil {
+		log.Warn("Error Post response:", err)
+
+		return "0.00"
+	}
+
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		log.Error("solTokenBalanceOf resp.StatusCode != 200", resp.StatusCode, err)
+
+		return "0.00"
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Error("solTokenBalanceOf io.ReadAll(resp.Body)", err)
+
+		return "0.00"
+	}
+
+	sum := new(big.Int)
+	values := gjson.GetBytes(body, "result.value").Array()
+	for _, v := range values {
+		amountStr := v.Get("account.data.parsed.info.tokenAmount.amount").String()
+
+		if amountStr == "" {
+			continue
+		}
+		if a, ok := new(big.Int).SetString(amountStr, 10); ok {
+			sum.Add(sum, a)
+		}
+	}
+
+	return decimal.NewFromBigInt(sum, wa.GetTokenDecimals()).String()
 }
 
 func evmTokenBalanceOf(wa model.WalletAddress) string {

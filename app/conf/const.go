@@ -50,14 +50,16 @@ const (
 	UsdtPolygonDecimals  = -6  // USDT Polygon小数位数
 	UsdtArbitrumDecimals = -6  // USDT Arbitrum小数位数
 	UsdtAptosDecimals    = -6  // USDT Aptos小数位数
+	UsdtSolanaDecimals   = -6  // USDT Solana小数位数
 
-	UsdcEthDecimals      = -6
-	UsdcPolygonDecimals  = -6
-	UsdcXlayerDecimals   = -6
-	UsdcArbitrumDecimals = -6
-	UsdcBscDecimals      = -18
-	UsdcTronDecimals     = -6
-	UsdcAptosDecimals    = -6
+	UsdcEthDecimals      = -6  // USDC ERC20小数位数
+	UsdcPolygonDecimals  = -6  // USDC Polygon小数位数
+	UsdcXlayerDecimals   = -6  // USDC Xlayer小数位数
+	UsdcArbitrumDecimals = -6  // USDC Arbitrum小数位数
+	UsdcBscDecimals      = -18 // USDC BEP20小数位数
+	UsdcTronDecimals     = -6  // USDC Tron小数位数
+	UsdcAptosDecimals    = -6  // USDC Aptos小数位数
+	UsdcSolanaDecimals   = -6  // USDC Solana小数位数
 )
 
 const (
