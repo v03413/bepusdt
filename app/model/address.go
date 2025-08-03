@@ -15,6 +15,14 @@ const (
 	OtherNotifyDisable uint8 = 0
 )
 
+type TokenType string
+
+const (
+	TokenTypeUSDT TokenType = "USDT"
+	TokenTypeUSDC TokenType = "USDC"
+	TokenTypeTRX  TokenType = "TRX"
+)
+
 // SupportTradeTypes 目前支持的收款交易类型
 var SupportTradeTypes = []string{
 	OrderTradeTypeTronTrx,
@@ -34,6 +42,31 @@ var SupportTradeTypes = []string{
 	OrderTradeTypeUsdcTrc20,
 	OrderTradeTypeUsdcSolana,
 	OrderTradeTypeUsdcAptos,
+}
+
+var tradeTypeTable = map[string]TokenType{
+	// USDT
+	OrderTradeTypeUsdtTrc20:    TokenTypeUSDT,
+	OrderTradeTypeUsdtErc20:    TokenTypeUSDT,
+	OrderTradeTypeUsdtBep20:    TokenTypeUSDT,
+	OrderTradeTypeUsdtAptos:    TokenTypeUSDT,
+	OrderTradeTypeUsdtXlayer:   TokenTypeUSDT,
+	OrderTradeTypeUsdtSolana:   TokenTypeUSDT,
+	OrderTradeTypeUsdtPolygon:  TokenTypeUSDT,
+	OrderTradeTypeUsdtArbitrum: TokenTypeUSDT,
+
+	// USDC
+	OrderTradeTypeUsdcErc20:    TokenTypeUSDC,
+	OrderTradeTypeUsdcBep20:    TokenTypeUSDC,
+	OrderTradeTypeUsdcXlayer:   TokenTypeUSDC,
+	OrderTradeTypeUsdcPolygon:  TokenTypeUSDC,
+	OrderTradeTypeUsdcArbitrum: TokenTypeUSDC,
+	OrderTradeTypeUsdcTrc20:    TokenTypeUSDC,
+	OrderTradeTypeUsdcSolana:   TokenTypeUSDC,
+	OrderTradeTypeUsdcAptos:    TokenTypeUSDC,
+
+	// TRX
+	OrderTradeTypeTronTrx:     TokenTypeTRX,
 }
 
 type WalletAddress struct {
@@ -202,6 +235,13 @@ func (wa *WalletAddress) GetEvmRpcEndpoint() string {
 	default:
 		return ""
 	}
+}
+
+func GetTokenType(tradeType string) (TokenType, error) {
+	if f, ok := tradeTypeTable[tradeType]; ok {
+		return f, nil
+	}
+	return "", fmt.Errorf("unsupported trade type: %s", tradeType)
 }
 
 func GetAvailableAddress(address, tradeType string) []WalletAddress {

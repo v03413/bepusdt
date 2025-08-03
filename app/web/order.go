@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sync"
 	"time"
+	"strings"
 
 	"github.com/v03413/bepusdt/app/conf"
 	"github.com/v03413/bepusdt/app/help"
@@ -38,18 +39,37 @@ func buildOrder(p orderParams) (model.TradeOrders, error) {
 	lock.Lock()
 	defer lock.Unlock()
 
-	// 获取兑换汇率
+	// 获取代币类型
+	tokenType, err := model.GetTokenType(p.TradeType)
+	if err != nil {
+		return order, fmt.Errorf(fmt.Sprintf("类型(%s)不支持：%v", p.TradeType, err))
+	}
+
+	// 计算汇率
 	var calcRate float64
-	if p.Rate != "" {
-		rawRate := rate.GetOkxUsdtRawRate()
-		if p.TradeType == model.OrderTradeTypeTronTrx {
-			rawRate = rate.GetOkxTrxRawRate()
+	rateParam := strings.TrimSpace(p.Rate)
+
+	if rateParam != "" {
+		switch tokenType {
+		case model.TokenTypeUSDT:
+			calcRate = rate.ParseFloatRate(rateParam, rate.GetOkxUsdtRawRate())
+		case model.TokenTypeUSDC:
+			calcRate = rate.ParseFloatRate(rateParam, rate.GetOkxUsdcRawRate())
+		case model.TokenTypeTRX:
+			calcRate = rate.ParseFloatRate(rateParam, rate.GetOkxTrxRawRate())
+		default:
+			return order, fmt.Errorf("类型(%s)分类错误：%s", p.TradeType, tokenType)
 		}
-		calcRate = rate.ParseFloatRate(p.Rate, rawRate)
 	} else {
-		calcRate = rate.GetUsdtCalcRate()
-		if p.TradeType == model.OrderTradeTypeTronTrx {
+		switch tokenType {
+		case model.TokenTypeUSDT:
+			calcRate = rate.GetUsdtCalcRate()
+		case model.TokenTypeUSDC:
+			calcRate = rate.GetUsdcCalcRate()
+		case model.TokenTypeTRX:
 			calcRate = rate.GetTrxCalcRate()
+		default:
+			return order, fmt.Errorf("类型(%s)分类错误：%s", p.TradeType, tokenType)
 		}
 	}
 
