@@ -9,8 +9,9 @@ const (
 	defaultListen           = ":8080"  // 默认监听地址
 	defaultPaymentMinAmount = 0.01
 	defaultPaymentMaxAmount = 99999
-	defaultUsdtAtomicity    = 0.01 // 原子精度
-	defaultTrxAtomicity     = 0.01
+	defaultUsdtAtomicity    = 0.01 // USDT原子精度
+	defaultUsdcAtomicity    = 0.01 // USDC原子精度
+	defaultTrxAtomicity     = 0.01 // TRX原子精度
 
 	defaultTronGrpcNode        = "18.141.79.38:50051"                      // 默认GRPC节点
 	defaultBscRpcEndpoint      = "https://bsc-dataseed.bnbchain.org/"      // 默认BSC RPC节点

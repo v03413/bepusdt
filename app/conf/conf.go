@@ -14,6 +14,7 @@ type Conf struct {
 		TrxAtom          float64  `toml:"trx_atom"`
 		TrxRate          string   `toml:"trx_rate"`
 		UsdtAtom         float64  `toml:"usdt_atom"`
+		UsdcAtom         float64  `toml:"usdc_atom"`
 		UsdtRate         string   `toml:"usdt_rate"`
 		UsdcRate         string   `toml:"usdc_rate"`
 		ExpireTime       int      `toml:"expire_time"`

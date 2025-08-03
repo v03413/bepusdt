@@ -79,6 +79,18 @@ func GetUsdtAtomicity() (decimal.Decimal, int) {
 	return atom, cast.ToInt(math.Abs(float64(atom.Exponent())))
 }
 
+func GetUsdcAtomicity() (decimal.Decimal, int) {
+	var val = defaultUsdcAtomicity
+	if cfg.Pay.UsdcAtom != 0 {
+
+		val = cfg.Pay.UsdcAtom
+	}
+
+	var atom = decimal.NewFromFloat(val)
+
+	return atom, cast.ToInt(math.Abs(float64(atom.Exponent())))
+}
+
 func GetTrxAtomicity() (decimal.Decimal, int) {
 	var val = defaultTrxAtomicity
 	if cfg.Pay.TrxAtom != 0 {
