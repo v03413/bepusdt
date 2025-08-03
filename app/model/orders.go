@@ -208,11 +208,7 @@ func CalcTradeAmount(wa []WalletAddress, rate, money float64, tradeType string) 
 		lock[order.Address+order.Amount] = true
 	}
 
-	var atom, prec = conf.GetUsdtAtomicity()
-	if tradeType == OrderTradeTypeTronTrx {
-
-		atom, prec = conf.GetTrxAtomicity()
-	}
+	var atom, prec = getTokenAtomicityByTradeType(tradeType)
 
 	var payAmount, _ = decimal.NewFromString(strconv.FormatFloat(money/rate, 'f', prec, 64))
 	for {
@@ -228,5 +224,46 @@ func CalcTradeAmount(wa []WalletAddress, rate, money float64, tradeType string) 
 
 		// 已经被占用，每次递增一个原子精度
 		payAmount = payAmount.Add(atom)
+	}
+}
+
+func getTokenAtomicityByTradeType(tradeType string) (decimal.Decimal, int) {
+	switch tradeType {
+	case OrderTradeTypeTronTrx:
+		return conf.GetTrxAtomicity()
+	case OrderTradeTypeUsdtTrc20:
+		return conf.GetUsdtAtomicity()
+	case OrderTradeTypeUsdtErc20:
+		return conf.GetUsdtAtomicity()
+	case OrderTradeTypeUsdtBep20:
+		return conf.GetUsdtAtomicity()
+	case OrderTradeTypeUsdtAptos:
+		return conf.GetUsdtAtomicity()
+	case OrderTradeTypeUsdtXlayer:
+		return conf.GetUsdtAtomicity()
+	case OrderTradeTypeUsdtSolana:
+		return conf.GetUsdtAtomicity()
+	case OrderTradeTypeUsdtPolygon:
+		return conf.GetUsdtAtomicity()
+	case OrderTradeTypeUsdtArbitrum:
+		return conf.GetUsdtAtomicity()
+	case OrderTradeTypeUsdcTrc20:
+		return conf.GetUsdcAtomicity()
+	case OrderTradeTypeUsdcErc20:
+		return conf.GetUsdcAtomicity()
+	case OrderTradeTypeUsdcBep20:
+		return conf.GetUsdcAtomicity()
+	case OrderTradeTypeUsdcAptos:
+		return conf.GetUsdcAtomicity()
+	case OrderTradeTypeUsdcXlayer:
+		return conf.GetUsdcAtomicity()
+	case OrderTradeTypeUsdcSolana:
+		return conf.GetUsdcAtomicity()
+	case OrderTradeTypeUsdcPolygon:
+		return conf.GetUsdcAtomicity()
+	case OrderTradeTypeUsdcArbitrum:
+		return conf.GetUsdcAtomicity()
+	default:
+		return conf.GetUsdtAtomicity()
 	}
 }

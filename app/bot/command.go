@@ -116,6 +116,14 @@ func cmdStateHandle(ctx context.Context, b *bot.Bot, u *models.Update) {
 		model.OrderTradeTypeUsdtSolana:   "USDT.Solana",
 		model.OrderTradeTypeUsdtPolygon:  "USDT.Polygon",
 		model.OrderTradeTypeUsdtArbitrum: "USDT.Arbitrum",
+		model.OrderTradeTypeUsdcTrc20:    "USDC.Trc20",
+		model.OrderTradeTypeUsdcErc20:    "USDC.Erc20",
+		model.OrderTradeTypeUsdcBep20:    "USDC.Bep20",
+		model.OrderTradeTypeUsdcAptos:    "USDC.Aptos",
+		model.OrderTradeTypeUsdcXlayer:   "USDC.Xlayer",
+		model.OrderTradeTypeUsdcSolana:   "USDC.Solana",
+		model.OrderTradeTypeUsdcPolygon:  "USDC.Polygon",
+		model.OrderTradeTypeUsdcArbitrum: "USDC.Arbitrum",
 	}
 
 	for _, t := range types {
@@ -182,8 +190,10 @@ func cmdStateHandle(ctx context.Context, b *bot.Bot, u *models.Update) {
 	text += "-----------------------\n"
 	text += fmt.Sprintf("🪧基准汇率(TRX)：%v\n", cast.ToString(rate.GetOkxTrxRawRate()))
 	text += fmt.Sprintf("🪧基准汇率(USDT)：%v\n", cast.ToString(rate.GetOkxUsdtRawRate()))
+	text += fmt.Sprintf("🪧基准汇率(USDC)：%v\n", cast.ToString(rate.GetOkxUsdcRawRate()))
 	text += fmt.Sprintf("✅订单汇率(TRX)：%v\n", cast.ToString(rate.GetTrxCalcRate()))
 	text += fmt.Sprintf("✅订单汇率(USDT)：%v\n", cast.ToString(rate.GetUsdtCalcRate()))
+	text += fmt.Sprintf("✅订单汇率(USDC)：%v\n", cast.ToString(rate.GetUsdcCalcRate()))
 	text += "-----------------------\n"
 	text += "```\n"
 	text += ">基准汇率：来源于交易所的原始数据。\n"

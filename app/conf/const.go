@@ -3,13 +3,15 @@ package conf
 const (
 	defaultExpireTime       = 600      // 订单默认有效期 10分钟
 	DefaultUsdtCnyRate      = 6.4      // 默认USDT基准汇率
+	DefaultUsdcCnyRate      = 6.4      // 默认USDC基准汇率
 	DefaultTrxCnyRate       = 0.95     // 默认TRX基准汇率
 	defaultAuthToken        = "123234" // 默认授权码
 	defaultListen           = ":8080"  // 默认监听地址
 	defaultPaymentMinAmount = 0.01
 	defaultPaymentMaxAmount = 99999
-	defaultUsdtAtomicity    = 0.01 // 原子精度
-	defaultTrxAtomicity     = 0.01
+	defaultUsdtAtomicity    = 0.01 // USDT原子精度
+	defaultUsdcAtomicity    = 0.01 // USDC原子精度
+	defaultTrxAtomicity     = 0.01 // TRX原子精度
 
 	defaultTronGrpcNode        = "18.141.79.38:50051"                      // 默认GRPC节点
 	defaultBscRpcEndpoint      = "https://bsc-dataseed.bnbchain.org/"      // 默认BSC RPC节点
@@ -50,14 +52,16 @@ const (
 	UsdtPolygonDecimals  = -6  // USDT Polygon小数位数
 	UsdtArbitrumDecimals = -6  // USDT Arbitrum小数位数
 	UsdtAptosDecimals    = -6  // USDT Aptos小数位数
+	UsdtSolanaDecimals   = -6  // USDT Solana小数位数
 
-	UsdcEthDecimals      = -6
-	UsdcPolygonDecimals  = -6
-	UsdcXlayerDecimals   = -6
-	UsdcArbitrumDecimals = -6
-	UsdcBscDecimals      = -18
-	UsdcTronDecimals     = -6
-	UsdcAptosDecimals    = -6
+	UsdcEthDecimals      = -6  // USDC ERC20小数位数
+	UsdcPolygonDecimals  = -6  // USDC Polygon小数位数
+	UsdcXlayerDecimals   = -6  // USDC Xlayer小数位数
+	UsdcArbitrumDecimals = -6  // USDC Arbitrum小数位数
+	UsdcBscDecimals      = -18 // USDC BEP20小数位数
+	UsdcTronDecimals     = -6  // USDC Tron小数位数
+	UsdcAptosDecimals    = -6  // USDC Aptos小数位数
+	UsdcSolanaDecimals   = -6  // USDC Solana小数位数
 )
 
 const (

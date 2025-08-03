@@ -5,6 +5,7 @@ listen = ":8080"
 
 [pay]
 usdt_rate = "~0.98"
+usdc_rate = "~0.98"
 trx_rate = "~0.95"
 expire_time = 1200
 wallet_address = [

@@ -57,6 +57,11 @@ func GetUsdtRate() string {
 	return cfg.Pay.UsdtRate
 }
 
+func GetUsdcRate() string {
+
+	return cfg.Pay.UsdcRate
+}
+
 func GetTrxRate() string {
 
 	return cfg.Pay.TrxRate
@@ -67,6 +72,18 @@ func GetUsdtAtomicity() (decimal.Decimal, int) {
 	if cfg.Pay.UsdtAtom != 0 {
 
 		val = cfg.Pay.UsdtAtom
+	}
+
+	var atom = decimal.NewFromFloat(val)
+
+	return atom, cast.ToInt(math.Abs(float64(atom.Exponent())))
+}
+
+func GetUsdcAtomicity() (decimal.Decimal, int) {
+	var val = defaultUsdcAtomicity
+	if cfg.Pay.UsdcAtom != 0 {
+
+		val = cfg.Pay.UsdcAtom
 	}
 
 	var atom = decimal.NewFromFloat(val)

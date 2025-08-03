@@ -15,6 +15,14 @@ const (
 	OtherNotifyDisable uint8 = 0
 )
 
+type TokenType string
+
+const (
+	TokenTypeUSDT TokenType = "USDT"
+	TokenTypeUSDC TokenType = "USDC"
+	TokenTypeTRX  TokenType = "TRX"
+)
+
 // SupportTradeTypes 目前支持的收款交易类型
 var SupportTradeTypes = []string{
 	OrderTradeTypeTronTrx,
@@ -34,6 +42,31 @@ var SupportTradeTypes = []string{
 	OrderTradeTypeUsdcTrc20,
 	OrderTradeTypeUsdcSolana,
 	OrderTradeTypeUsdcAptos,
+}
+
+var tradeTypeTable = map[string]TokenType{
+	// USDT
+	OrderTradeTypeUsdtTrc20:    TokenTypeUSDT,
+	OrderTradeTypeUsdtErc20:    TokenTypeUSDT,
+	OrderTradeTypeUsdtBep20:    TokenTypeUSDT,
+	OrderTradeTypeUsdtAptos:    TokenTypeUSDT,
+	OrderTradeTypeUsdtXlayer:   TokenTypeUSDT,
+	OrderTradeTypeUsdtSolana:   TokenTypeUSDT,
+	OrderTradeTypeUsdtPolygon:  TokenTypeUSDT,
+	OrderTradeTypeUsdtArbitrum: TokenTypeUSDT,
+
+	// USDC
+	OrderTradeTypeUsdcErc20:    TokenTypeUSDC,
+	OrderTradeTypeUsdcBep20:    TokenTypeUSDC,
+	OrderTradeTypeUsdcXlayer:   TokenTypeUSDC,
+	OrderTradeTypeUsdcPolygon:  TokenTypeUSDC,
+	OrderTradeTypeUsdcArbitrum: TokenTypeUSDC,
+	OrderTradeTypeUsdcTrc20:    TokenTypeUSDC,
+	OrderTradeTypeUsdcSolana:   TokenTypeUSDC,
+	OrderTradeTypeUsdcAptos:    TokenTypeUSDC,
+
+	// TRX
+	OrderTradeTypeTronTrx:     TokenTypeTRX,
 }
 
 type WalletAddress struct {
@@ -107,7 +140,7 @@ func (wa *WalletAddress) Delete() {
 	DB.Delete(wa)
 }
 
-func (wa *WalletAddress) GetUsdtContract() string {
+func (wa *WalletAddress) GetTokenContract() string {
 	switch wa.TradeType {
 	case OrderTradeTypeUsdtPolygon:
 		return conf.UsdtPolygon
@@ -119,12 +152,30 @@ func (wa *WalletAddress) GetUsdtContract() string {
 		return conf.UsdtBep20
 	case OrderTradeTypeUsdtXlayer:
 		return conf.UsdtXlayer
+	case OrderTradeTypeUsdtAptos:
+		return conf.UsdtAptos
+	case OrderTradeTypeUsdtSolana:
+		return conf.UsdtSolana
+	case OrderTradeTypeUsdcErc20:
+		return conf.UsdcErc20
+	case OrderTradeTypeUsdcBep20:
+		return conf.UsdcBep20
+	case OrderTradeTypeUsdcXlayer:
+		return conf.UsdcXlayer
+	case OrderTradeTypeUsdcPolygon:
+		return conf.UsdcPolygon
+	case OrderTradeTypeUsdcArbitrum:
+		return conf.UsdcArbitrum
+	case OrderTradeTypeUsdcAptos:
+		return conf.UsdcAptos
+	case OrderTradeTypeUsdcSolana:
+		return conf.UsdcSolana
 	default:
 		return ""
 	}
 }
 
-func (wa *WalletAddress) GetUsdtDecimals() int32 {
+func (wa *WalletAddress) GetTokenDecimals() int32 {
 	switch wa.TradeType {
 	case OrderTradeTypeUsdtPolygon:
 		return conf.UsdtPolygonDecimals
@@ -134,8 +185,26 @@ func (wa *WalletAddress) GetUsdtDecimals() int32 {
 		return conf.UsdtEthDecimals
 	case OrderTradeTypeUsdtBep20:
 		return conf.UsdtBscDecimals
+	case OrderTradeTypeUsdtAptos:
+		return conf.UsdtAptosDecimals
 	case OrderTradeTypeUsdtXlayer:
 		return conf.UsdtXlayerDecimals
+	case OrderTradeTypeUsdtSolana:
+		return conf.UsdtSolanaDecimals
+	case OrderTradeTypeUsdcErc20:
+		return conf.UsdcEthDecimals
+	case OrderTradeTypeUsdcBep20:
+		return conf.UsdcBscDecimals
+	case OrderTradeTypeUsdcXlayer:
+		return conf.UsdcXlayerDecimals
+	case OrderTradeTypeUsdcPolygon:
+		return conf.UsdcPolygonDecimals
+	case OrderTradeTypeUsdcArbitrum:
+		return conf.UsdcArbitrumDecimals
+	case OrderTradeTypeUsdcSolana:
+		return conf.UsdcSolanaDecimals
+	case OrderTradeTypeUsdcAptos:
+		return conf.UsdcAptosDecimals
 	default:
 		return -6
 	}
@@ -153,9 +222,26 @@ func (wa *WalletAddress) GetEvmRpcEndpoint() string {
 		return conf.GetBscRpcEndpoint()
 	case OrderTradeTypeUsdtXlayer:
 		return conf.GetXlayerRpcEndpoint()
+	case OrderTradeTypeUsdcErc20:
+		return conf.GetEthereumRpcEndpoint()
+	case OrderTradeTypeUsdcBep20:
+		return conf.GetBscRpcEndpoint()
+	case OrderTradeTypeUsdcXlayer:
+		return conf.GetXlayerRpcEndpoint()
+	case OrderTradeTypeUsdcPolygon:
+		return conf.GetPolygonRpcEndpoint()
+	case OrderTradeTypeUsdcArbitrum:
+		return conf.GetArbitrumRpcEndpoint()
 	default:
 		return ""
 	}
+}
+
+func GetTokenType(tradeType string) (TokenType, error) {
+	if f, ok := tradeTypeTable[tradeType]; ok {
+		return f, nil
+	}
+	return "", fmt.Errorf("unsupported trade type: %s", tradeType)
 }
 
 func GetAvailableAddress(address, tradeType string) []WalletAddress {
