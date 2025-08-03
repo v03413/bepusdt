@@ -190,8 +190,10 @@ func cmdStateHandle(ctx context.Context, b *bot.Bot, u *models.Update) {
 	text += "-----------------------\n"
 	text += fmt.Sprintf("🪧基准汇率(TRX)：%v\n", cast.ToString(rate.GetOkxTrxRawRate()))
 	text += fmt.Sprintf("🪧基准汇率(USDT)：%v\n", cast.ToString(rate.GetOkxUsdtRawRate()))
+	text += fmt.Sprintf("🪧基准汇率(USDC)：%v\n", cast.ToString(rate.GetOkxUsdcRawRate()))
 	text += fmt.Sprintf("✅订单汇率(TRX)：%v\n", cast.ToString(rate.GetTrxCalcRate()))
 	text += fmt.Sprintf("✅订单汇率(USDT)：%v\n", cast.ToString(rate.GetUsdtCalcRate()))
+	text += fmt.Sprintf("✅订单汇率(USDC)：%v\n", cast.ToString(rate.GetUsdcCalcRate()))
 	text += "-----------------------\n"
 	text += "```\n"
 	text += ">基准汇率：来源于交易所的原始数据。\n"

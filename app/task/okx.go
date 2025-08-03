@@ -1,6 +1,7 @@
 package task
 
 import (
+	"fmt"
 	"context"
 	"errors"
 	"github.com/spf13/cast"
@@ -16,12 +17,13 @@ import (
 
 func init() {
 	register(task{duration: time.Minute, callback: OkxUsdtRateStart})
-	register(task{duration: time.Minute, callback: OkxTrxUsdtRateStart})
+	register(task{duration: time.Minute, callback: OkxUsdcRateStart})
+	register(task{duration: time.Minute, callback: OkxTrxRateStart})
 }
 
 // OkxUsdtRateStart Okx USDT_CNY 汇率监控
 func OkxUsdtRateStart(context.Context) {
-	var rawRate, err = getOkxUsdtCnySellPrice()
+	var rawRate, err = getOkxUsdTokenCnySellPrice("USDT")
 	if err != nil {
 		log.Error("Okx USDT_CNY 汇率获取失败", err)
 	} else {
@@ -31,8 +33,20 @@ func OkxUsdtRateStart(context.Context) {
 	log.Info("当前 USDT_CNY 计算汇率：", rate.GetUsdtCalcRate())
 }
 
-// OkxTrxUsdtRateStart  Okx TRX_CNY 汇率监控
-func OkxTrxUsdtRateStart(context.Context) {
+// OkxUsdcRateStart Okx USDC_CNY 汇率监控
+func OkxUsdcRateStart(context.Context) {
+	var rawRate, err = getOkxUsdTokenCnySellPrice("USDC")
+	if err != nil {
+		log.Error("Okx USDC_CNY 汇率获取失败", err)
+	} else {
+		rate.SetOkxUsdcCnyRate(conf.GetUsdcRate(), rawRate)
+	}
+
+	log.Info("当前 USDC_CNY 计算汇率：", rate.GetUsdcCalcRate())
+}
+
+// OkxTrxRateStart  Okx TRX_CNY 汇率监控
+func OkxTrxRateStart(context.Context) {
 	var price, err = getOkxTrxCnyMarketPrice()
 	if err != nil {
 		log.Error("Okx TRX_USDT 汇率获取失败", err)
@@ -44,9 +58,17 @@ func OkxTrxUsdtRateStart(context.Context) {
 }
 
 // getOkxUsdtCnySellPrice  Okx  C2C快捷交易 USDT出售 实时汇率
-func getOkxUsdtCnySellPrice() (float64, error) {
-	var t = strconv.Itoa(int(time.Now().Unix()))
-	var okxApi = "https://www.okx.com/v4/c2c/express/price?crypto=USDT&fiat=CNY&side=sell&t=" + t
+func getOkxUsdTokenCnySellPrice(crypto string) (float64, error) {
+	if crypto != "USDT" && crypto != "USDC" {
+		return 0, errors.New("unsupported crypto:" + crypto)
+	}
+
+	t := strconv.Itoa(int(time.Now().Unix()))
+	okxApi := fmt.Sprintf(
+		"https://www.okx.com/v4/c2c/express/price?crypto=%s&fiat=CNY&side=sell&t=%s",
+		crypto, t,
+	)
+
 	client := http.Client{Timeout: time.Second * 5}
 	req, _ := http.NewRequest("GET", okxApi, nil)
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36")

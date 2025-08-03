@@ -57,6 +57,11 @@ func GetUsdtRate() string {
 	return cfg.Pay.UsdtRate
 }
 
+func GetUsdcRate() string {
+
+	return cfg.Pay.UsdcRate
+}
+
 func GetTrxRate() string {
 
 	return cfg.Pay.TrxRate
