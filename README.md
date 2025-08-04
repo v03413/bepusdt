@@ -18,7 +18,7 @@
 
 ## 🪧 介绍
 
-基本就是对`Epusdt`重新造了一次轮子，移除一些非必要依赖(`Redis MySQL`)，同时加入一些新特性，让个人`USDT USDC`
+基本就是对`Epusdt`重新造了一次轮子，移除一些非必要依赖(`Redis MySQL`)，同时加入一些新特性，让个人`USDT/USDC`
 收款更好用、部署更便捷！
 
 ## 🎉 新特性
@@ -55,9 +55,8 @@
 
 ## 🤔 常见问题
 
-### 如何获取参数 admin_id
-
-Telegram 搜索加入群`@BEpusdtChat`，随后发送命令`/info`，返回的`ID`就是`admin_id`
+- [如何获取参数 admin_id](./docs/faq/admin_id.md)  
+- [服务器宽带占用过大解释](./docs/faq/bandwidth.md)  
 
 ## ⚠️ 特别注意
 
