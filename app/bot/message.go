@@ -13,10 +13,14 @@ import (
 )
 
 func SendTradeSuccMsg(order model.TradeOrders) {
-	var tradeType = "USDT"
-	if order.TradeType == model.OrderTradeTypeTronTrx {
-		tradeType = "TRX"
+	// 获取代币类型
+	tokenType, err := model.GetTokenType(order.TradeType)
+	if err != nil {
+		SendMessage(&bot.SendMessageParams{Text: "❌交易类型不支持：" + order.TradeType})
+		return
 	}
+
+	tradeType := string(tokenType)
 
 	var text = `
 \#收款成功 \#订单交易 \#` + tradeType + `
@@ -57,13 +61,17 @@ func SendTradeSuccMsg(order model.TradeOrders) {
 }
 
 func SendNotifyFailed(o model.TradeOrders, reason string) {
-	var tradeType = "USDT"
-	if o.TradeType == model.OrderTradeTypeTronTrx {
-		tradeType = "TRX"
+	// 获取代币类型
+	tokenType, err := model.GetTokenType(o.TradeType)
+	if err != nil {
+		SendMessage(&bot.SendMessageParams{Text: "❌交易类型不支持：" + o.TradeType})
+		return
 	}
 
+	tradeType := string(tokenType)
+
 	var text = fmt.Sprintf(`
-\#回调失败 \#订单交易 \#`+tradeType+`
+\#回调失败 \#订单交易 \#` + tradeType + `
 \-\-\-
 `+"```"+`
 🚦商户订单：%v
@@ -101,7 +109,7 @@ func SendNotifyFailed(o model.TradeOrders, reason string) {
 
 func Welcome() string {
 	return `
-👋 欢迎使用 BEpusdt，一款更好用的个人USDT收款网关，如果您看到此消息，说明机器人已经启动成功！
+👋 欢迎使用 BEpusdt，一款更好用的个人 USDT/USDC 收款网关，如果您看到此消息，说明机器人已经启动成功！
 
 📌当前版本：` + app.Version + `
 📝发送命令 /start 可以开始使用
