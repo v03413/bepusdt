@@ -311,6 +311,11 @@ func (s *solana) parseTransfer(instr gjson.Result, accountKeys []string, tokenAc
 
 	data := base58.Decode(instr.Get("data").String())
 	dLen := len(data)
+	if dLen < 9 {
+
+		return trans
+	}
+
 	isTransfer := data[0] == 3 && dLen == 9
 	isTransferChecked := data[0] == 12 && dLen == 10
 	if !isTransfer && !isTransferChecked {
