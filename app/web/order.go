@@ -2,15 +2,11 @@ package web
 
 import (
 	"fmt"
-	"sync"
-	"time"
-	"strings"
-
-	"github.com/v03413/bepusdt/app/conf"
 	"github.com/v03413/bepusdt/app/help"
 	"github.com/v03413/bepusdt/app/log"
 	"github.com/v03413/bepusdt/app/model"
-	"github.com/v03413/bepusdt/app/task/rate"
+	"strings"
+	"sync"
 )
 
 type orderParams struct {
@@ -26,84 +22,73 @@ type orderParams struct {
 	Rate        string  `json:"rate"`         // 强制指定汇率
 }
 
+type trade struct {
+	TokenType model.TokenType
+	Rate      float64
+	Address   model.WalletAddress
+	Amount    string
+}
+
 func buildOrder(p orderParams) (model.TradeOrders, error) {
-	var lock sync.Mutex
 	var order model.TradeOrders
 
 	model.DB.Where("order_id = ?", p.OrderId).Find(&order)
-	if order.Status == model.OrderStatusWaiting || order.Status == model.OrderStatusSuccess {
+	if order.Status == model.OrderStatusSuccess {
 		return order, nil
 	}
 
-	// 暂时先强制使用互斥锁，后续有需求的话再考虑优化
+	if order.Status == model.OrderStatusWaiting {
+		return rebuildOrder(order, p)
+	}
+
+	var lock sync.Mutex
 	lock.Lock()
 	defer lock.Unlock()
 
-	// 获取代币类型
-	tokenType, err := model.GetTokenType(p.TradeType)
-	if err != nil {
-		return order, fmt.Errorf(fmt.Sprintf("类型(%s)不支持：%v", p.TradeType, err))
-	}
-
-	// 计算汇率
-	var calcRate float64
-	rateParam := strings.TrimSpace(p.Rate)
-
-	if rateParam != "" {
-		switch tokenType {
-		case model.TokenTypeUSDT:
-			calcRate = rate.ParseFloatRate(rateParam, rate.GetOkxUsdtRawRate())
-		case model.TokenTypeUSDC:
-			calcRate = rate.ParseFloatRate(rateParam, rate.GetOkxUsdcRawRate())
-		case model.TokenTypeTRX:
-			calcRate = rate.ParseFloatRate(rateParam, rate.GetOkxTrxRawRate())
-		default:
-			return order, fmt.Errorf("类型(%s)分类错误：%s", p.TradeType, tokenType)
-		}
-	} else {
-		switch tokenType {
-		case model.TokenTypeUSDT:
-			calcRate = rate.GetUsdtCalcRate()
-		case model.TokenTypeUSDC:
-			calcRate = rate.GetUsdcCalcRate()
-		case model.TokenTypeTRX:
-			calcRate = rate.GetTrxCalcRate()
-		default:
-			return order, fmt.Errorf("类型(%s)分类错误：%s", p.TradeType, tokenType)
-		}
-	}
-
-	// 获取钱包地址
-	wallet := model.GetAvailableAddress(p.PayAddress, p.TradeType)
-	if len(wallet) == 0 {
-		return order, fmt.Errorf(fmt.Sprintf("类型(%s)没检测到可用收款地址", p.TradeType))
-	}
-
-	// 计算交易金额
-	address, amount := model.CalcTradeAmount(wallet, calcRate, p.Money, p.TradeType)
-	tradeId, err := help.GenerateTradeId()
+	data, err := buildTrade(p)
 	if err != nil {
 		return order, err
 	}
 
-	// 超时处理
-	timeout := conf.GetExpireTime() * time.Second
-	if p.Timeout >= 60 { // 至少60秒
+	return newOrder(p, data)
+}
 
-		timeout = time.Duration(p.Timeout) * time.Second
+func rebuildOrder(t model.TradeOrders, p orderParams) (model.TradeOrders, error) {
+	if p.OrderId == t.OrderId && p.TradeType == t.TradeType && p.Money == t.Money {
+		return t, nil
 	}
 
-	// 创建交易订单
-	expiredAt := time.Now().Add(timeout)
+	var lock sync.Mutex
+	lock.Lock()
+	defer lock.Unlock()
+
+	data, err := buildTrade(p)
+	if err != nil {
+		return t, err
+	}
+
+	t.Amount = data.Amount
+	t.TradeType = p.TradeType
+	t.Address = data.Address.Address
+
+	return t, model.DB.Save(&t).Error
+}
+
+func newOrder(p orderParams, data trade) (model.TradeOrders, error) {
+	tradeId, err := help.GenerateTradeId()
+	if err != nil {
+		return model.TradeOrders{}, err
+	}
+
 	tradeOrder := model.TradeOrders{
 		OrderId:     p.OrderId,
 		TradeId:     tradeId,
-		TradeHash:   tradeId, // 这里默认填充一个本地交易ID，等支付成功后再更新为实际交易哈希
+		TradeHash:   tradeId,
 		TradeType:   p.TradeType,
-		TradeRate:   fmt.Sprintf("%v", calcRate),
-		Amount:      amount,
+		TradeRate:   fmt.Sprintf("%v", data.Rate),
+		Amount:      data.Amount,
 		Money:       p.Money,
-		Address:     address.Address,
+		Address:     data.Address.Address,
 		Status:      model.OrderStatusWaiting,
 		Name:        p.Name,
 		ApiType:     p.ApiType,
@@ -111,15 +96,44 @@ func buildOrder(p orderParams) (model.TradeOrders, error) {
 		NotifyUrl:   p.NotifyUrl,
 		NotifyNum:   0,
 		NotifyState: model.OrderNotifyStateFail,
-		ExpiredAt:   expiredAt,
+		ExpiredAt:   model.CalcTradeExpiredAt(p.Timeout),
 	}
+
 	if err = model.DB.Create(&tradeOrder).Error; err != nil {
 		log.Error("订单创建失败：", err.Error())
-
-		return order, err
+		return model.TradeOrders{}, err
 	}
 
 	model.PushWebhookEvent(model.WebhookEventOrderCreate, tradeOrder)
-
 	return tradeOrder, nil
+}
+
+func buildTrade(p orderParams) (trade, error) {
+	// 获取代币类型
+	tokenType, err := model.GetTokenType(p.TradeType)
+	if err != nil {
+		return trade{}, fmt.Errorf("类型(%s)不支持：%v", p.TradeType, err)
+	}
+
+	// 获取交易汇率
+	rate, err := model.GetTradeRate(tokenType, strings.TrimSpace(p.Rate))
+	if err != nil {
+		return trade{}, err
+	}
+
+	// 可用钱包地址
+	wallet := model.GetAvailableAddress(p.PayAddress, p.TradeType)
+	if len(wallet) == 0 {
+		return trade{}, fmt.Errorf("类型(%s)未检测到可用钱包地址", p.TradeType)
+	}
+
+	// 计算交易金额
+	address, amount := model.CalcTradeAmount(wallet, rate, p.Money, p.TradeType)
+
+	return trade{
+		TokenType: tokenType,
+		Rate:      rate,
+		Address:   address,
+		Amount:    amount,
+	}, nil
 }

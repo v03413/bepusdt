@@ -5,6 +5,7 @@ import (
 	"github.com/shopspring/decimal"
 	"github.com/v03413/bepusdt/app/conf"
 	"github.com/v03413/bepusdt/app/help"
+	"github.com/v03413/bepusdt/app/task/rate"
 	"strconv"
 	"sync"
 	"time"
@@ -225,6 +226,41 @@ func CalcTradeAmount(wa []WalletAddress, rate, money float64, tradeType string) 
 		// 已经被占用，每次递增一个原子精度
 		payAmount = payAmount.Add(atom)
 	}
+}
+
+func CalcTradeExpiredAt(sec uint64) time.Time {
+	timeout := conf.GetExpireTime() * time.Second
+	if sec >= 60 {
+		timeout = time.Duration(sec) * time.Second
+	}
+
+	return time.Now().Add(timeout)
+}
+
+func GetTradeRate(token TokenType, param string) (float64, error) {
+	if param != "" {
+		switch token {
+		case TokenTypeUSDT:
+			return rate.ParseFloatRate(param, rate.GetOkxUsdtRawRate()), nil
+		case TokenTypeUSDC:
+			return rate.ParseFloatRate(param, rate.GetOkxUsdcRawRate()), nil
+		case TokenTypeTRX:
+			return rate.ParseFloatRate(param, rate.GetOkxTrxRawRate()), nil
+		}
+
+		return 0, fmt.Errorf("(%s)交易汇率计算获取失败：%s", token, param)
+	}
+
+	switch token {
+	case TokenTypeUSDT:
+		return rate.GetUsdtCalcRate(), nil
+	case TokenTypeUSDC:
+		return rate.GetUsdcCalcRate(), nil
+	case TokenTypeTRX:
+		return rate.GetTrxCalcRate(), nil
+	}
+
+	return 0, fmt.Errorf("(%s)交易汇率获取失败", token)
 }
 
 func getTokenAtomicityByTradeType(tradeType string) (decimal.Decimal, int) {

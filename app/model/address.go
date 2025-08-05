@@ -66,7 +66,7 @@ var tradeTypeTable = map[string]TokenType{
 	OrderTradeTypeUsdcAptos:    TokenTypeUSDC,
 
 	// TRX
-	OrderTradeTypeTronTrx:     TokenTypeTRX,
+	OrderTradeTypeTronTrx: TokenTypeTRX,
 }
 
 type WalletAddress struct {
