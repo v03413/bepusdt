@@ -21,7 +21,7 @@ import (
 
 // 参考文档
 //  - https://solana.com/zh/docs/rpc
-//  - https://github.com/solana-program/token/blob/main/program/src/instruction.rs
+//  - https://github.com/solana-program/token/blob/6d18ff73b1dd30703a30b1ca941cb0f1d18c2b2a/program/src/instruction.rs
 
 type solana struct {
 	slotConfirmedOffset int64
