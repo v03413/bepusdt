@@ -5,6 +5,10 @@ import (
 	"context"
 	"encoding/binary"
 	"fmt"
+	"io"
+	"math/big"
+	"time"
+
 	"github.com/btcsuite/btcd/btcutil/base58"
 	"github.com/panjf2000/ants/v2"
 	"github.com/shopspring/decimal"
@@ -13,9 +17,6 @@ import (
 	"github.com/v03413/bepusdt/app/conf"
 	"github.com/v03413/bepusdt/app/log"
 	"github.com/v03413/bepusdt/app/model"
-	"io"
-	"math/big"
-	"time"
 )
 
 // 参考文档
@@ -260,13 +261,7 @@ func (s *solana) slotParse(n any) {
 		}
 
 		// 解析内部指令
-		innerInstructions := trans.Get("meta.innerInstructions").Array()
-		if len(innerInstructions) == 0 {
-
-			continue
-		}
-
-		for _, itm := range innerInstructions {
+		for _, itm := range trans.Get("meta.innerInstructions").Array() {
 			for _, instr := range itm.Get("instructions").Array() {
 				if instr.Get("programIdIndex").Int() != splTokenIndex {
 
