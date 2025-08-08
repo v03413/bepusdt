@@ -5,6 +5,13 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"io"
+	"math/big"
+	"net/http"
+	"strings"
+	"sync"
+	"time"
+
 	"github.com/panjf2000/ants/v2"
 	"github.com/shopspring/decimal"
 	"github.com/smallnest/chanx"
@@ -13,12 +20,6 @@ import (
 	"github.com/v03413/bepusdt/app/help"
 	"github.com/v03413/bepusdt/app/log"
 	"github.com/v03413/bepusdt/app/model"
-	"io"
-	"math/big"
-	"net/http"
-	"strings"
-	"sync"
-	"time"
 )
 
 const (
@@ -283,6 +284,9 @@ func (e *evm) blockParse(a any) {
 			if bytes.Equal(input[0:4], []byte{0x23, 0xb8, 0x72, 0xdd}) { // transfer from function ID
 				from, recv, amount = e.parseErc20ContractTransferFrom(input)
 			}
+			if bytes.Equal(input[0:4], []byte{0xe3, 0xee, 0x16, 0x0e}) || bytes.Equal(input[0:4], []byte{0xcf, 0x09, 0x29, 0x95}) { // transferWithAuthorization function ID
+				from, recv, amount = e.parseUsdcTransferWithAuthorization(input)
+			}
 
 			if amount == nil {
 
@@ -323,6 +327,19 @@ func (e *evm) parseErc20ContractTransfer(data []byte) (string, *big.Int) {
 }
 
 func (e *evm) parseErc20ContractTransferFrom(data []byte) (string, string, *big.Int) {
+	if len(data) < 100 {
+
+		return "", "", nil
+	}
+
+	from := hex.EncodeToString(data[16:36])
+	to := hex.EncodeToString(data[48:68])
+	amount := big.NewInt(0).SetBytes(data[68:100])
+
+	return "0x" + from, "0x" + to, amount
+}
+
+func (e *evm) parseUsdcTransferWithAuthorization(data []byte) (string, string, *big.Int) {
 	if len(data) < 100 {
 
 		return "", "", nil
