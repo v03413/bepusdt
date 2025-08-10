@@ -2,9 +2,10 @@ package task
 
 import (
 	"context"
+	"time"
+
 	"github.com/smallnest/chanx"
 	"github.com/v03413/bepusdt/app/conf"
-	"time"
 )
 
 func xlayerInit() {
@@ -17,7 +18,7 @@ func xlayerInit() {
 			RollDelayOffset: 3,
 			ConfirmedOffset: 12,
 		},
-		blockScanQueue: chanx.NewUnboundedChan[[]int64](ctx, 30),
+		blockScanQueue: chanx.NewUnboundedChan[evmBlock](ctx, 30),
 	}
 
 	register(task{ctx: ctx, callback: xlayer.blockDispatch})

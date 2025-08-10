@@ -2,9 +2,10 @@ package task
 
 import (
 	"context"
+	"time"
+
 	"github.com/smallnest/chanx"
 	"github.com/v03413/bepusdt/app/conf"
-	"time"
 )
 
 func bscInit() {
@@ -16,9 +17,9 @@ func bscInit() {
 			InitStartOffset: -400,
 			ConfirmedOffset: 15,
 		},
-		blockScanQueue: chanx.NewUnboundedChan[[]int64](ctx, 30),
+		blockScanQueue: chanx.NewUnboundedChan[evmBlock](ctx, 30),
 	}
 
 	register(task{ctx: ctx, callback: bsc.blockDispatch})
-	register(task{ctx: ctx, callback: bsc.blockRoll, duration: time.Second * 3})
+	register(task{ctx: ctx, callback: bsc.blockRoll, duration: time.Second * 5})
 }

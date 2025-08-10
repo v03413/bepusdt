@@ -3,6 +3,9 @@ package task
 import (
 	"context"
 	"fmt"
+	"strings"
+	"time"
+
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
 	"github.com/shopspring/decimal"
@@ -14,8 +17,6 @@ import (
 	"github.com/v03413/bepusdt/app/model"
 	"github.com/v03413/bepusdt/app/web/notify"
 	"github.com/v03413/tronprotocol/core"
-	"strings"
-	"time"
 )
 
 type transfer struct {
