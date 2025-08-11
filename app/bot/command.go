@@ -124,6 +124,7 @@ func cmdStateHandle(ctx context.Context, b *bot.Bot, u *models.Update) {
 		model.OrderTradeTypeUsdcSolana:   "USDC.Solana",
 		model.OrderTradeTypeUsdcPolygon:  "USDC.Polygon",
 		model.OrderTradeTypeUsdcArbitrum: "USDC.Arbitrum",
+		model.OrderTradeTypeUsdcBase:     "USDC.Base",
 	}
 
 	for _, t := range types {
@@ -144,6 +145,7 @@ func cmdStateHandle(ctx context.Context, b *bot.Bot, u *models.Update) {
 		model.OrderTradeTypeUsdtPolygon:  conf.Polygon,
 		model.OrderTradeTypeUsdtArbitrum: conf.Arbitrum,
 		model.OrderTradeTypeUsdtErc20:    conf.Ethereum,
+		model.OrderTradeTypeUsdcBase:     conf.Base,
 	}
 
 	blockchainNames := map[string]string{
@@ -155,6 +157,7 @@ func cmdStateHandle(ctx context.Context, b *bot.Bot, u *models.Update) {
 		conf.Polygon:  "Polygon",
 		conf.Arbitrum: "Arbitrum",
 		conf.Ethereum: "Ethereum",
+		conf.Base:     "Base",
 	}
 
 	// 收集需要显示的区块链

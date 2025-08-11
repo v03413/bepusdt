@@ -70,3 +70,12 @@ func GetEthereumRpcEndpoint() string {
 
 	return defaultEthereumRpcEndpoint
 }
+
+func GetBaseRpcEndpoint() string {
+	if cfg.EvmRpc.Base != "" {
+
+		return cfg.EvmRpc.Base
+	}
+
+	return defaultBaseRpcEndpoint
+}

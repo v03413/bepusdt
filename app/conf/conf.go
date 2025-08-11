@@ -30,6 +30,7 @@ type Conf struct {
 		Polygon  string `toml:"polygon"`
 		Arbitrum string `toml:"arbitrum"`
 		Ethereum string `toml:"ethereum"`
+		Base     string `toml:"base"`
 	} `toml:"evm_rpc"`
 	Bot struct {
 		Token   string `toml:"token"`

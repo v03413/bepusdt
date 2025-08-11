@@ -22,6 +22,7 @@ const (
 	Polygon  = "polygon"
 	Arbitrum = "arbitrum"
 	Ethereum = "ethereum"
+	Base     = "base"
 )
 
 var (

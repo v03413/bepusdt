@@ -48,6 +48,7 @@ xlayer = "https://xlayerrpc.okx.com/"
 polygon = "https://polygon-rpc.com/"
 arbitrum = "https://arb1.arbitrum.io/rpc"
 ethereum = "https://ethereum.publicnode.com/"
+base = "https://base-public.nodies.app/"
 
 [bot]
 # Telegram Bot 管理员ID，必须设置，否则无法使用；群里 @BEpusdtChat 发送命令 /info 获取

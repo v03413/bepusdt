@@ -40,6 +40,7 @@ var SupportTradeTypes = []string{
 	OrderTradeTypeUsdcXlayer,
 	OrderTradeTypeUsdcPolygon,
 	OrderTradeTypeUsdcArbitrum,
+	OrderTradeTypeUsdcBase,
 	OrderTradeTypeUsdcTrc20,
 	OrderTradeTypeUsdcSolana,
 	OrderTradeTypeUsdcAptos,
@@ -62,6 +63,7 @@ var tradeTypeTable = map[string]TokenType{
 	OrderTradeTypeUsdcXlayer:   TokenTypeUSDC,
 	OrderTradeTypeUsdcPolygon:  TokenTypeUSDC,
 	OrderTradeTypeUsdcArbitrum: TokenTypeUSDC,
+	OrderTradeTypeUsdcBase:     TokenTypeUSDC,
 	OrderTradeTypeUsdcTrc20:    TokenTypeUSDC,
 	OrderTradeTypeUsdcSolana:   TokenTypeUSDC,
 	OrderTradeTypeUsdcAptos:    TokenTypeUSDC,
@@ -167,6 +169,8 @@ func (wa *WalletAddress) GetTokenContract() string {
 		return conf.UsdcPolygon
 	case OrderTradeTypeUsdcArbitrum:
 		return conf.UsdcArbitrum
+	case OrderTradeTypeUsdcBase:
+		return conf.UsdcBase
 	case OrderTradeTypeUsdcAptos:
 		return conf.UsdcAptos
 	case OrderTradeTypeUsdcSolana:
@@ -202,6 +206,8 @@ func (wa *WalletAddress) GetTokenDecimals() int32 {
 		return conf.UsdcPolygonDecimals
 	case OrderTradeTypeUsdcArbitrum:
 		return conf.UsdcArbitrumDecimals
+	case OrderTradeTypeUsdcBase:
+		return conf.UsdcBaseDecimals
 	case OrderTradeTypeUsdcSolana:
 		return conf.UsdcSolanaDecimals
 	case OrderTradeTypeUsdcAptos:
@@ -233,6 +239,8 @@ func (wa *WalletAddress) GetEvmRpcEndpoint() string {
 		return conf.GetPolygonRpcEndpoint()
 	case OrderTradeTypeUsdcArbitrum:
 		return conf.GetArbitrumRpcEndpoint()
+	case OrderTradeTypeUsdcBase:
+		return conf.GetBaseRpcEndpoint()
 	default:
 		return ""
 	}
