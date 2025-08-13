@@ -2,23 +2,25 @@ package model
 
 import (
 	"fmt"
+	"strconv"
+	"sync"
+	"time"
+
 	"github.com/shopspring/decimal"
 	"github.com/v03413/bepusdt/app/conf"
 	"github.com/v03413/bepusdt/app/help"
 	"github.com/v03413/bepusdt/app/task/rate"
-	"strconv"
-	"sync"
-	"time"
 )
 
 const (
 	OrderNotifyStateSucc = 1 // 回调成功
 	OrderNotifyStateFail = 0 // 回调失败
 
-	OrderStatusCanceled = 4 // 订单取消
-	OrderStatusExpired  = 3 // 订单过期
-	OrderStatusSuccess  = 2 // 订单成功
-	OrderStatusWaiting  = 1 // 等待支付
+	OrderStatusWaiting    = 1 // 等待支付
+	OrderStatusSuccess    = 2 // 交易确认成功
+	OrderStatusExpired    = 3 // 订单过期
+	OrderStatusCanceled   = 4 // 订单取消
+	OrderStatusConfirming = 5 // 等待交易确认
 
 	OrderTradeTypeTronTrx      = "tron.trx"
 	OrderTradeTypeUsdtTrc20    = "usdt.trc20"
@@ -46,11 +48,6 @@ const (
 
 var calcMutex sync.Mutex
 
-type TradeType struct {
-	Type   string `json:"type"`   // 交易类型
-	Native bool   `json:"native"` // 是否是原生代币
-}
-
 type TradeOrders struct {
 	Id          int64     `gorm:"primary_key;AUTO_INCREMENT;comment:id"`
 	OrderId     string    `gorm:"column:order_id;type:varchar(128);not null;index;comment:商户ID"`
@@ -76,24 +73,30 @@ type TradeOrders struct {
 	ConfirmedAt time.Time `gorm:"type:timestamp;null;comment:交易确认时间"`
 }
 
-func (o *TradeOrders) OrderSetCanceled() error {
+func (o *TradeOrders) SetCanceled() error {
 	o.Status = OrderStatusCanceled
 
 	return DB.Save(o).Error
 }
 
-func (o *TradeOrders) OrderSetExpired() {
+func (o *TradeOrders) SetExpired() {
 	o.Status = OrderStatusExpired
 
 	DB.Save(o)
 }
 
-func (o *TradeOrders) MarkSuccess(blockNum int64, from, hash string, at time.Time) {
+func (o *TradeOrders) SetSuccess() {
+	o.Status = OrderStatusSuccess
+
+	DB.Save(o)
+}
+
+func (o *TradeOrders) MarkConfirming(blockNum int64, from, hash string, at time.Time) {
 	o.FromAddress = from
 	o.ConfirmedAt = at
 	o.TradeHash = hash
 	o.RefBlockNum = blockNum
-	o.Status = OrderStatusSuccess
+	o.Status = OrderStatusConfirming
 
 	DB.Save(o)
 }

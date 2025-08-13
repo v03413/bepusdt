@@ -3,6 +3,12 @@ package task
 import (
 	"context"
 	"fmt"
+	"io"
+	"math/big"
+	"strings"
+	"sync"
+	"time"
+
 	"github.com/panjf2000/ants/v2"
 	"github.com/shopspring/decimal"
 	"github.com/smallnest/chanx"
@@ -10,10 +16,6 @@ import (
 	"github.com/v03413/bepusdt/app/conf"
 	"github.com/v03413/bepusdt/app/log"
 	"github.com/v03413/bepusdt/app/model"
-	"io"
-	"math/big"
-	"strings"
-	"time"
 )
 
 type aptos struct {
@@ -52,6 +54,7 @@ func init() {
 	apt = newAptos()
 	register(task{callback: apt.versionDispatch})
 	register(task{callback: apt.versionRoll, duration: time.Second * 3})
+	register(task{callback: apt.tradeConfirmHandle, duration: time.Second * 5})
 }
 
 func newAptos() aptos {
@@ -387,4 +390,66 @@ func (a *aptos) padAddressLeadingZeros(addr string) string {
 	addr = strings.Repeat("0", 64-len(addr)) + addr
 
 	return "0x" + addr
+}
+
+func (a *aptos) tradeConfirmHandle(ctx context.Context) {
+	var orders = getConfirmingOrders(networkTokenMap[conf.Aptos])
+	var wg sync.WaitGroup
+	var ctx2, cancel = context.WithTimeout(context.Background(), time.Second*6)
+	defer cancel()
+
+	var handle = func(o model.TradeOrders) {
+		resp, err := client.Get(conf.GetAptosRpcNode() + "v1/transactions/by_hash/" + o.TradeHash)
+		if err != nil {
+			log.Warn("aptos tradeConfirmHandle Error sending request:", err)
+
+			return
+		}
+
+		defer resp.Body.Close()
+
+		if resp.StatusCode != 200 {
+			log.Warn("aptos tradeConfirmHandle Error response status code:", resp.StatusCode)
+
+			return
+		}
+
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			log.Warn("aptos tradeConfirmHandle Error reading response body:", err)
+
+			return
+		}
+
+		data := gjson.ParseBytes(body)
+		if data.Get("error_code").Exists() {
+			log.Warn("aptos tradeConfirmHandle Error:", data.Get("message").String())
+
+			return
+		}
+
+		if data.Get("version").String() != "" &&
+			data.Get("success").Bool() &&
+			data.Get("vm_status").String() == "Executed successfully" {
+
+			markFinalConfirmed(o)
+		}
+	}
+
+	for _, order := range orders {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			select {
+			case <-ctx.Done():
+				return
+			case <-ctx2.Done():
+				return
+			default:
+				handle(order)
+			}
+		}()
+	}
+
+	wg.Wait()
 }

@@ -11,7 +11,7 @@ import (
 func xlayerInit() {
 	ctx := context.Background()
 	xlayer := evm{
-		Type:     conf.Xlayer,
+		Network:  conf.Xlayer,
 		Endpoint: conf.GetXlayerRpcEndpoint(),
 		Block: block{
 			InitStartOffset: -600,
@@ -23,4 +23,5 @@ func xlayerInit() {
 
 	register(task{ctx: ctx, callback: xlayer.blockDispatch})
 	register(task{ctx: ctx, callback: xlayer.blockRoll, duration: time.Second * 3})
+	register(task{ctx: ctx, callback: xlayer.tradeConfirmHandle, duration: time.Second * 5})
 }

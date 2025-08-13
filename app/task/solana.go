@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"math/big"
+	"sync"
 	"time"
 
 	"github.com/btcsuite/btcd/btcutil/base58"
@@ -46,6 +47,7 @@ func init() {
 	sol = newSolana()
 	register(task{callback: sol.slotDispatch})
 	register(task{callback: sol.slotRoll, duration: time.Second * 5})
+	register(task{callback: sol.tradeConfirmHandle, duration: time.Second * 5})
 }
 
 func newSolana() solana {
@@ -344,4 +346,66 @@ func (s *solana) parseTransfer(instr gjson.Result, accountKeys []string, tokenAc
 	trans.Amount = decimal.NewFromBigInt(b, exp)
 
 	return trans
+}
+
+func (s *solana) tradeConfirmHandle(ctx context.Context) {
+	var orders = getConfirmingOrders(networkTokenMap[conf.Solana])
+	var wg sync.WaitGroup
+	var ctx2, cancel = context.WithTimeout(context.Background(), time.Second*6)
+	defer cancel()
+
+	var handle = func(o model.TradeOrders) {
+		post := []byte(fmt.Sprintf(`{"jsonrpc":"2.0","id":1,"method":"getSignatureStatuses","params":[["%s"],{"searchTransactionHistory":true}]}`, o.TradeHash))
+
+		resp, err := client.Post(conf.GetSolanaRpcEndpoint(), "application/json", bytes.NewBuffer(post))
+		if err != nil {
+			log.Warn("solana tradeConfirmHandle Error sending request:", err)
+
+			return
+		}
+
+		defer resp.Body.Close()
+
+		if resp.StatusCode != 200 {
+			log.Warn("solana tradeConfirmHandle Error response status code:", resp.StatusCode)
+
+			return
+		}
+
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			log.Warn("solana tradeConfirmHandle Error reading response body:", err)
+
+			return
+		}
+
+		data := gjson.ParseBytes(body)
+		if data.Get("error").Exists() {
+			log.Warn("solana tradeConfirmHandle Error:", data.Get("error").String())
+
+			return
+		}
+
+		if data.Get("result.value.0.confirmationStatus").String() == "finalized" {
+
+			markFinalConfirmed(o)
+		}
+	}
+
+	for _, order := range orders {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			select {
+			case <-ctx.Done():
+				return
+			case <-ctx2.Done():
+				return
+			default:
+				handle(order)
+			}
+		}()
+	}
+
+	wg.Wait()
 }

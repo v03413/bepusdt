@@ -11,7 +11,7 @@ import (
 func bscInit() {
 	ctx := context.Background()
 	bsc := evm{
-		Type:     conf.Bsc,
+		Network:  conf.Bsc,
 		Endpoint: conf.GetBscRpcEndpoint(),
 		Block: block{
 			InitStartOffset: -400,
@@ -22,4 +22,5 @@ func bscInit() {
 
 	register(task{ctx: ctx, callback: bsc.blockDispatch})
 	register(task{ctx: ctx, callback: bsc.blockRoll, duration: time.Second * 5})
+	register(task{ctx: ctx, callback: bsc.tradeConfirmHandle, duration: time.Second * 5})
 }

@@ -4,6 +4,10 @@ import (
 	"bytes"
 	"context"
 	"encoding/hex"
+	"math/big"
+	"sync"
+	"time"
+
 	"github.com/btcsuite/btcd/btcutil/base58"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/panjf2000/ants/v2"
@@ -18,8 +22,6 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/backoff"
 	"google.golang.org/grpc/credentials/insecure"
-	"math/big"
-	"time"
 )
 
 var gasFreeUsdtTokenAddress = []byte{0xa6, 0x14, 0xf8, 0x03, 0xb6, 0xfd, 0x78, 0x09, 0x86, 0xa4, 0x2c, 0x78, 0xec, 0x9c, 0x7f, 0x77, 0xe6, 0xde, 0xd1, 0x3c}
@@ -47,8 +49,9 @@ var tr tron
 
 func init() {
 	tr = newTron()
-	register(task{duration: time.Second * 3, callback: tr.blockRoll}) // 大概3秒产生一个区块
 	register(task{duration: time.Second, callback: tr.blockDispatch})
+	register(task{duration: time.Second * 3, callback: tr.blockRoll})
+	register(task{duration: time.Second * 5, callback: tr.tradeConfirmHandle})
 }
 
 func newTron() tron {
@@ -394,6 +397,78 @@ func (t *tron) gasFreePermitTransfer(data []byte) (string, string, *big.Int) {
 	amount := big.NewInt(0).SetBytes(data[100:132])
 
 	return user, receiver, amount
+}
+
+func (t *tron) tradeConfirmHandle(context.Context) {
+	var orders = getConfirmingOrders([]string{model.OrderTradeTypeTronTrx, model.OrderTradeTypeUsdtTrc20, model.OrderTradeTypeUsdcTrc20})
+
+	var wg sync.WaitGroup
+	var ctx, cancel = context.WithTimeout(context.Background(), time.Second*6)
+	defer cancel()
+
+	var handle = func(o model.TradeOrders) {
+		conn, err := grpc.NewClient(conf.GetTronGrpcNode(), grpc.WithConnectParams(grpcParams), grpc.WithTransportCredentials(insecure.NewCredentials()))
+		if err != nil {
+			log.Error("grpc.NewClient", err)
+
+			return
+		}
+
+		defer conn.Close()
+
+		var c = api.NewWalletClient(conn)
+
+		var ctx1, cancel1 = context.WithTimeout(context.Background(), time.Second*5)
+		defer cancel1()
+
+		idBytes, err := hex.DecodeString(o.TradeHash)
+		if err != nil {
+			log.Error("hex.DecodeString", err)
+
+			return
+		}
+
+		if o.TradeType == model.OrderTradeTypeTronTrx {
+			trans, err := c.GetTransactionById(ctx1, &api.BytesMessage{Value: idBytes})
+			if err != nil {
+				log.Error("GetTransactionById", err)
+
+				return
+			}
+
+			if trans.GetRet()[0].ContractRet == core.Transaction_Result_SUCCESS {
+				markFinalConfirmed(o)
+			}
+
+			return
+		}
+
+		info, err := c.GetTransactionInfoById(ctx1, &api.BytesMessage{Value: idBytes})
+		if err != nil {
+			log.Error("GetTransactionInfoById", err)
+
+			return
+		}
+
+		if info.GetReceipt().GetResult() == core.Transaction_Result_SUCCESS {
+			markFinalConfirmed(o)
+		}
+	}
+
+	for _, order := range orders {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			select {
+			case <-ctx.Done():
+				return
+			default:
+				handle(order)
+			}
+		}()
+	}
+
+	wg.Wait()
 }
 
 func (t *tron) base58CheckEncode(input []byte) string {

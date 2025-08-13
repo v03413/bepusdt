@@ -11,7 +11,7 @@ import (
 func polygonInit() {
 	ctx := context.Background()
 	pol := evm{
-		Type:     conf.Polygon,
+		Network:  conf.Polygon,
 		Endpoint: conf.GetPolygonRpcEndpoint(),
 		Block: block{
 			InitStartOffset: -600,
@@ -22,4 +22,5 @@ func polygonInit() {
 
 	register(task{ctx: ctx, callback: pol.blockDispatch})
 	register(task{ctx: ctx, callback: pol.blockRoll, duration: time.Second * 5})
+	register(task{ctx: ctx, callback: pol.tradeConfirmHandle, duration: time.Second * 5})
 }

@@ -41,7 +41,7 @@ var contractMap = map[string]string{
 	conf.UsdcArbitrum: model.OrderTradeTypeUsdcArbitrum,
 	conf.UsdcBep20:    model.OrderTradeTypeUsdcBep20,
 }
-var chainTokenMap = map[string][]string{
+var networkTokenMap = map[string][]string{
 	conf.Bsc:      {model.OrderTradeTypeUsdtBep20, model.OrderTradeTypeUsdcBep20},
 	conf.Xlayer:   {model.OrderTradeTypeUsdtXlayer, model.OrderTradeTypeUsdcXlayer},
 	conf.Polygon:  {model.OrderTradeTypeUsdtPolygon, model.OrderTradeTypeUsdcPolygon},
@@ -73,7 +73,7 @@ type block struct {
 }
 
 type evm struct {
-	Type           string
+	Network        string
 	Endpoint       string
 	Block          block
 	blockScanQueue *chanx.UnboundedChan[evmBlock]
@@ -89,7 +89,7 @@ func init() {
 }
 
 func (e *evm) blockRoll(ctx context.Context) {
-	if rollBreak(e.Type) {
+	if rollBreak(e.Network) {
 
 		return
 	}
@@ -132,7 +132,7 @@ func (e *evm) blockRoll(ctx context.Context) {
 	}
 
 	var lastBlockNumber int64
-	if v, ok := chainBlockNum.Load(e.Type); ok {
+	if v, ok := chainBlockNum.Load(e.Network); ok {
 
 		lastBlockNumber = v.(int64)
 	}
@@ -141,7 +141,7 @@ func (e *evm) blockRoll(ctx context.Context) {
 		lastBlockNumber = e.blockInitOffset(now, e.Block.InitStartOffset) - 1
 	}
 
-	chainBlockNum.Store(e.Type, now)
+	chainBlockNum.Store(e.Network, now)
 	if now <= lastBlockNumber {
 
 		return
@@ -163,7 +163,7 @@ func (e *evm) blockInitOffset(now, offset int64) int64 {
 		defer ticker.Stop()
 
 		for b := now; b > now+offset; b -= blockParseMaxNum {
-			if rollBreak(e.Type) {
+			if rollBreak(e.Network) {
 
 				return
 			}
@@ -217,7 +217,7 @@ func (e *evm) getBlockByNumber(a any) {
 	post := []byte(fmt.Sprintf(`[%s]`, strings.Join(items, ",")))
 	resp, err := client.Post(e.Endpoint, "application/json", bytes.NewBuffer(post))
 	if err != nil {
-		conf.SetBlockFail(e.Type)
+		conf.SetBlockFail(e.Network)
 		e.blockScanQueue.In <- b
 		log.Warn("eth_getBlockByNumber Error sending request:", err)
 
@@ -228,7 +228,7 @@ func (e *evm) getBlockByNumber(a any) {
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		conf.SetBlockFail(e.Type)
+		conf.SetBlockFail(e.Network)
 		e.blockScanQueue.In <- b
 		log.Warn("eth_getBlockByNumber Error reading response body:", err)
 
@@ -238,9 +238,9 @@ func (e *evm) getBlockByNumber(a any) {
 	timestamp := make(map[string]time.Time)
 	for _, itm := range gjson.ParseBytes(body).Array() {
 		if itm.Get("error").Exists() {
-			conf.SetBlockFail(e.Type)
+			conf.SetBlockFail(e.Network)
 			e.blockScanQueue.In <- b
-			log.Warn(fmt.Sprintf("%s eth_getBlockByNumber response error %s", e.Type, itm.Get("error").String()))
+			log.Warn(fmt.Sprintf("%s eth_getBlockByNumber response error %s", e.Network, itm.Get("error").String()))
 
 			return
 		}
@@ -250,7 +250,7 @@ func (e *evm) getBlockByNumber(a any) {
 
 	transfers, err := e.parseBlockTransfer(b, timestamp)
 	if err != nil {
-		conf.SetBlockFail(e.Type)
+		conf.SetBlockFail(e.Network)
 		e.blockScanQueue.In <- b
 		log.Warn("evmBlockParse Error parsing block transfer:", err)
 
@@ -262,7 +262,7 @@ func (e *evm) getBlockByNumber(a any) {
 		transferQueue.In <- transfers
 	}
 
-	log.Info("区块扫描完成", b, conf.GetBlockSuccRate(e.Type), e.Type)
+	log.Info("区块扫描完成", b, conf.GetBlockSuccRate(e.Network), e.Network)
 }
 
 func (e *evm) parseBlockTransfer(b evmBlock, timestamp map[string]time.Time) ([]transfer, error) {
@@ -285,7 +285,7 @@ func (e *evm) parseBlockTransfer(b evmBlock, timestamp map[string]time.Time) ([]
 	data := gjson.ParseBytes(body)
 	if data.Get("error").Exists() {
 
-		return transfers, errors.New(fmt.Sprintf("%s eth_getLogs response error %s", e.Type, data.Get("error").String()))
+		return transfers, errors.New(fmt.Sprintf("%s eth_getLogs response error %s", e.Network, data.Get("error").String()))
 	}
 
 	for _, itm := range data.Get("result").Array() {
@@ -323,7 +323,7 @@ func (e *evm) parseBlockTransfer(b evmBlock, timestamp map[string]time.Time) ([]
 		}
 
 		transfers = append(transfers, transfer{
-			Network:     e.Type,
+			Network:     e.Network,
 			FromAddress: from,
 			RecvAddress: recv,
 			Amount:      decimal.NewFromBigInt(amount, decimals[to]),
@@ -337,8 +337,70 @@ func (e *evm) parseBlockTransfer(b evmBlock, timestamp map[string]time.Time) ([]
 	return transfers, nil
 }
 
+func (e *evm) tradeConfirmHandle(ctx context.Context) {
+	var orders = getConfirmingOrders(networkTokenMap[e.Network])
+	var wg sync.WaitGroup
+	var ctx2, cancel = context.WithTimeout(context.Background(), time.Second*6)
+	defer cancel()
+
+	var handle = func(o model.TradeOrders) {
+		post := []byte(fmt.Sprintf(`{"jsonrpc":"2.0","method":"eth_getTransactionReceipt","params":["%s"],"id":1}`, o.TradeHash))
+		req, err := http.NewRequestWithContext(ctx2, "POST", e.Endpoint, bytes.NewBuffer(post))
+		if err != nil {
+			log.Warn("Error creating request:", err)
+
+			return
+		}
+
+		req.Header.Set("Content-Type", "application/json")
+		resp, err := client.Do(req)
+		if err != nil {
+			log.Warn("Error sending request:", err)
+
+			return
+		}
+
+		defer resp.Body.Close()
+
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			log.Warn("Error reading response body:", err)
+
+			return
+		}
+
+		data := gjson.ParseBytes(body)
+		if data.Get("error").Exists() {
+			log.Warn(fmt.Sprintf("%s eth_getTransactionReceipt response error %s", e.Network, data.Get("error").String()))
+
+			return
+		}
+
+		if data.Get("result.status").String() == "0x1" {
+			markFinalConfirmed(o)
+		}
+	}
+
+	for _, order := range orders {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			select {
+			case <-ctx.Done():
+				return
+			case <-ctx2.Done():
+				return
+			default:
+				handle(order)
+			}
+		}()
+	}
+
+	wg.Wait()
+}
+
 func rollBreak(network string) bool {
-	token, ok := chainTokenMap[network]
+	token, ok := networkTokenMap[network]
 	if !ok {
 
 		return true

@@ -3,6 +3,11 @@ package notify
 import (
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
+	"strings"
+	"time"
+
 	"github.com/v03413/bepusdt/app"
 	"github.com/v03413/bepusdt/app/bot"
 	"github.com/v03413/bepusdt/app/conf"
@@ -11,10 +16,6 @@ import (
 	"github.com/v03413/bepusdt/app/model"
 	e "github.com/v03413/bepusdt/app/web/epay"
 	"github.com/v03413/go-cache"
-	"io"
-	"net/http"
-	"strings"
-	"time"
 )
 
 type EpNotify struct {
@@ -29,6 +30,11 @@ type EpNotify struct {
 }
 
 func Handle(order model.TradeOrders) {
+	if order.Status != model.OrderStatusSuccess {
+
+		return
+	}
+
 	if order.ApiType == model.OrderApiTypeEpay {
 		epay(order)
 

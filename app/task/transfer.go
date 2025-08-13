@@ -50,6 +50,15 @@ func init() {
 	register(task{callback: tronResourceHandle})
 }
 
+func markFinalConfirmed(o model.TradeOrders) {
+	model.PushWebhookEvent(model.WebhookEventOrderPaid, o)
+
+	o.SetSuccess()
+
+	go notify.Handle(o)         // 通知订单支付成功
+	go bot2.SendTradeSuccMsg(o) // TG发送订单信息
+}
+
 func orderTransferHandle(context.Context) {
 	for transfers := range transferQueue.Out {
 		var other = make([]transfer, 0)
@@ -80,13 +89,8 @@ func orderTransferHandle(context.Context) {
 				continue
 			}
 
-			// 标记成功
-			o.MarkSuccess(t.BlockNum, t.FromAddress, t.TxHash, t.Timestamp)
-
-			model.PushWebhookEvent(model.WebhookEventOrderPaid, o)
-
-			go notify.Handle(o)         // 通知订单支付成功
-			go bot2.SendTradeSuccMsg(o) // TG发送订单信息
+			// 进入确认状态
+			o.MarkConfirming(t.BlockNum, t.FromAddress, t.TxHash, t.Timestamp)
 		}
 
 		if len(other) > 0 {
@@ -214,7 +218,7 @@ func getAllWaitingOrders() map[string]model.TradeOrders {
 	var data = make(map[string]model.TradeOrders) // 当前所有正在等待支付的订单 Lock Key
 	for _, order := range tradeOrders {
 		if time.Now().Unix() >= order.ExpiredAt.Unix() { // 订单过期
-			order.OrderSetExpired()
+			order.SetExpired()
 			notify.Bepusdt(order)
 			model.PushWebhookEvent(model.WebhookEventOrderTimeout, order)
 
@@ -227,6 +231,26 @@ func getAllWaitingOrders() map[string]model.TradeOrders {
 		}
 
 		data[order.Address+order.Amount+order.TradeType] = order
+	}
+
+	return data
+}
+
+func getConfirmingOrders(tradeType []string) []model.TradeOrders {
+	var orders = make([]model.TradeOrders, 0)
+	var data = make([]model.TradeOrders, 0)
+	model.DB.Where("status = ? and trade_type in (?)", model.OrderStatusConfirming, tradeType).Find(&orders)
+
+	for _, order := range orders {
+		if time.Now().Unix() >= order.ExpiredAt.Unix() {
+			order.SetExpired()
+			notify.Bepusdt(order)
+			model.PushWebhookEvent(model.WebhookEventOrderTimeout, order)
+
+			continue
+		}
+
+		data = append(data, order)
 	}
 
 	return data

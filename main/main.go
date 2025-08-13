@@ -2,6 +2,10 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"os/signal"
+	"runtime"
+
 	"github.com/v03413/bepusdt/app"
 	"github.com/v03413/bepusdt/app/bot"
 	"github.com/v03413/bepusdt/app/conf"
@@ -9,9 +13,6 @@ import (
 	"github.com/v03413/bepusdt/app/model"
 	"github.com/v03413/bepusdt/app/task"
 	"github.com/v03413/bepusdt/app/web"
-	"os"
-	"os/signal"
-	"runtime"
 )
 
 type Initializer func() error

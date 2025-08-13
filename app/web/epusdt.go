@@ -156,7 +156,7 @@ func cancelTransaction(ctx *gin.Context) {
 		return
 	}
 
-	if err := order.OrderSetCanceled(); err != nil {
+	if err := order.SetCanceled(); err != nil {
 		ctx.JSON(200, respFailJson(fmt.Sprintf("订单取消失败：%s", err.Error())))
 
 		return
