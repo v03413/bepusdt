@@ -8,7 +8,7 @@ builds:
     main: ./main
     binary: bepusdt
     ldflags:
-      - s -w -buildid=
+      - -s -w -buildid=
     goos:
       - windows
       - linux
