@@ -21,6 +21,7 @@ const (
 	OrderStatusExpired    = 3 // 订单过期
 	OrderStatusCanceled   = 4 // 订单取消
 	OrderStatusConfirming = 5 // 等待交易确认
+	OrderStatusFailed     = 6 // 交易确认失败
 
 	OrderTradeTypeTronTrx      = "tron.trx"
 	OrderTradeTypeUsdtTrc20    = "usdt.trc20"
@@ -87,6 +88,12 @@ func (o *TradeOrders) SetExpired() {
 
 func (o *TradeOrders) SetSuccess() {
 	o.Status = OrderStatusSuccess
+
+	DB.Save(o)
+}
+
+func (o *TradeOrders) SetFailed() {
+	o.Status = OrderStatusFailed
 
 	DB.Save(o)
 }

@@ -239,13 +239,18 @@ func getAllWaitingOrders() map[string]model.TradeOrders {
 func getConfirmingOrders(tradeType []string) []model.TradeOrders {
 	var orders = make([]model.TradeOrders, 0)
 	var data = make([]model.TradeOrders, 0)
-	model.DB.Where("status = ? and trade_type in (?)", model.OrderStatusConfirming, tradeType).Find(&orders)
+	var db = model.DB.Where("status = ?", model.OrderStatusConfirming)
+	if len(tradeType) > 0 {
+		db = db.Where("trade_type in (?)", tradeType)
+	}
+
+	db.Find(&orders)
 
 	for _, order := range orders {
 		if time.Now().Unix() >= order.ExpiredAt.Unix() {
-			order.SetExpired()
+			order.SetFailed()
 			notify.Bepusdt(order)
-			model.PushWebhookEvent(model.WebhookEventOrderTimeout, order)
+			model.PushWebhookEvent(model.WebhookEventOrderFailed, order)
 
 			continue
 		}
