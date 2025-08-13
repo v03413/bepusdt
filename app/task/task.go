@@ -27,6 +27,7 @@ func Init() error {
 	polygonInit()
 	arbitrumInit()
 	xlayerInit()
+	baseInit()
 
 	return nil
 }

@@ -21,6 +21,7 @@ const (
 	defaultPolygonRpcEndpoint  = "https://polygon-public.nodies.app/"             // 默认Polygon RPC节点 官方 https://polygon-rpc.com 存在速率限制
 	defaultArbitrumRpcEndpoint = "https://arb1.arbitrum.io/rpc"                   // 默认Arbitrum One RPC节点
 	defaultEthereumRpcEndpoint = "https://ethereum-public.nodies.app/"            // 默认Ethereum RPC节点
+	defaultBaseRpcEndpoint     = "https://base-public.nodies.app/"                // 默认Base RPC节点 官方 https://mainnet.base.org 存在速率限制
 	defaultAptosRpcEndpoint    = "https://aptos-rest.publicnode.com/"             // 默认Aptos RPC节点
 	defaultOutputLog           = "/var/log/bepusdt.log"                           // 默认日志输出文件
 	defaultSqlitePath          = "/var/lib/bepusdt/sqlite.db"                     // 默认数据库文件
@@ -41,6 +42,7 @@ const (
 	UsdcXlayer   = "0x74b7f16337b8972027f6196a17a631ac6de26d22"
 	UsdcArbitrum = "0xaf88d065e77c8cc2239327c5edb3a432268e5831"
 	UsdcBep20    = "0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d"
+	UsdcBase     = "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913"
 	UsdcSolana   = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
 	UsdcAptos    = "0xbae207659db88bea0cbead6da0ed00aac12edcdda169e591cd41c94180b46f3b"
 )
@@ -59,6 +61,7 @@ const (
 	UsdcPolygonDecimals  = -6  // USDC Polygon小数位数
 	UsdcXlayerDecimals   = -6  // USDC Xlayer小数位数
 	UsdcArbitrumDecimals = -6  // USDC Arbitrum小数位数
+	UsdcBaseDecimals     = -6  // USDC Base小数位数
 	UsdcBscDecimals      = -18 // USDC BEP20小数位数
 	UsdcTronDecimals     = -6  // USDC Tron小数位数
 	UsdcAptosDecimals    = -6  // USDC Aptos小数位数

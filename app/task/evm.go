@@ -40,6 +40,7 @@ var contractMap = map[string]string{
 	conf.UsdcXlayer:   model.OrderTradeTypeUsdcXlayer,
 	conf.UsdcArbitrum: model.OrderTradeTypeUsdcArbitrum,
 	conf.UsdcBep20:    model.OrderTradeTypeUsdcBep20,
+	conf.UsdcBase:     model.OrderTradeTypeUsdcBase,
 }
 var networkTokenMap = map[string][]string{
 	conf.Bsc:      {model.OrderTradeTypeUsdtBep20, model.OrderTradeTypeUsdcBep20},
@@ -47,6 +48,7 @@ var networkTokenMap = map[string][]string{
 	conf.Polygon:  {model.OrderTradeTypeUsdtPolygon, model.OrderTradeTypeUsdcPolygon},
 	conf.Arbitrum: {model.OrderTradeTypeUsdtArbitrum, model.OrderTradeTypeUsdcArbitrum},
 	conf.Ethereum: {model.OrderTradeTypeUsdtErc20, model.OrderTradeTypeUsdcErc20},
+	conf.Base:     {model.OrderTradeTypeUsdcBase},
 	conf.Solana:   {model.OrderTradeTypeUsdtSolana, model.OrderTradeTypeUsdcSolana},
 	conf.Aptos:    {model.OrderTradeTypeUsdtAptos, model.OrderTradeTypeUsdcAptos},
 }
@@ -62,6 +64,7 @@ var decimals = map[string]int32{
 	conf.UsdcXlayer:   conf.UsdcXlayerDecimals,
 	conf.UsdcArbitrum: conf.UsdcArbitrumDecimals,
 	conf.UsdcBep20:    conf.UsdcBscDecimals,
+	conf.UsdcBase:     conf.UsdcBaseDecimals,
 	conf.UsdcAptos:    conf.UsdcAptosDecimals,
 	conf.UsdtAptos:    conf.UsdtAptosDecimals,
 }
