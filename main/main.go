@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/signal"
@@ -29,9 +30,11 @@ func init() {
 }
 
 func main() {
-	task.Start()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-	web.Start()
+	task.Start(ctx)
+	web.Start(ctx)
 
 	fmt.Println("BEpusdt 启动成功，当前版本：" + app.Version)
 
@@ -39,6 +42,7 @@ func main() {
 		var signals = make(chan os.Signal, 1)
 		signal.Notify(signals, os.Interrupt, os.Kill)
 		<-signals
+		cancel()
 		runtime.GC()
 	}
 }

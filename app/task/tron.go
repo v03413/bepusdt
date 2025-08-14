@@ -399,12 +399,10 @@ func (t *tron) gasFreePermitTransfer(data []byte) (string, string, *big.Int) {
 	return user, receiver, amount
 }
 
-func (t *tron) tradeConfirmHandle(context.Context) {
+func (t *tron) tradeConfirmHandle(ctx context.Context) {
 	var orders = getConfirmingOrders([]string{model.OrderTradeTypeTronTrx, model.OrderTradeTypeUsdtTrc20, model.OrderTradeTypeUsdcTrc20})
 
 	var wg sync.WaitGroup
-	var ctx, cancel = context.WithTimeout(context.Background(), time.Second*6)
-	defer cancel()
 
 	var handle = func(o model.TradeOrders) {
 		conn, err := grpc.NewClient(conf.GetTronGrpcNode(), grpc.WithConnectParams(grpcParams), grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -418,9 +416,6 @@ func (t *tron) tradeConfirmHandle(context.Context) {
 
 		var c = api.NewWalletClient(conn)
 
-		var ctx1, cancel1 = context.WithTimeout(context.Background(), time.Second*5)
-		defer cancel1()
-
 		idBytes, err := hex.DecodeString(o.TradeHash)
 		if err != nil {
 			log.Error("hex.DecodeString", err)
@@ -429,7 +424,7 @@ func (t *tron) tradeConfirmHandle(context.Context) {
 		}
 
 		if o.TradeType == model.OrderTradeTypeTronTrx {
-			trans, err := c.GetTransactionById(ctx1, &api.BytesMessage{Value: idBytes})
+			trans, err := c.GetTransactionById(ctx, &api.BytesMessage{Value: idBytes})
 			if err != nil {
 				log.Error("GetTransactionById", err)
 
@@ -443,7 +438,7 @@ func (t *tron) tradeConfirmHandle(context.Context) {
 			return
 		}
 
-		info, err := c.GetTransactionInfoById(ctx1, &api.BytesMessage{Value: idBytes})
+		info, err := c.GetTransactionInfoById(ctx, &api.BytesMessage{Value: idBytes})
 		if err != nil {
 			log.Error("GetTransactionInfoById", err)
 
@@ -459,12 +454,8 @@ func (t *tron) tradeConfirmHandle(context.Context) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			select {
-			case <-ctx.Done():
-				return
-			default:
-				handle(order)
-			}
+
+			handle(order)
 		}()
 	}
 

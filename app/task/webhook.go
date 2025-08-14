@@ -2,34 +2,30 @@ package task
 
 import (
 	"context"
-	"github.com/smallnest/chanx"
-	"github.com/v03413/bepusdt/app"
-	"github.com/v03413/bepusdt/app/log"
-	"github.com/v03413/bepusdt/app/model"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/v03413/bepusdt/app"
+	"github.com/v03413/bepusdt/app/log"
+	"github.com/v03413/bepusdt/app/model"
 )
 
-var webhookQueueKey = contextKey{}
-
 func init() {
-	register(task{
-		callback: webhookRoll,
-		ctx:      context.WithValue(context.Background(), webhookQueueKey, model.WebhookHandleQueue)},
-	)
+	register(task{callback: webhookRoll})
 }
 
 func webhookRoll(ctx context.Context) {
 	var w model.Webhook
-	var queue = ctx.Value(webhookQueueKey).(*chanx.UnboundedChan[model.Webhook])
 	var ticker = time.NewTicker(time.Minute)
 
 	for {
 		select {
+		case <-ctx.Done():
+			return
 		case <-ticker.C:
 			model.ListWaitWebhooks()
-		case w = <-queue.Out:
+		case w = <-model.WebhookHandleQueue.Out:
 			go webhookHandle(w)
 		}
 	}

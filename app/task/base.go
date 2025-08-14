@@ -20,7 +20,7 @@ func baseInit() {
 		blockScanQueue: chanx.NewUnboundedChan[evmBlock](ctx, 30),
 	}
 
-	register(task{ctx: ctx, callback: base.blockDispatch})
-	register(task{ctx: ctx, callback: base.blockRoll, duration: time.Second * 5})
-	register(task{ctx: ctx, callback: base.tradeConfirmHandle, duration: time.Second * 5})
+	register(task{callback: base.blockDispatch})
+	register(task{callback: base.blockRoll, duration: time.Second * 5})
+	register(task{callback: base.tradeConfirmHandle, duration: time.Second * 5})
 }

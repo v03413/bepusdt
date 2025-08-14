@@ -3,11 +3,12 @@ package bot
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
 	"github.com/v03413/bepusdt/app/conf"
 	"github.com/v03413/bepusdt/app/log"
-	"time"
 )
 
 var api *bot.Bot
@@ -26,11 +27,7 @@ func Init() error {
 	return err
 }
 
-func Start() {
-	var ctx, cancel = context.WithCancel(context.Background())
-
-	defer cancel()
-
+func Start(ctx context.Context) {
 	var me, err2 = api.GetMe(ctx)
 	if err2 != nil {
 		panic(err2)

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"math/big"
+	"net/http"
 	"strings"
 	"sync"
 	"time"
@@ -67,13 +68,14 @@ func newAptos() aptos {
 	}
 }
 
-func (a *aptos) versionRoll(context.Context) {
+func (a *aptos) versionRoll(ctx context.Context) {
 	if rollBreak(conf.Aptos) {
 
 		return
 	}
 
-	resp, err := client.Get(conf.GetAptosRpcNode() + "/v1")
+	req, _ := http.NewRequestWithContext(ctx, "GET", conf.GetAptosRpcNode()+"/v1", nil)
+	resp, err := client.Do(req)
 	if err != nil {
 		log.Warn("aptos versionRoll Error sending request:", err)
 
@@ -395,11 +397,10 @@ func (a *aptos) padAddressLeadingZeros(addr string) string {
 func (a *aptos) tradeConfirmHandle(ctx context.Context) {
 	var orders = getConfirmingOrders(networkTokenMap[conf.Aptos])
 	var wg sync.WaitGroup
-	var ctx2, cancel = context.WithTimeout(context.Background(), time.Second*6)
-	defer cancel()
 
 	var handle = func(o model.TradeOrders) {
-		resp, err := client.Get(conf.GetAptosRpcNode() + "v1/transactions/by_hash/" + o.TradeHash)
+		req, _ := http.NewRequestWithContext(ctx, "GET", conf.GetAptosRpcNode()+"v1/transactions/by_hash/"+o.TradeHash, nil)
+		resp, err := client.Do(req)
 		if err != nil {
 			log.Warn("aptos tradeConfirmHandle Error sending request:", err)
 
@@ -440,14 +441,8 @@ func (a *aptos) tradeConfirmHandle(ctx context.Context) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			select {
-			case <-ctx.Done():
-				return
-			case <-ctx2.Done():
-				return
-			default:
-				handle(order)
-			}
+
+			handle(order)
 		}()
 	}
 

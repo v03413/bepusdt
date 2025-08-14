@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"math/big"
+	"net/http"
 	"sync"
 	"time"
 
@@ -59,15 +60,16 @@ func newSolana() solana {
 	}
 }
 
-func (s *solana) slotRoll(context.Context) {
+func (s *solana) slotRoll(ctx context.Context) {
 	if rollBreak(conf.Solana) {
 
 		return
 	}
 
-	post := []byte(`{"jsonrpc":"2.0","id":1,"method":"getSlot"}`)
+	req, err := http.NewRequestWithContext(ctx, "POST", conf.GetSolanaRpcEndpoint(), bytes.NewBuffer([]byte(`{"jsonrpc":"2.0","id":1,"method":"getSlot"}`)))
+	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := client.Post(conf.GetSolanaRpcEndpoint(), "application/json", bytes.NewBuffer(post))
+	resp, err := client.Do(req)
 	if err != nil {
 		log.Warn("slotRoll Error sending request:", err)
 
@@ -351,13 +353,11 @@ func (s *solana) parseTransfer(instr gjson.Result, accountKeys []string, tokenAc
 func (s *solana) tradeConfirmHandle(ctx context.Context) {
 	var orders = getConfirmingOrders(networkTokenMap[conf.Solana])
 	var wg sync.WaitGroup
-	var ctx2, cancel = context.WithTimeout(context.Background(), time.Second*6)
-	defer cancel()
 
 	var handle = func(o model.TradeOrders) {
 		post := []byte(fmt.Sprintf(`{"jsonrpc":"2.0","id":1,"method":"getSignatureStatuses","params":[["%s"],{"searchTransactionHistory":true}]}`, o.TradeHash))
-
-		resp, err := client.Post(conf.GetSolanaRpcEndpoint(), "application/json", bytes.NewBuffer(post))
+		req, _ := http.NewRequestWithContext(ctx, "POST", conf.GetSolanaRpcEndpoint(), bytes.NewBuffer(post))
+		resp, err := client.Do(req)
 		if err != nil {
 			log.Warn("solana tradeConfirmHandle Error sending request:", err)
 
@@ -396,14 +396,8 @@ func (s *solana) tradeConfirmHandle(ctx context.Context) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			select {
-			case <-ctx.Done():
-				return
-			case <-ctx2.Done():
-				return
-			default:
-				handle(order)
-			}
+
+			handle(order)
 		}()
 	}
 

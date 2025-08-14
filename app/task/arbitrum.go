@@ -20,7 +20,7 @@ func arbitrumInit() {
 		blockScanQueue: chanx.NewUnboundedChan[evmBlock](ctx, 30),
 	}
 
-	register(task{ctx: ctx, callback: arb.blockDispatch})
-	register(task{ctx: ctx, callback: arb.blockRoll, duration: time.Second * 5})
-	register(task{ctx: ctx, callback: arb.tradeConfirmHandle, duration: time.Second * 5})
+	register(task{callback: arb.blockDispatch})
+	register(task{callback: arb.blockRoll, duration: time.Second * 5})
+	register(task{callback: arb.tradeConfirmHandle, duration: time.Second * 5})
 }

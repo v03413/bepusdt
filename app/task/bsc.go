@@ -20,7 +20,7 @@ func bscInit() {
 		blockScanQueue: chanx.NewUnboundedChan[evmBlock](ctx, 30),
 	}
 
-	register(task{ctx: ctx, callback: bsc.blockDispatch})
-	register(task{ctx: ctx, callback: bsc.blockRoll, duration: time.Second * 5})
-	register(task{ctx: ctx, callback: bsc.tradeConfirmHandle, duration: time.Second * 5})
+	register(task{callback: bsc.blockDispatch})
+	register(task{callback: bsc.blockRoll, duration: time.Second * 5})
+	register(task{callback: bsc.tradeConfirmHandle, duration: time.Second * 5})
 }

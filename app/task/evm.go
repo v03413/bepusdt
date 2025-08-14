@@ -217,8 +217,18 @@ func (e *evm) getBlockByNumber(a any) {
 		items = append(items, fmt.Sprintf(`{"jsonrpc":"2.0","method":"eth_getBlockByNumber","params":["0x%x",false],"id":%d}`, i, i))
 	}
 
-	post := []byte(fmt.Sprintf(`[%s]`, strings.Join(items, ",")))
-	resp, err := client.Post(e.Endpoint, "application/json", bytes.NewBuffer(post))
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, "POST", e.Endpoint, bytes.NewBuffer([]byte(fmt.Sprintf(`[%s]`, strings.Join(items, ",")))))
+	if err != nil {
+		log.Warn("Error creating request:", err)
+
+		return
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := client.Do(req)
 	if err != nil {
 		conf.SetBlockFail(e.Network)
 		e.blockScanQueue.In <- b
@@ -343,14 +353,12 @@ func (e *evm) parseBlockTransfer(b evmBlock, timestamp map[string]time.Time) ([]
 func (e *evm) tradeConfirmHandle(ctx context.Context) {
 	var orders = getConfirmingOrders(networkTokenMap[e.Network])
 	var wg sync.WaitGroup
-	var ctx2, cancel = context.WithTimeout(context.Background(), time.Second*6)
-	defer cancel()
 
 	var handle = func(o model.TradeOrders) {
 		post := []byte(fmt.Sprintf(`{"jsonrpc":"2.0","method":"eth_getTransactionReceipt","params":["%s"],"id":1}`, o.TradeHash))
-		req, err := http.NewRequestWithContext(ctx2, "POST", e.Endpoint, bytes.NewBuffer(post))
+		req, err := http.NewRequestWithContext(ctx, "POST", e.Endpoint, bytes.NewBuffer(post))
 		if err != nil {
-			log.Warn("Error creating request:", err)
+			log.Warn("evm tradeConfirmHandle Error creating request:", err)
 
 			return
 		}
@@ -358,7 +366,7 @@ func (e *evm) tradeConfirmHandle(ctx context.Context) {
 		req.Header.Set("Content-Type", "application/json")
 		resp, err := client.Do(req)
 		if err != nil {
-			log.Warn("Error sending request:", err)
+			log.Warn("evm tradeConfirmHandle Error sending request:", err)
 
 			return
 		}
@@ -367,7 +375,7 @@ func (e *evm) tradeConfirmHandle(ctx context.Context) {
 
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
-			log.Warn("Error reading response body:", err)
+			log.Warn("evm tradeConfirmHandle Error reading response body:", err)
 
 			return
 		}
@@ -388,14 +396,7 @@ func (e *evm) tradeConfirmHandle(ctx context.Context) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			select {
-			case <-ctx.Done():
-				return
-			case <-ctx2.Done():
-				return
-			default:
-				handle(order)
-			}
+			handle(order)
 		}()
 	}
 

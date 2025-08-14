@@ -23,8 +23,8 @@ func init() {
 }
 
 // OkxUsdtRateStart Okx USDT_CNY 汇率监控
-func OkxUsdtRateStart(context.Context) {
-	var rawRate, err = getOkxUsdTokenCnySellPrice("USDT")
+func OkxUsdtRateStart(ctx context.Context) {
+	var rawRate, err = getOkxUsdTokenCnySellPrice(ctx, "USDT")
 	if err != nil {
 		log.Error("Okx USDT_CNY 汇率获取失败", err)
 	} else {
@@ -35,8 +35,8 @@ func OkxUsdtRateStart(context.Context) {
 }
 
 // OkxUsdcRateStart Okx USDC_CNY 汇率监控
-func OkxUsdcRateStart(context.Context) {
-	var rawRate, err = getOkxUsdTokenCnySellPrice("USDC")
+func OkxUsdcRateStart(ctx context.Context) {
+	var rawRate, err = getOkxUsdTokenCnySellPrice(ctx, "USDC")
 	if err != nil {
 		log.Error("Okx USDC_CNY 汇率获取失败", err)
 	} else {
@@ -47,8 +47,8 @@ func OkxUsdcRateStart(context.Context) {
 }
 
 // OkxTrxRateStart  Okx TRX_CNY 汇率监控
-func OkxTrxRateStart(context.Context) {
-	var price, err = getOkxTrxCnyMarketPrice()
+func OkxTrxRateStart(ctx context.Context) {
+	var price, err = getOkxTrxCnyMarketPrice(ctx)
 	if err != nil {
 		log.Error("Okx TRX_USDT 汇率获取失败", err)
 	} else {
@@ -59,7 +59,7 @@ func OkxTrxRateStart(context.Context) {
 }
 
 // getOkxUsdtCnySellPrice  Okx  C2C快捷交易 USDT出售 实时汇率
-func getOkxUsdTokenCnySellPrice(crypto string) (float64, error) {
+func getOkxUsdTokenCnySellPrice(ctx context.Context, crypto string) (float64, error) {
 	if crypto != "USDT" && crypto != "USDC" {
 		return 0, errors.New("unsupported crypto:" + crypto)
 	}
@@ -70,8 +70,7 @@ func getOkxUsdTokenCnySellPrice(crypto string) (float64, error) {
 		crypto, t,
 	)
 
-	client := http.Client{Timeout: time.Second * 5}
-	req, _ := http.NewRequest("GET", okxApi, nil)
+	req, _ := http.NewRequestWithContext(ctx, "GET", okxApi, nil)
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36")
 	resp, err := client.Do(req)
 	if err != nil {
@@ -110,11 +109,11 @@ func getOkxUsdTokenCnySellPrice(crypto string) (float64, error) {
 }
 
 // getOkxTrxCnyMarketPrice 获取 Trx/Cny 市场价格 https://www.okx.com/zh-hans/convert/trx-to-cny
-func getOkxTrxCnyMarketPrice() (float64, error) {
+func getOkxTrxCnyMarketPrice(ctx context.Context) (float64, error) {
 	var t = strconv.Itoa(int(time.Now().Unix()))
 	var okxApi = "https://www.okx.com/priapi/v3/growth/convert/currency-pair-market-movement?baseCurrency=TRX&quoteCurrency=CNY&bar=4H&limit=1&t=" + t
-	client := http.Client{Timeout: time.Second * 5}
-	req, _ := http.NewRequest("GET", okxApi, nil)
+
+	req, _ := http.NewRequestWithContext(ctx, "GET", okxApi, nil)
 	req.Header.Set("accept", "application/json")
 	req.Header.Set("accept-language", "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7")
 	req.Header.Set("app-type", "web")

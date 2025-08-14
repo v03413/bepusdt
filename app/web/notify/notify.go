@@ -1,6 +1,7 @@
 package notify
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -35,20 +36,23 @@ func Handle(order model.TradeOrders) {
 		return
 	}
 
+	var ctx, cancel = context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
+
 	if order.ApiType == model.OrderApiTypeEpay {
-		epay(order)
+		epay(ctx, order)
 
 		return
 	}
 
-	epusdt(order)
+	epusdt(ctx, order)
 }
 
-func epay(order model.TradeOrders) {
+func epay(ctx context.Context, order model.TradeOrders) {
 	var client = http.Client{Timeout: time.Second * 5}
 	var notifyUrl = fmt.Sprintf("%s?%s", order.NotifyUrl, e.BuildNotifyParams(order))
 
-	postReq, err2 := http.NewRequest("GET", notifyUrl, nil)
+	postReq, err2 := http.NewRequestWithContext(ctx, "GET", notifyUrl, nil)
 	if err2 != nil {
 		log.Error("Notify NewRequest Error：", err2)
 
@@ -92,7 +96,7 @@ func epay(order model.TradeOrders) {
 	}
 }
 
-func epusdt(order model.TradeOrders) {
+func epusdt(ctx context.Context, order model.TradeOrders) {
 	var data = make(map[string]interface{})
 	var body = EpNotify{
 		TradeId:            order.TradeId,
@@ -122,7 +126,7 @@ func epusdt(order model.TradeOrders) {
 	// 再次序列化
 	jsonBody, err = json.Marshal(body)
 	var client = http.Client{Timeout: time.Second * 5}
-	var postReq, err2 = http.NewRequest("POST", order.NotifyUrl, strings.NewReader(string(jsonBody)))
+	var postReq, err2 = http.NewRequestWithContext(ctx, "POST", order.NotifyUrl, strings.NewReader(string(jsonBody)))
 	if err2 != nil {
 		markNotifyFail(order, err.Error())
 
@@ -218,7 +222,7 @@ func Bepusdt(order model.TradeOrders) {
 		body.Signature = help.EpusdtSign(data, conf.GetAuthToken())
 
 		// 再次序列化
-		jsonBody, err = json.Marshal(body)
+		jsonBody, _ = json.Marshal(body)
 		var client = http.Client{Timeout: time.Second * 5}
 		var req, err2 = http.NewRequest("POST", o.NotifyUrl, strings.NewReader(string(jsonBody)))
 		if err2 != nil {
@@ -228,7 +232,7 @@ func Bepusdt(order model.TradeOrders) {
 		}
 
 		req.Header.Set("Content-Type", "application/json")
-		req.Header.Set("Powered-By", "https://github.com/v03413/bepusdt")
+		req.Header.Set("Powered-By", "https://github.com/v03413/BEpusdt")
 		resp, err := client.Do(req)
 		if err != nil {
 			db.Rollback()
