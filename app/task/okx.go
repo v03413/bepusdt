@@ -2,6 +2,7 @@ package task
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"io"
@@ -70,9 +71,11 @@ func getOkxUsdTokenCnySellPrice(ctx context.Context, crypto string) (float64, er
 		crypto, t,
 	)
 
+	var c = &http.Client{Timeout: time.Second * 30, Transport: &http.Transport{TLSClientConfig: &tls.Config{NextProtos: []string{"http/1.1"}}}}
+
 	req, _ := http.NewRequestWithContext(ctx, "GET", okxApi, nil)
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36")
-	resp, err := client.Do(req)
+	resp, err := c.Do(req)
 	if err != nil {
 
 		return 0, errors.New("okx resp error:" + err.Error())
@@ -130,7 +133,9 @@ func getOkxTrxCnyMarketPrice(ctx context.Context) (float64, error) {
 	req.Header.Set("x-utc", "8")
 	req.Header.Set("x-zkdex-env", "0")
 
-	resp, err := client.Do(req)
+	var c = &http.Client{Timeout: time.Second * 30, Transport: &http.Transport{TLSClientConfig: &tls.Config{NextProtos: []string{"http/1.1"}}}}
+
+	resp, err := c.Do(req)
 	if err != nil {
 
 		return 0, errors.New("okx resp error:" + err.Error())
