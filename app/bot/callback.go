@@ -4,6 +4,13 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
+	"math/big"
+	"net/http"
+	"net/url"
+	"strings"
+	"time"
+
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
 	"github.com/shopspring/decimal"
@@ -15,12 +22,6 @@ import (
 	"github.com/v03413/bepusdt/app/model"
 	"github.com/v03413/go-cache"
 	"gorm.io/gorm"
-	"io"
-	"math/big"
-	"net/http"
-	"net/url"
-	"strings"
-	"time"
 )
 
 const cbWallet = "wallet"
@@ -292,7 +293,7 @@ func cbOrderDetailAction(ctx context.Context, b *bot.Bot, u *models.Update) {
 		})
 	}
 
-	if order.Status == model.OrderStatusExpired && order.NotifyState == model.OrderNotifyStateFail {
+	if (order.Status == model.OrderStatusExpired || order.Status == model.OrderStatusWaiting) && order.NotifyState == model.OrderNotifyStateFail {
 		markup.InlineKeyboard = append(markup.InlineKeyboard, []models.InlineKeyboardButton{
 			{Text: "⚠️直接标记已支付（即使未收到款）", CallbackData: cbMarkOrderSucc + "|" + order.TradeId},
 		})
