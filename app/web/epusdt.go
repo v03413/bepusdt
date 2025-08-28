@@ -184,16 +184,29 @@ func checkoutCounter(ctx *gin.Context) {
 		return
 	}
 
-	ctx.HTML(200, order.TradeType+".html", gin.H{
-		"http_host":  uri.Host,
-		"amount":     order.Amount,
-		"address":    order.Address,
-		"expire":     int64(order.ExpiredAt.Sub(time.Now()).Seconds()),
-		"return_url": order.ReturnUrl,
-		"usdt_rate":  order.TradeRate,
-		"trade_id":   tradeId,
-		"order_id":   order.OrderId,
-		"trade_type": order.TradeType,
+	config, exists := GetPayment(order.TradeType)
+	if !exists {
+		ctx.String(200, "不支持的交易类型")
+		log.Error("不支持的交易类型:", order.TradeType)
+
+		return
+	}
+
+	ctx.HTML(200, "payment.html", gin.H{
+		"http_host":       uri.Host,
+		"amount":          order.Amount,
+		"address":         order.Address,
+		"expire":          int64(time.Until(order.ExpiredAt).Seconds()),
+		"return_url":      order.ReturnUrl,
+		"usdt_rate":       order.TradeRate,
+		"trade_id":        tradeId,
+		"order_id":        order.OrderId,
+		"trade_type":      order.TradeType,
+		"coin":            config.Coin,
+		"network":         config.Network,
+		"network_display": config.NetworkDisplay,
+		"network_suffix":  config.NetworkSuffix,
+		"warning_coin":    config.WarningCoin,
 	})
 }
 
