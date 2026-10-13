@@ -59,6 +59,10 @@ func newSolana() solana {
 	}
 }
 
+func solanaGetBlockPayload(slot int) []byte {
+	return []byte(fmt.Sprintf(`{"jsonrpc":"2.0","id":1,"method":"getBlock","params":[%d,{"encoding":"json","maxSupportedTransactionVersion":1,"transactionDetails":"full","rewards":false}]}`, slot))
+}
+
 func (s *solana) syncSlotForward(ctx context.Context) {
 	if syncBreak(conf.Solana, s.slotQueue.Len()) {
 
@@ -144,7 +148,7 @@ func (s *solana) slotDispatch(ctx context.Context) {
 
 func (s *solana) slotParse(n any) {
 	slot := n.(int)
-	post := []byte(fmt.Sprintf(`{"jsonrpc":"2.0","id":1,"method":"getBlock","params":[%d,{"encoding":"json","maxSupportedTransactionVersion":0,"transactionDetails":"full","rewards":false}]}`, slot))
+	post := solanaGetBlockPayload(slot)
 	network := conf.Solana
 
 	conf.RecordSuccess(network, cast.ToString(slot))
