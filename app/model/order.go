@@ -79,8 +79,8 @@ type Order struct {
 	Status            int        `gorm:"column:status;not null;default:1;index;index:idx_order_notify_retry,priority:1;comment:交易状态" json:"status"`
 	Name              string     `gorm:"column:name;type:varchar(64);not null;default:'';comment:商品名称" json:"name"`
 	ApiType           string     `gorm:"column:api_type;type:varchar(20);not null;default:'epusdt';comment:API类型" json:"api_type"`
-	ReturnUrl         string     `gorm:"column:return_url;type:varchar(255);not null;default:'';comment:同步地址" json:"return_url"`
-	NotifyUrl         string     `gorm:"column:notify_url;type:varchar(255);not null;default:'';comment:异步地址" json:"notify_url"`
+	ReturnUrl         string     `gorm:"column:return_url;type:text;not null;default:'';comment:同步地址" json:"return_url"`
+	NotifyUrl         string     `gorm:"column:notify_url;type:text;not null;default:'';comment:异步地址" json:"notify_url"`
 	NotifyNum         int        `gorm:"column:notify_num;not null;default:0;index:idx_order_notify_retry,priority:3;comment:回调次数" json:"notify_num"`
 	NotifyState       int        `gorm:"column:notify_state;not null;default:0;index:idx_order_notify_retry,priority:2;comment:回调状态 1：成功 0：失败" json:"notify_state"`
 	RefHash           string     `gorm:"column:ref_hash;type:varchar(128);not null;default:'';index;comment:交易哈希" json:"ref_hash"`
