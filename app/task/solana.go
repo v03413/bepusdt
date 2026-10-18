@@ -160,7 +160,7 @@ func (s *solana) slotParse(n any) {
 	resp, err := s.client.Post(model.Endpoint(conf.Solana), "application/json", bytes.NewBuffer(post))
 	if err != nil {
 		conf.RecordFailure(network)
-		s.scheduleSlotRetry(slot, 0)
+		s.scheduleSlotRetry(slot)
 		log.Task.Warn("slotParse Error sending request:", err)
 
 		return
@@ -169,7 +169,7 @@ func (s *solana) slotParse(n any) {
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
 		conf.RecordFailure(network)
-		s.scheduleSlotRetry(slot, 0)
+		s.scheduleSlotRetry(slot)
 		log.Task.Warn("slotParse Error response status code:", resp.StatusCode)
 
 		return
@@ -178,7 +178,7 @@ func (s *solana) slotParse(n any) {
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		conf.RecordFailure(network)
-		s.scheduleSlotRetry(slot, 0)
+		s.scheduleSlotRetry(slot)
 		log.Task.Warn("slotParse Error reading response body:", err)
 
 		return
@@ -187,7 +187,7 @@ func (s *solana) slotParse(n any) {
 	result, err := validateSolanaBlockResponse(body)
 	if err != nil {
 		conf.RecordFailure(network)
-		s.scheduleSlotRetry(slot, 0)
+		s.scheduleSlotRetry(slot)
 		log.Task.Warn("slotParse Error JSON-RPC response:", err)
 
 		return
@@ -330,7 +330,7 @@ func validateSolanaBlockResponse(body []byte) (gjson.Result, error) {
 	return result, nil
 }
 
-func (s *solana) scheduleSlotRetry(slot int, delay time.Duration) {
+func (s *solana) scheduleSlotRetry(slot int) {
 	s.retryMu.Lock()
 	if _, ok := s.retryScheduled[slot]; ok {
 		s.retryMu.Unlock()
@@ -339,13 +339,18 @@ func (s *solana) scheduleSlotRetry(slot int, delay time.Duration) {
 	}
 
 	attempt := s.retryAttempts[slot] + 1
-	s.retryAttempts[slot] = attempt
-	if delay <= 0 {
-		delay = solanaRetryDelay(attempt)
-	}
+	if attempt > solanaSlotMaxRetries { // 放弃该 slot，否则向前扫描会一直暂停
+		delete(s.retryAttempts, slot)
+		s.retryMu.Unlock()
+		log.Task.Error(fmt.Sprintf("Solana slot %d 连续 %d 次扫描失败，已放弃，该 slot 内的付款需要人工核对", slot, solanaSlotMaxRetries))
 
+		return
+	}
+	s.retryAttempts[slot] = attempt
+
+	// 待重试的 slot 数量有限，到期直接入队；不再因队列堆积而延后，否则堆积会被计为失败次数
 	var timer *time.Timer
-	timer = time.AfterFunc(delay, func() {
+	timer = time.AfterFunc(solanaRetryDelay(attempt), func() {
 		s.retryMu.Lock()
 		if s.retryScheduled[slot] != timer {
 			s.retryMu.Unlock()
@@ -354,13 +359,6 @@ func (s *solana) scheduleSlotRetry(slot int, delay time.Duration) {
 		}
 		delete(s.retryScheduled, slot)
 		s.retryMu.Unlock()
-
-		if s.slotQueue.Len() >= blockQueueLimit {
-			log.Task.Warn("Solana 重试延后，当前区块消费堆积数量：", s.slotQueue.Len())
-			s.scheduleSlotRetry(slot, delay)
-
-			return
-		}
 
 		s.slotQueue.In <- slot
 	})
@@ -385,6 +383,9 @@ func (s *solana) pendingSlotRetryCount() int {
 
 	return len(s.retryAttempts)
 }
+
+// 单个 slot 最多重试 10 次，按 solanaRetryDelay 约 7 分钟
+const solanaSlotMaxRetries = 10
 
 func solanaRetryDelay(attempt int) time.Duration {
 	delays := [...]time.Duration{2 * time.Second, 5 * time.Second, 15 * time.Second, 30 * time.Second, time.Minute}
