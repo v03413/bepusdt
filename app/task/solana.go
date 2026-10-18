@@ -31,6 +31,7 @@ import (
 type solana struct {
 	slotConfirmedOffset int
 	lastSlotNum         int
+	forwardIdle         bool // 因没有待支付订单而暂停了向前扫描
 	slotQueue           *chanx.UnboundedChan[int]
 	client              *http.Client
 	retryMu             sync.Mutex
@@ -69,7 +70,10 @@ func solanaGetBlockPayload(slot int) []byte {
 }
 
 func (s *solana) syncSlotForward(ctx context.Context) {
-	if syncBreak(conf.Solana, s.slotQueue.Len()) {
+	if queued := s.slotQueue.Len(); syncBreak(conf.Solana, queued) {
+		if queued < blockQueueLimit {
+			s.forwardIdle = true
+		}
 
 		return
 	}
@@ -109,9 +113,14 @@ func (s *solana) syncSlotForward(ctx context.Context) {
 		return
 	}
 
-	if now-s.lastSlotNum > cast.ToInt(model.GetC(model.BlockHeightMaxDiff)) { // 区块高度变化过大，强制丢块重扫
-		s.lastSlotNum = now
+	if lag := now - s.lastSlotNum; lag > cast.ToInt(model.GetC(model.BlockHeightMaxDiff)) {
+		if s.lastSlotNum == 0 || s.forwardIdle { // 启动或空闲后恢复扫描：直接从最新高度开始
+			s.lastSlotNum = now
+		} else { // 扫描期间落后：继续追赶，不能跳过，其中可能有付款
+			log.Task.Warn(fmt.Sprintf("Solana 扫描落后 %d 个 slot，继续追赶", lag))
+		}
 	}
+	s.forwardIdle = false
 
 	if now <= s.lastSlotNum { // 区块高度没有变化或节点返回旧高度
 
