@@ -51,6 +51,7 @@ func init() {
 	Register(Task{Callback: sol.syncSlotForward, Duration: time.Second * 5})
 	Register(Task{Callback: sol.tradeConfirmHandle, Duration: time.Second * 5})
 	Register(Task{Callback: sol.lookbackSlots, Duration: time.Second * 15})
+	Register(Task{Callback: sol.reconcileExpiredOrders, Duration: time.Minute})
 }
 
 func newSolana() solana {

@@ -396,6 +396,16 @@ func GetTxUrl(t TradeType, hash string) string {
 	return "https://tronscan.org/#/transaction/" + hash
 }
 
+func GetTradeContract(t TradeType) string {
+	c, ok := registry[t]
+	if !ok {
+
+		return ""
+	}
+
+	return c.Contract
+}
+
 func GetTradeDecimal(t TradeType) int32 {
 	c, ok := registry[t]
 	if !ok {
