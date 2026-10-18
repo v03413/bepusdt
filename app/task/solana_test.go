@@ -64,3 +64,21 @@ func TestSolanaRetryDelayIsBounded(t *testing.T) {
 		}
 	}
 }
+
+func TestValidSolanaLookbackRange(t *testing.T) {
+	tests := []struct {
+		start int64
+		end   int64
+		want  bool
+	}{
+		{start: 458225400, end: 458225500, want: true},
+		{start: 0, end: 0, want: false},
+		{start: 0, end: 458225500, want: false},
+		{start: 458225500, end: 458225400, want: false},
+	}
+	for _, tt := range tests {
+		if got := validSolanaLookbackRange(tt.start, tt.end); got != tt.want {
+			t.Fatalf("validSolanaLookbackRange(%d, %d) = %v, want %v", tt.start, tt.end, got, tt.want)
+		}
+	}
+}

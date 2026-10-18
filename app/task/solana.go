@@ -36,6 +36,10 @@ type solana struct {
 	retryMu             sync.Mutex
 	retryAttempts       map[int]int
 	retryScheduled      map[int]*time.Timer
+	lookbackMu          sync.Mutex
+	lookbackNext        int
+	lookbackEnd         int
+	lookbackOrderIDs    []int64
 }
 
 type solanaTokenOwner struct {
@@ -516,22 +520,45 @@ func (s *solana) lookbackSlots(ctx context.Context) {
 		return
 	}
 
-	startAt, endAt, ok := getLookbackUnix(conf.Solana)
-	if !ok {
-		return
+	s.lookbackMu.Lock()
+	defer s.lookbackMu.Unlock()
+
+	if s.lookbackNext == 0 {
+		startAt, endAt, orderIDs, ok := pendingLookbackUnix(conf.Solana)
+		if !ok {
+			return
+		}
+
+		start, end := blockapi.New().GetBoundaryHeights(startAt, endAt, conf.Solana)
+		if !validSolanaLookbackRange(start, end) {
+			log.Task.Warn("Solana 回溯区块范围无效，稍后重试：", start, "-", end)
+
+			return
+		}
+
+		s.lookbackNext = int(start)
+		s.lookbackEnd = int(end)
+		s.lookbackOrderIDs = orderIDs
 	}
 
-	start, end := blockapi.New().GetBoundaryHeights(startAt, endAt, conf.Solana)
-	for i := int(start); i <= int(end); i++ {
+	for s.lookbackNext <= s.lookbackEnd && s.slotQueue.Len() < blockQueueLimit {
 		select {
 		case <-ctx.Done():
 			return
 		default:
 		}
-		if syncBreak(conf.Solana, s.slotQueue.Len()) {
-			return
-		}
-		s.slotQueue.In <- i
-		time.Sleep(time.Millisecond * 200)
+		s.slotQueue.In <- s.lookbackNext
+		s.lookbackNext++
 	}
+
+	if s.lookbackNext > s.lookbackEnd {
+		markLookbackDone(s.lookbackOrderIDs)
+		s.lookbackNext = 0
+		s.lookbackEnd = 0
+		s.lookbackOrderIDs = nil
+	}
+}
+
+func validSolanaLookbackRange(start, end int64) bool {
+	return start > 0 && end >= start
 }
