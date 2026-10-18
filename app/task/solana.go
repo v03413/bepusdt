@@ -204,6 +204,11 @@ func (s *solana) slotParse(n any) {
 	timestamp := time.Unix(result.Get("blockTime").Int(), 0)
 
 	for _, trans := range result.Get("transactions").Array() {
+		if !solanaTxSucceeded(trans.Get("meta.err")) {
+
+			continue
+		}
+
 		hash := trans.Get("transaction.signatures.0").String()
 
 		// 解析账号索引
@@ -296,6 +301,16 @@ func (s *solana) slotParse(n any) {
 	}
 
 	log.Task.Info(fmt.Sprintf("区块扫描完成(Solana) %d 成功率：%s", slot, conf.GetSuccessRate(network)))
+}
+
+// 执行失败的交易同样会被打包进区块，指令和代币余额也照常保留，但转账已经回滚；只有 err 为 null 才算执行成功
+func solanaTxSucceeded(err gjson.Result) bool {
+	return err.Exists() && err.Type == gjson.Null
+}
+
+// getSignatureStatuses 对执行失败的交易同样返回 finalized，必须同时检查 err
+func solanaSignatureFinalized(status gjson.Result) bool {
+	return status.Get("confirmationStatus").String() == "finalized" && solanaTxSucceeded(status.Get("err"))
 }
 
 // Solana JSON-RPC 错误码，参考 https://github.com/anza-xyz/agave/blob/master/rpc-client-api/src/custom_error.rs
@@ -493,7 +508,7 @@ func (s *solana) tradeConfirmHandle(ctx context.Context) {
 			return
 		}
 
-		if data.Get("result.value.0.confirmationStatus").String() == "finalized" {
+		if solanaSignatureFinalized(data.Get("result.value.0")) {
 
 			markFinalConfirmed(o)
 		}
