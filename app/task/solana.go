@@ -204,61 +204,82 @@ func (s *solana) slotParse(n any) {
 	timestamp := time.Unix(result.Get("blockTime").Int(), 0)
 
 	for _, trans := range result.Get("transactions").Array() {
-		if !solanaTxSucceeded(trans.Get("meta.err")) {
-
-			continue
+		if transfers := s.parseTransaction(trans, slot, timestamp); len(transfers) > 0 {
+			transferQueue.In <- transfers
 		}
+	}
 
-		hash := trans.Get("transaction.signatures.0").String()
+	log.Task.Info(fmt.Sprintf("区块扫描完成(Solana) %d 成功率：%s", slot, conf.GetSuccessRate(network)))
+}
 
-		// 解析账号索引
-		accountKeys := make([]string, 0)
-		for _, key := range trans.Get("transaction.message.accountKeys").Array() {
+// parseTransaction 解析单笔交易中的 USDT/USDC 转账；getBlock 返回的交易项与 getTransaction 的结果结构相同，都可以传入
+func (s *solana) parseTransaction(trans gjson.Result, slot int, timestamp time.Time) []transfer {
+	if !solanaTxSucceeded(trans.Get("meta.err")) {
+
+		return nil
+	}
+
+	hash := trans.Get("transaction.signatures.0").String()
+
+	// 解析账号索引
+	accountKeys := make([]string, 0)
+	for _, key := range trans.Get("transaction.message.accountKeys").Array() {
+		accountKeys = append(accountKeys, key.String())
+	}
+	for _, v := range []string{"readonly", "writable"} {
+		for _, key := range trans.Get("meta.loadedAddresses." + v).Array() {
 			accountKeys = append(accountKeys, key.String())
 		}
-		for _, v := range []string{"readonly", "writable"} {
-			for _, key := range trans.Get("meta.loadedAddresses." + v).Array() {
-				accountKeys = append(accountKeys, key.String())
+	}
+
+	// 查找SPL Token索引
+	splTokenIndex := int64(-1)
+	for i, v := range accountKeys {
+		if v == conf.SolSplToken {
+			splTokenIndex = int64(i)
+
+			break
+		}
+	}
+
+	// SPL Token的Mint地址，即不包含 Token 交易信息
+	if splTokenIndex == -1 {
+
+		return nil
+	}
+
+	// 解析 Token 账户 【Token Wallet => Owner Wallet】
+	tokenAccountMap := make(map[string]solanaTokenOwner)
+	for _, v := range []string{"postTokenBalances", "preTokenBalances"} {
+		for _, itm := range trans.Get("meta." + v).Array() {
+			tradeType, ok := model.GetContractTrade(itm.Get("mint").String())
+			if !ok || itm.Get("programId").String() != conf.SolSplToken {
+
+				continue
+			}
+
+			tokenAccountMap[accountKeys[itm.Get("accountIndex").Int()]] = solanaTokenOwner{
+				TradeType: tradeType,
+				Address:   itm.Get("owner").String(),
 			}
 		}
+	}
 
-		// 查找SPL Token索引
-		splTokenIndex := int64(-1)
-		for i, v := range accountKeys {
-			if v == conf.SolSplToken {
-				splTokenIndex = int64(i)
+	transArr := make([]transfer, 0)
 
-				break
-			}
-		}
-
-		// SPL Token的Mint地址，即不包含 Token 交易信息
-		if splTokenIndex == -1 {
+	// 解析外部指令
+	for _, instr := range trans.Get("transaction.message.instructions").Array() {
+		if instr.Get("programIdIndex").Int() != splTokenIndex {
 
 			continue
 		}
 
-		// 解析 Token 账户 【Token Wallet => Owner Wallet】
-		tokenAccountMap := make(map[string]solanaTokenOwner)
-		for _, v := range []string{"postTokenBalances", "preTokenBalances"} {
-			for _, itm := range trans.Get("meta." + v).Array() {
-				tradeType, ok := model.GetContractTrade(itm.Get("mint").String())
-				if !ok || itm.Get("programId").String() != conf.SolSplToken {
+		transArr = append(transArr, s.parseTransfer(instr, accountKeys, tokenAccountMap))
+	}
 
-					continue
-				}
-
-				tokenAccountMap[accountKeys[itm.Get("accountIndex").Int()]] = solanaTokenOwner{
-					TradeType: tradeType,
-					Address:   itm.Get("owner").String(),
-				}
-			}
-		}
-
-		transArr := make([]transfer, 0)
-
-		// 解析外部指令
-		for _, instr := range trans.Get("transaction.message.instructions").Array() {
+	// 解析内部指令
+	for _, itm := range trans.Get("meta.innerInstructions").Array() {
+		for _, instr := range itm.Get("instructions").Array() {
 			if instr.Get("programIdIndex").Int() != splTokenIndex {
 
 				continue
@@ -266,41 +287,25 @@ func (s *solana) slotParse(n any) {
 
 			transArr = append(transArr, s.parseTransfer(instr, accountKeys, tokenAccountMap))
 		}
-
-		// 解析内部指令
-		for _, itm := range trans.Get("meta.innerInstructions").Array() {
-			for _, instr := range itm.Get("instructions").Array() {
-				if instr.Get("programIdIndex").Int() != splTokenIndex {
-
-					continue
-				}
-
-				transArr = append(transArr, s.parseTransfer(instr, accountKeys, tokenAccountMap))
-			}
-		}
-
-		// 过滤无关交易
-		result := make([]transfer, 0)
-		for _, t := range transArr {
-			if t.FromAddress == "" || t.RecvAddress == "" || t.Amount.IsZero() {
-
-				continue
-			}
-
-			t.TxHash = hash
-			t.Network = conf.Solana
-			t.BlockNum = slot
-			t.Timestamp = timestamp
-
-			result = append(result, t)
-		}
-
-		if len(result) > 0 {
-			transferQueue.In <- result
-		}
 	}
 
-	log.Task.Info(fmt.Sprintf("区块扫描完成(Solana) %d 成功率：%s", slot, conf.GetSuccessRate(network)))
+	// 过滤无关交易
+	result := make([]transfer, 0)
+	for _, t := range transArr {
+		if t.FromAddress == "" || t.RecvAddress == "" || t.Amount.IsZero() {
+
+			continue
+		}
+
+		t.TxHash = hash
+		t.Network = conf.Solana
+		t.BlockNum = slot
+		t.Timestamp = timestamp
+
+		result = append(result, t)
+	}
+
+	return result
 }
 
 // 执行失败的交易同样会被打包进区块，指令和代币余额也照常保留，但转账已经回滚；只有 err 为 null 才算执行成功
