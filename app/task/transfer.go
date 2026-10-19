@@ -334,11 +334,16 @@ func pendingLookbackUnix(network model.Network) (startAt, endAt int64, orderIDs 
 	// 起点：最早的创建时间（已按 created_at asc 排序）
 	startAt = pending[0].CreatedAt.Time().Unix()
 
-	// 终点：最晚的已过期 expired_at；若全部尚未过期则用当前时间
-	endAt = time.Now().Unix()
+	// 终点：覆盖每个订单的有效期，取各订单 min(过期时间, 当前时间) 的最大值
+	now := time.Now()
+	endAt = startAt
 	for _, o := range pending {
-		if o.ExpiredAt.Before(time.Now()) && o.ExpiredAt.Unix() > startAt {
-			endAt = o.ExpiredAt.Unix()
+		end := o.ExpiredAt
+		if end.After(now) {
+			end = now
+		}
+		if end.Unix() > endAt {
+			endAt = end.Unix()
 		}
 	}
 
