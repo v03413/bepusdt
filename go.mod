@@ -3,6 +3,7 @@ module github.com/v03413/bepusdt
 go 1.26.2
 
 require (
+	filippo.io/edwards25519 v1.2.0
 	github.com/btcsuite/btcd/btcutil v1.1.6
 	github.com/btcsuite/btcd/chaincfg/chainhash v1.1.0
 	github.com/eclipse/paho.mqtt.golang v1.5.1
@@ -31,7 +32,6 @@ require (
 )
 
 require (
-	filippo.io/edwards25519 v1.2.0 // indirect
 	github.com/BurntSushi/toml v1.6.0 // indirect
 	github.com/bytedance/gopkg v0.1.4 // indirect
 	github.com/bytedance/sonic v1.15.1 // indirect
