@@ -472,15 +472,6 @@ func (s *solana) tradeConfirmHandle(ctx context.Context) {
 	var wg sync.WaitGroup
 
 	var handle = func(o model.Order) {
-		if model.GetC(model.BlockOffsetConfirm) == "1" {
-			if s.lastSlotNum == 0 {
-				return
-			}
-			if s.lastSlotNum-o.RefBlockNum < s.slotConfirmedOffset {
-				return
-			}
-		}
-
 		post := []byte(fmt.Sprintf(`{"jsonrpc":"2.0","id":1,"method":"getSignatureStatuses","params":[["%s"],{"searchTransactionHistory":true}]}`, o.RefHash))
 		req, _ := http.NewRequestWithContext(ctx, "POST", model.Endpoint(conf.Solana), bytes.NewBuffer(post))
 		resp, err := s.client.Do(req)
@@ -508,6 +499,12 @@ func (s *solana) tradeConfirmHandle(ctx context.Context) {
 		data := gjson.ParseBytes(body)
 		if data.Get("error").Exists() {
 			log.Task.Warn("solana tradeConfirmHandle Error:", data.Get("error").String())
+
+			return
+		}
+
+		// 用同一响应里节点当前的 slot 计算确认数，不依赖向前扫描进度：扫描在没有待支付订单时会暂停，重启后为 0
+		if model.GetC(model.BlockOffsetConfirm) == "1" && data.Get("result.context.slot").Int()-int64(o.RefBlockNum) < int64(s.slotConfirmedOffset) {
 
 			return
 		}
